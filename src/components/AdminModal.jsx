@@ -316,11 +316,11 @@ export const AdminModal = () => {
                   width: "6px",
                   height: "6px",
                   borderRadius: "50%",
-                  background: syncStatus === "connected" ? "#22c55e" : "#3b82f6",
+                  background: syncStatus === "connected" ? "#22c55e" : syncStatus === "suspended" ? "#f59e0b" : "#3b82f6",
                   display: "inline-block",
                 }}
               />
-              {syncStatus === "connected" ? "Shared Central DB Live" : "Admin Panel (Active)"}
+              {syncStatus === "connected" ? "Shared Central DB Live" : syncStatus === "suspended" ? "Server Paused on Render" : "Admin Panel (Active)"}
             </span>
           </h3>
           <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
@@ -463,6 +463,28 @@ export const AdminModal = () => {
               {/* TAB 1: PRODUCTS */}
               {activeTab === "products" && (
                 <div>
+                  {syncStatus === "suspended" && (
+                    <div
+                      style={{
+                        padding: "0.85rem 1rem",
+                        background: "#fef3c7",
+                        border: "1px solid #f59e0b",
+                        borderRadius: "8px",
+                        color: "#92400e",
+                        fontSize: "0.84rem",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "0.6rem",
+                        marginBottom: "1.25rem",
+                      }}
+                    >
+                      <AlertCircle size={18} style={{ flexShrink: 0, color: "#d97706" }} />
+                      <div>
+                        <strong>Render Server Paused:</strong> Products you add or edit are safely stored on this device. To sync across all other phones and devices, open your <strong>Render Dashboard</strong> and click <strong>Resume</strong> on <code>mani-oils</code>.
+                      </div>
+                    </div>
+                  )}
+
                   {!editingProduct ? (
                     <>
                       <div

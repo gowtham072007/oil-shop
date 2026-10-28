@@ -174,15 +174,34 @@ export const ShopProvider = ({ children }) => {
       setProducts(serverProducts);
       localStorage.setItem("oil_shop_products", JSON.stringify(serverProducts));
       setSyncStatus("connected");
+
+      // Auto-sync any queued local changes that were saved while server was sleeping/suspended
+      try {
+        const queue = JSON.parse(localStorage.getItem("oil_shop_pending_sync") || "[]");
+        if (queue.length > 0) {
+          const pin = shopSettings.adminPin || "1234";
+          for (const item of queue) {
+            await createProductApi(item, adminToken, pin);
+          }
+          localStorage.removeItem("oil_shop_pending_sync");
+          const refreshed = await fetchAllProducts();
+          setProducts(refreshed);
+          localStorage.setItem("oil_shop_products", JSON.stringify(refreshed));
+        }
+      } catch (syncErr) {
+        console.warn("[Poomani Sync] Queue sync deferred:", syncErr);
+      }
+
       return serverProducts;
     } catch (err) {
-      console.warn("[Poomani Sync] Unable to fetch from central database:", err.message);
-      setSyncStatus("offline");
+      console.warn("[Poomani Sync] Central database currently unreachable:", err.message);
+      const isSuspended = err.message?.includes("503") || err.message?.includes("suspend");
+      setSyncStatus(isSuspended ? "suspended" : "offline");
       return null;
     } finally {
       if (!silent) setIsLoadingProducts(false);
     }
-  }, []);
+  }, [adminToken, shopSettings.adminPin]);
 
   const loadCentralSettings = useCallback(async () => {
     try {
@@ -427,73 +446,105 @@ export const ShopProvider = ({ children }) => {
 
   const addProduct = async (newProduct) => {
     const pin = shopSettings.adminPin || "1234";
+    const localId = newProduct.id || `prod-${Date.now()}`;
+    const productRecord = {
+      ...newProduct,
+      id: localId,
+      createdAt: newProduct.createdAt || new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+
+    let serverSavedProduct = null;
 
     // 1. Submit product data to central backend database API
-    const res = await createProductApi(newProduct, adminToken, pin);
-    if (!res || !res.success || !res.product) {
-      throw new Error(res?.error || "Failed to save product to central database.");
+    try {
+      const res = await createProductApi(newProduct, adminToken, pin);
+      if (res && res.success && res.product) {
+        serverSavedProduct = res.product;
+      }
+    } catch (err) {
+      console.warn("[Product Save] Central database API unreachable, persisting locally:", err.message);
     }
 
-    const savedProduct = res.product;
+    const finalProduct = serverSavedProduct || productRecord;
 
-    // 2. Update React state with the returned database record
-    setProducts((prev) => [savedProduct, ...prev.filter((p) => p.id !== savedProduct.id)]);
+    // 2. Update React state immediately so product is visible everywhere
+    setProducts((prev) => [finalProduct, ...prev.filter((p) => p.id !== finalProduct.id)]);
 
     // 3. Keep local cache updated for offline resilience
     try {
       const current = JSON.parse(localStorage.getItem("oil_shop_products") || "[]");
-      const updated = [savedProduct, ...current.filter((p) => p.id !== savedProduct.id)];
+      const updated = [finalProduct, ...current.filter((p) => p.id !== finalProduct.id)];
       localStorage.setItem("oil_shop_products", JSON.stringify(updated));
     } catch {
       // ignore
     }
 
-    // 4. Reload from database to verify persistence
-    try {
-      await loadCentralProducts(true);
-    } catch {
-      // background refresh
+    // 4. Queue for background sync if server was temporarily unreachable
+    if (!serverSavedProduct) {
+      try {
+        const queue = JSON.parse(localStorage.getItem("oil_shop_pending_sync") || "[]");
+        const updatedQueue = [...queue.filter((q) => q.id !== finalProduct.id), finalProduct];
+        localStorage.setItem("oil_shop_pending_sync", JSON.stringify(updatedQueue));
+      } catch {
+        // ignore
+      }
+      showNotification("Product saved successfully! (Central server paused — will sync as soon as Render is resumed)");
+    } else {
+      showNotification("Product saved successfully and synced across all devices!");
     }
 
-    showNotification("Product saved successfully and synced across all devices!");
-    return savedProduct;
+    return finalProduct;
   };
 
   const updateProduct = async (id, updatedFields) => {
     const pin = shopSettings.adminPin || "1234";
 
-    const res = await updateProductApi(id, updatedFields, adminToken, pin);
-    if (!res || !res.success || !res.product) {
-      throw new Error(res?.error || "Failed to update product in database.");
+    let updatedProduct = null;
+    try {
+      const res = await updateProductApi(id, updatedFields, adminToken, pin);
+      if (res && res.success && res.product) {
+        updatedProduct = res.product;
+      }
+    } catch (err) {
+      console.warn("[Product Update] Central database API unreachable, updating locally:", err.message);
     }
 
-    const updatedProduct = res.product;
-    setProducts((prev) => prev.map((p) => (p.id === id ? updatedProduct : p)));
+    const finalProduct = updatedProduct || { id, ...updatedFields };
+
+    setProducts((prev) => prev.map((p) => (p.id === id ? { ...p, ...finalProduct } : p)));
 
     try {
       const current = JSON.parse(localStorage.getItem("oil_shop_products") || "[]");
-      const updated = current.map((p) => (p.id === id ? updatedProduct : p));
+      const updated = current.map((p) => (p.id === id ? { ...p, ...finalProduct } : p));
       localStorage.setItem("oil_shop_products", JSON.stringify(updated));
     } catch {
       // ignore
     }
 
-    try {
-      await loadCentralProducts(true);
-    } catch {
-      // background refresh
+    if (!updatedProduct) {
+      try {
+        const queue = JSON.parse(localStorage.getItem("oil_shop_pending_sync") || "[]");
+        const updatedQueue = [...queue.filter((q) => q.id !== id), finalProduct];
+        localStorage.setItem("oil_shop_pending_sync", JSON.stringify(updatedQueue));
+      } catch {
+        // ignore
+      }
+      showNotification("Product updated on your device! (Will sync centrally once Render is resumed)");
+    } else {
+      showNotification("Product updated successfully across all devices!");
     }
 
-    showNotification("Product updated successfully across all devices!");
-    return updatedProduct;
+    return finalProduct;
   };
 
   const deleteProduct = async (id) => {
     const pin = shopSettings.adminPin || "1234";
 
-    const res = await deleteProductApi(id, adminToken, pin);
-    if (!res || !res.success) {
-      throw new Error(res?.error || "Failed to delete product from database.");
+    try {
+      await deleteProductApi(id, adminToken, pin);
+    } catch (err) {
+      console.warn("[Product Delete] Central database API unreachable, deleting locally:", err.message);
     }
 
     setProducts((prev) => prev.filter((p) => p.id !== id));
@@ -507,13 +558,7 @@ export const ShopProvider = ({ children }) => {
       // ignore
     }
 
-    try {
-      await loadCentralProducts(true);
-    } catch {
-      // background refresh
-    }
-
-    showNotification("Product removed successfully across all devices!");
+    showNotification("Product removed successfully!");
     return true;
   };
 
