@@ -11,8 +11,15 @@ export const Footer = () => {
         <div className="footer-grid">
           {/* Shop Column */}
           <div className="footer-col">
-            <h4 style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-              🪔 {shopSettings.shopName} <span style={{ fontSize: "0.95rem", color: "#e5b94c" }}>| {shopSettings.shopNameTamil || "பூமணி ஆயில்ஸ்"}</span>
+            <h4 style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
+              <span style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                🪔 {shopSettings.shopName}
+              </span>
+              {shopSettings.shopNameTamil && (
+                <span style={{ fontSize: "0.92rem", color: "#e5b94c", paddingLeft: "1.75rem", fontWeight: "600" }}>
+                  {shopSettings.shopNameTamil}
+                </span>
+              )}
             </h4>
             <p>
               Preserving ancient South Indian wood pestle (Mara Chekku) oil extraction traditions.

@@ -42,28 +42,19 @@ export const Header = () => {
             >
               <div className="brand-icon-emblem">🪔</div>
               <div className="brand-text">
-                <h1 style={{ display: "flex", alignItems: "center", gap: "0.5rem", flexWrap: "wrap" }}>
-                  <span>{shopSettings.shopName}</span>
-                  <span
-                    style={{
-                      fontFamily: "var(--font-sans)",
-                      fontSize: "0.95rem",
-                      color: "var(--primary)",
-                      background: "var(--gold-glow)",
-                      border: "1px solid var(--gold)",
-                      padding: "0.1rem 0.55rem",
-                      borderRadius: "6px",
-                      fontWeight: "700",
-                    }}
-                  >
-                    {shopSettings.shopNameTamil || "பூமணி ஆயில்ஸ்"}
-                  </span>
+                <h1>
+                  <span className="brand-name-en">{shopSettings.shopName}</span>
+                  {shopSettings.shopNameTamil && (
+                    <span className="brand-name-ta">
+                      {shopSettings.shopNameTamil}
+                    </span>
+                  )}
                 </h1>
                 <div className="tagline">
-                  {shopSettings.tagline}
+                  <span className="tagline-en">{shopSettings.tagline}</span>
                   {shopSettings.taglineTamil && (
-                    <span style={{ color: "var(--primary-light)", marginLeft: "4px" }}>
-                      • {shopSettings.taglineTamil}
+                    <span className="tagline-ta">
+                      {shopSettings.taglineTamil}
                     </span>
                   )}
                 </div>
