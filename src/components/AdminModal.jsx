@@ -1,6 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { useShop } from "../context/ShopContext";
-import { formatINR, cleanWhatsAppNumber } from "../utils/billGenerator";
+import { formatINR } from "../utils/billGenerator";
+import { processProductImageFile } from "../utils/imageHandler";
 import {
   X,
   Lock,
@@ -17,7 +18,6 @@ import {
   Download,
   Upload,
   RefreshCw,
-  ExternalLink,
   Eye,
   AlertCircle,
 } from "lucide-react";
@@ -55,18 +55,23 @@ export const AdminModal = () => {
     name: "",
     regionalName: "",
     brand: "Poomani Oils",
-    category: "groundnut",
     oilType: "Wood-Pressed Cold Extracted",
-    image: "/images/groundnut_oil.jpg",
+    image: "",
+    imageFileName: "",
     description: "",
     inStock: true,
     featured: false,
     variants: [
-      { id: "v-1", size: "500 ml", price: 150, stock: 30, unit: "Bottle" },
-      { id: "v-2", size: "1 Litre", price: 290, stock: 50, unit: "Bottle" },
-      { id: "v-3", size: "5 Litre Can", price: 1400, stock: 15, unit: "Tin Can" },
+      { id: "v-1", size: "500 ml", price: 160, stock: 30, unit: "Bottle" },
+      { id: "v-2", size: "1 Litre", price: 310, stock: 50, unit: "Bottle" },
+      { id: "v-3", size: "5 Litre Can", price: 1500, stock: 15, unit: "Tin Can" },
     ],
   });
+
+  const [imageError, setImageError] = useState("");
+  const [formError, setFormError] = useState("");
+  const [isProcessingImage, setIsProcessingImage] = useState(false);
+  const fileInputRef = useRef(null);
 
   // Shop Settings Form State
   const [settingsForm, setSettingsForm] = useState({ ...shopSettings });
@@ -100,10 +105,10 @@ export const AdminModal = () => {
       name: "",
       regionalName: "",
       brand: shopSettings.shopName || "Poomani Oils",
-      category: categories[1]?.id || "groundnut",
       oilType: "Wood-Pressed Cold Extracted",
-      image: "/images/groundnut_oil.jpg",
-      description: "Authentic wood-pressed oil extracted at low temperature using traditional wooden pestles. Unrefined, unbleached, zero chemical solvents.",
+      image: "", // Explicitly empty: no hardcoded photo or default substitution
+      imageFileName: "",
+      description: "",
       inStock: true,
       featured: false,
       variants: [
@@ -112,6 +117,8 @@ export const AdminModal = () => {
         { id: `v-${Date.now()}-3`, size: "5 Litre Can", price: 1500, stock: 10, unit: "Tin Can" },
       ],
     });
+    setImageError("");
+    setFormError("");
     setEditingProduct("new");
   };
 
@@ -122,21 +129,103 @@ export const AdminModal = () => {
         ? product.variants
         : [{ id: "v-def", size: "1 Litre", price: product.price || 300, stock: 20, unit: "Bottle" }],
     });
+    setImageError("");
+    setFormError("");
     setEditingProduct(product.id);
+  };
+
+  const handleFileChange = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setImageError("");
+    setFormError("");
+    setIsProcessingImage(true);
+
+    try {
+      const processed = await processProductImageFile(file);
+      setProductForm((prev) => ({
+        ...prev,
+        image: processed.dataUrl,
+        imageFileName: processed.fileName,
+      }));
+    } catch (err) {
+      setImageError(err.message || "Failed to upload image. Please try another photo.");
+    } finally {
+      setIsProcessingImage(false);
+      if (e.target) e.target.value = "";
+    }
+  };
+
+  const handleRemovePhoto = () => {
+    setProductForm((prev) => ({
+      ...prev,
+      image: "",
+      imageFileName: "",
+    }));
+    setImageError("");
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
   };
 
   const saveProductForm = (e) => {
     e.preventDefault();
-    if (!productForm.name.trim()) {
-      alert("Product name is required");
+    setFormError("");
+    setImageError("");
+
+    // 1. Validate Product Name
+    if (!productForm.name || !productForm.name.trim()) {
+      setFormError("Product name (English) is required.");
       return;
     }
 
-    if (editingProduct === "new") {
-      addProduct(productForm);
-    } else {
-      updateProduct(editingProduct, productForm);
+    // 2. Validate Product Photo (mandatory for all products)
+    if (!productForm.image) {
+      setImageError("Product photo is mandatory. Please upload an image file (JPG, JPEG, PNG, or WEBP).");
+      setFormError("Please upload a product photo to continue.");
+      return;
     }
+
+    // 3. Validate Variants
+    if (!productForm.variants || productForm.variants.length === 0) {
+      setFormError("Please configure at least one pack size variant.");
+      return;
+    }
+
+    for (let i = 0; i < productForm.variants.length; i++) {
+      const v = productForm.variants[i];
+      if (!v.size || !v.size.trim()) {
+        setFormError(`Pack size description is required for row #${i + 1} (e.g. 500 ml, 1 Litre).`);
+        return;
+      }
+      const priceNum = Number(v.price);
+      if (v.price === "" || isNaN(priceNum) || priceNum <= 0) {
+        setFormError(`Selling price for '${v.size}' must be greater than ₹0.`);
+        return;
+      }
+      const stockNum = Number(v.stock);
+      if (v.stock === "" || isNaN(stockNum) || stockNum < 0) {
+        setFormError(`Available stock for '${v.size}' cannot be negative.`);
+        return;
+      }
+    }
+
+    // 4. Save Product
+    const cleanedProduct = {
+      ...productForm,
+      name: productForm.name.trim(),
+      regionalName: productForm.regionalName?.trim() || "",
+      oilType: productForm.oilType?.trim() || "Wood-Pressed Cold Extracted",
+      description: productForm.description?.trim() || "",
+    };
+
+    if (editingProduct === "new") {
+      addProduct(cleanedProduct);
+    } else {
+      updateProduct(editingProduct, cleanedProduct);
+    }
+
     setEditingProduct(null);
   };
 
@@ -144,7 +233,9 @@ export const AdminModal = () => {
     const updated = [...productForm.variants];
     updated[index] = {
       ...updated[index],
-      [field]: field === "price" || field === "stock" ? Number(value) || 0 : value,
+      [field]: field === "price" || field === "stock"
+        ? (value === "" ? "" : Number(value))
+        : value,
     };
     setProductForm({ ...productForm, variants: updated });
   };
@@ -154,20 +245,18 @@ export const AdminModal = () => {
       ...productForm,
       variants: [
         ...productForm.variants,
-        { id: `v-${Date.now()}`, size: "2 Litre", price: 600, stock: 20, unit: "Bottle" },
+        { id: `v-${Date.now()}`, size: "", price: "", stock: 10, unit: "Bottle" },
       ],
     });
   };
 
   const removeVariantRow = (index) => {
     if (productForm.variants.length <= 1) {
-      alert("At least one pack size variant is required");
+      setFormError("A product must have at least one pack size variant.");
       return;
     }
-    setProductForm({
-      ...productForm,
-      variants: productForm.variants.filter((_, i) => i !== index),
-    });
+    const updated = productForm.variants.filter((_, idx) => idx !== index);
+    setProductForm({ ...productForm, variants: updated });
   };
 
   // Save Settings
@@ -315,7 +404,7 @@ export const AdminModal = () => {
                 onClick={() => setActiveTab("backup")}
               >
                 <Download size={16} />
-                Data & Reset
+                Backup & Restore
               </button>
             </div>
 
@@ -348,93 +437,139 @@ export const AdminModal = () => {
                         </button>
                       </div>
 
-                      <div style={{ overflowX: "auto" }}>
-                        <table className="admin-table">
-                          <thead>
-                            <tr>
-                              <th>Product</th>
-                              <th>Category</th>
-                              <th>Oil Type</th>
-                              <th>Pack Sizes & Prices</th>
-                              <th>Stock Status</th>
-                              <th>Actions</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {products.map((p) => {
-                              const minPrice = p.variants?.length
-                                ? Math.min(...p.variants.map((v) => v.price))
-                                : p.price || 0;
-                              return (
-                                <tr key={p.id}>
-                                  <td>
-                                    <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-                                      <img
-                                        src={p.image}
-                                        alt={p.name}
-                                        style={{ width: "42px", height: "42px", borderRadius: "6px", objectFit: "cover" }}
-                                      />
-                                      <div>
-                                        <strong style={{ display: "block", color: "#09331d" }}>
-                                          {p.name}
-                                        </strong>
-                                        <small style={{ color: "#8c6819" }}>{p.regionalName || p.brand}</small>
+                      {products.length === 0 ? (
+                        <div
+                          style={{
+                            textAlign: "center",
+                            padding: "3.5rem 1.5rem",
+                            background: "#faf8f4",
+                            borderRadius: "12px",
+                            border: "2px dashed #d6cebf",
+                            margin: "1rem 0",
+                          }}
+                        >
+                          <div
+                            style={{
+                              width: "56px",
+                              height: "56px",
+                              borderRadius: "50%",
+                              background: "#f0eae0",
+                              color: "#124e2c",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              margin: "0 auto 1rem",
+                            }}
+                          >
+                            <Package size={28} />
+                          </div>
+                          <h4 style={{ fontSize: "1.1rem", color: "#09331d", fontWeight: "700", marginBottom: "0.35rem" }}>
+                            No products added yet. Click Add New Product to get started.
+                          </h4>
+                          <p style={{ color: "#57655d", fontSize: "0.88rem", marginBottom: "1.25rem" }}>
+                            Add your authentic cooking oils with custom pack sizes, pricing, and uploaded photos.
+                          </p>
+                          <button
+                            type="button"
+                            className="btn-primary-glow"
+                            onClick={openNewProductForm}
+                            style={{ padding: "0.6rem 1.35rem", fontSize: "0.9rem" }}
+                          >
+                            <Plus size={16} />
+                            Add New Product
+                          </button>
+                        </div>
+                      ) : (
+                        <div style={{ overflowX: "auto" }}>
+                          <table className="admin-table">
+                            <thead>
+                              <tr>
+                                <th>Product Photo & Name</th>
+                                <th>Oil Extraction Type</th>
+                                <th>Pack Sizes & Rates</th>
+                                <th>Stock Status</th>
+                                <th>Actions</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {products.map((p) => {
+                                return (
+                                  <tr key={p.id}>
+                                    <td>
+                                      <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+                                        <img
+                                          src={p.image}
+                                          alt={p.name}
+                                          style={{
+                                            width: "48px",
+                                            height: "48px",
+                                            borderRadius: "6px",
+                                            objectFit: "cover",
+                                            border: "1px solid #d4af37",
+                                            background: "#f8f5ee",
+                                          }}
+                                        />
+                                        <div>
+                                          <strong style={{ display: "block", color: "#09331d" }}>
+                                            {p.name}
+                                          </strong>
+                                          {p.regionalName && (
+                                            <small style={{ color: "#8c6819", display: "block" }}>{p.regionalName}</small>
+                                          )}
+                                        </div>
                                       </div>
-                                    </div>
-                                  </td>
-                                  <td>
-                                    <span style={{ textTransform: "capitalize" }}>{p.category}</span>
-                                  </td>
-                                  <td>
-                                    <small>{p.oilType}</small>
-                                  </td>
-                                  <td>
-                                    {p.variants?.map((v) => (
-                                      <div key={v.id} style={{ fontSize: "0.78rem" }}>
-                                        {v.size}: ₹{v.price} ({v.stock} in stock)
-                                      </div>
-                                    ))}
-                                  </td>
-                                  <td>
-                                    <button
-                                      type="button"
-                                      className={`badge-stock ${p.inStock ? "in" : "out"}`}
-                                      onClick={() => updateProduct(p.id, { inStock: !p.inStock })}
-                                      title="Click to toggle in/out of stock"
-                                    >
-                                      {p.inStock ? "In Stock" : "Out of Stock"}
-                                    </button>
-                                  </td>
-                                  <td>
-                                    <div style={{ display: "flex", gap: "0.4rem" }}>
+                                    </td>
+                                    <td>
+                                      <small>{p.oilType || "Wood-Pressed Cold Extracted"}</small>
+                                    </td>
+                                    <td>
+                                      {p.variants?.map((v, vIdx) => (
+                                        <div key={v.id || vIdx} style={{ fontSize: "0.78rem" }}>
+                                          <strong>{v.size}</strong>: ₹{v.price} ({v.stock} in stock{v.unit ? `, ${v.unit}` : ""})
+                                        </div>
+                                      ))}
+                                    </td>
+                                    <td>
                                       <button
                                         type="button"
-                                        onClick={() => openEditProductForm(p)}
-                                        style={{ padding: "4px", color: "#124e2c" }}
-                                        title="Edit Product"
+                                        className={`badge-stock ${p.inStock ? "in" : "out"}`}
+                                        onClick={() => updateProduct(p.id, { inStock: !p.inStock })}
+                                        title="Click to toggle in/out of stock"
                                       >
-                                        <Edit2 size={16} />
+                                        {p.inStock ? "In Stock" : "Out of Stock"}
                                       </button>
-                                      <button
-                                        type="button"
-                                        onClick={() => {
-                                          if (confirm(`Are you sure you want to delete ${p.name}?`)) {
-                                            deleteProduct(p.id);
-                                          }
-                                        }}
-                                        style={{ padding: "4px", color: "#dc2626" }}
-                                        title="Delete Product"
-                                      >
-                                        <Trash2 size={16} />
-                                      </button>
-                                    </div>
-                                  </td>
-                                </tr>
-                              );
-                            })}
-                          </tbody>
-                        </table>
-                      </div>
+                                    </td>
+                                    <td>
+                                      <div style={{ display: "flex", gap: "0.4rem" }}>
+                                        <button
+                                          type="button"
+                                          onClick={() => openEditProductForm(p)}
+                                          style={{ padding: "4px", color: "#124e2c" }}
+                                          title="Edit Product"
+                                        >
+                                          <Edit2 size={16} />
+                                        </button>
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            if (confirm(`Are you sure you want to delete "${p.name}"?`)) {
+                                              deleteProduct(p.id);
+                                            }
+                                          }}
+                                          style={{ padding: "4px", color: "#dc2626" }}
+                                          title="Delete Product"
+                                        >
+                                          <Trash2 size={16} />
+                                        </button>
+                                      </div>
+                                    </td>
+                                  </tr>
+                                );
+                              })}
+                            </tbody>
+                          </table>
+                        </div>
+                      )}
                     </>
                   ) : (
                     /* Add / Edit Product Form */
@@ -453,12 +588,40 @@ export const AdminModal = () => {
                         <button
                           type="button"
                           onClick={() => setEditingProduct(null)}
-                          style={{ color: "#57655d", fontSize: "0.85rem", textDecoration: "underline" }}
+                          style={{
+                            color: "#57655d",
+                            fontSize: "0.85rem",
+                            textDecoration: "underline",
+                            background: "none",
+                            border: "none",
+                            cursor: "pointer",
+                          }}
                         >
                           Back to Product List
                         </button>
                       </div>
 
+                      {formError && (
+                        <div
+                          style={{
+                            padding: "0.75rem 1rem",
+                            background: "#fef2f2",
+                            border: "1px solid #f87171",
+                            borderRadius: "8px",
+                            color: "#991b1b",
+                            fontSize: "0.88rem",
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "0.5rem",
+                            marginBottom: "1rem",
+                          }}
+                        >
+                          <AlertCircle size={18} style={{ flexShrink: 0 }} />
+                          <span>{formError}</span>
+                        </div>
+                      )}
+
+                      {/* Product Name (English) and Regional / Tamil Name */}
                       <div className="form-grid-2">
                         <div className="form-group">
                           <label>Product Name (English) *</label>
@@ -466,7 +629,10 @@ export const AdminModal = () => {
                             type="text"
                             required
                             value={productForm.name}
-                            onChange={(e) => setProductForm({ ...productForm, name: e.target.value })}
+                            onChange={(e) => {
+                              setProductForm({ ...productForm, name: e.target.value });
+                              if (formError) setFormError("");
+                            }}
                             placeholder="e.g. Wood-Pressed Groundnut Oil"
                           />
                         </div>
@@ -482,81 +648,225 @@ export const AdminModal = () => {
                         </div>
                       </div>
 
-                      <div className="form-grid-2">
-                        <div className="form-group">
-                          <label>Category</label>
-                          <select
-                            value={productForm.category}
-                            onChange={(e) => setProductForm({ ...productForm, category: e.target.value })}
-                          >
-                            {categories
-                              .filter((c) => c.id !== "all")
-                              .map((c) => (
-                                <option key={c.id} value={c.id}>
-                                  {c.name}
-                                </option>
-                              ))}
-                          </select>
-                        </div>
-
-                        <div className="form-group">
-                          <label>Oil Extraction Type</label>
-                          <input
-                            type="text"
-                            value={productForm.oilType}
-                            onChange={(e) => setProductForm({ ...productForm, oilType: e.target.value })}
-                            placeholder="e.g. Mara Chekku Cold-Pressed"
-                          />
-                        </div>
+                      {/* Oil Extraction Type */}
+                      <div className="form-group">
+                        <label>Oil Extraction Type</label>
+                        <input
+                          type="text"
+                          value={productForm.oilType}
+                          onChange={(e) => setProductForm({ ...productForm, oilType: e.target.value })}
+                          placeholder="e.g. Mara Chekku Cold-Pressed / Wood Pestle Churned"
+                        />
                       </div>
 
-                      <div className="form-grid-2">
-                        <div className="form-group">
-                          <label>Product Photo</label>
-                          <select
-                            value={productForm.image}
-                            onChange={(e) => setProductForm({ ...productForm, image: e.target.value })}
-                          >
-                            <option value="/images/groundnut_oil.jpg">Groundnut Oil (Kadala Ennai)</option>
-                            <option value="/images/sesame_oil.jpg">Sesame / Gingelly Oil (Nalla Ennai)</option>
-                            <option value="/images/coconut_oil.jpg">Virgin Coconut Oil (Thengai Ennai)</option>
-                            <option value="/images/mustard_oil.jpg">Kachi Ghani Mustard Oil</option>
-                            <option value="/images/sunflower_oil.jpg">Cold Pressed Sunflower Oil</option>
-                            <option value="/images/deepam_oil.jpg">Pancha Deepam Pooja Oil</option>
-                            <option value="/images/hero_banner.jpg">Oil Mill Collection</option>
-                          </select>
-                        </div>
+                      {/* Upload Product Photo */}
+                      <div className="form-group" style={{ marginBottom: "1.25rem" }}>
+                        <label style={{ display: "flex", alignItems: "center", gap: "0.4rem", fontWeight: "700", color: "#09331d" }}>
+                          Upload Product Photo <span style={{ color: "#dc2626" }}>*</span>
+                        </label>
 
-                        <div className="form-group">
-                          <label>Or Custom Image URL</label>
-                          <input
-                            type="text"
-                            value={productForm.image}
-                            onChange={(e) => setProductForm({ ...productForm, image: e.target.value })}
-                            placeholder="https://... or /images/..."
-                          />
-                        </div>
+                        {/* Hidden native file input */}
+                        <input
+                          ref={fileInputRef}
+                          type="file"
+                          accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"
+                          onChange={handleFileChange}
+                          style={{ display: "none" }}
+                          id="product-photo-upload-input"
+                        />
+
+                        {/* Image Preview or Choose File Dropzone */}
+                        {productForm.image ? (
+                          <div
+                            style={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: "1.25rem",
+                              padding: "1rem",
+                              background: "#f9f7f2",
+                              borderRadius: "10px",
+                              border: "1px solid #d4af37",
+                              flexWrap: "wrap",
+                            }}
+                          >
+                            <div
+                              style={{
+                                width: "96px",
+                                height: "96px",
+                                borderRadius: "8px",
+                                overflow: "hidden",
+                                border: "2px solid #124e2c",
+                                flexShrink: 0,
+                                background: "#ffffff",
+                              }}
+                            >
+                              <img
+                                src={productForm.image}
+                                alt="Product Preview"
+                                style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                              />
+                            </div>
+
+                            <div style={{ flex: 1, minWidth: "200px" }}>
+                              <div style={{ display: "flex", alignItems: "center", gap: "0.4rem", color: "#124e2c", fontWeight: "700", fontSize: "0.9rem" }}>
+                                <CheckCircle size={16} color="#16a34a" />
+                                Photo Ready
+                              </div>
+                              <div style={{ fontSize: "0.8rem", color: "#57655d", marginTop: "2px" }}>
+                                {productForm.imageFileName || "Stored persistently with product record"}
+                              </div>
+
+                              <div style={{ display: "flex", gap: "0.6rem", marginTop: "0.6rem" }}>
+                                <button
+                                  type="button"
+                                  onClick={() => fileInputRef.current?.click()}
+                                  disabled={isProcessingImage}
+                                  style={{
+                                    display: "inline-flex",
+                                    alignItems: "center",
+                                    gap: "0.35rem",
+                                    padding: "0.4rem 0.8rem",
+                                    fontSize: "0.82rem",
+                                    background: "#ffffff",
+                                    border: "1px solid #124e2c",
+                                    color: "#124e2c",
+                                    borderRadius: "6px",
+                                    cursor: "pointer",
+                                    fontWeight: "600",
+                                  }}
+                                >
+                                  <Upload size={14} />
+                                  Change Photo
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={handleRemovePhoto}
+                                  style={{
+                                    display: "inline-flex",
+                                    alignItems: "center",
+                                    gap: "0.35rem",
+                                    padding: "0.4rem 0.8rem",
+                                    fontSize: "0.82rem",
+                                    background: "#fee2e2",
+                                    border: "1px solid #f87171",
+                                    color: "#b91c1c",
+                                    borderRadius: "6px",
+                                    cursor: "pointer",
+                                    fontWeight: "600",
+                                  }}
+                                >
+                                  <Trash2 size={14} />
+                                  Remove Photo
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        ) : (
+                          <div
+                            onClick={() => fileInputRef.current?.click()}
+                            style={{
+                              display: "flex",
+                              flexDirection: "column",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              padding: "2rem 1.5rem",
+                              background: "#faf8f4",
+                              border: imageError ? "2px dashed #dc2626" : "2px dashed #c69222",
+                              borderRadius: "10px",
+                              cursor: "pointer",
+                              transition: "all 0.2s ease",
+                              textAlign: "center",
+                            }}
+                            role="button"
+                            tabIndex={0}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter" || e.key === " ") fileInputRef.current?.click();
+                            }}
+                          >
+                            <div
+                              style={{
+                                width: "48px",
+                                height: "48px",
+                                borderRadius: "50%",
+                                background: "rgba(212, 175, 55, 0.15)",
+                                color: "#124e2c",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                marginBottom: "0.6rem",
+                              }}
+                            >
+                              <Upload size={22} />
+                            </div>
+
+                            <button
+                              type="button"
+                              style={{
+                                padding: "0.45rem 1.15rem",
+                                background: "linear-gradient(135deg, #124e2c, #09331d)",
+                                color: "#ffffff",
+                                border: "none",
+                                borderRadius: "6px",
+                                fontSize: "0.88rem",
+                                fontWeight: "600",
+                                cursor: "pointer",
+                                marginBottom: "0.4rem",
+                              }}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                fileInputRef.current?.click();
+                              }}
+                            >
+                              Choose File
+                            </button>
+
+                            <span style={{ fontSize: "0.82rem", color: "#57655d" }}>
+                              Accepts <strong>JPG, JPEG, PNG, or WEBP</strong> (Max 5 MB)
+                            </span>
+                            {isProcessingImage && (
+                              <span style={{ fontSize: "0.82rem", color: "#124e2c", marginTop: "0.4rem", fontWeight: "600" }}>
+                                Optimizing photo...
+                              </span>
+                            )}
+                          </div>
+                        )}
+
+                        {imageError && (
+                          <div style={{ display: "flex", alignItems: "center", gap: "0.35rem", color: "#dc2626", fontSize: "0.82rem", marginTop: "0.4rem" }}>
+                            <AlertCircle size={15} />
+                            <span>{imageError}</span>
+                          </div>
+                        )}
                       </div>
 
+                      {/* Product Description */}
                       <div className="form-group">
                         <label>Product Description</label>
                         <textarea
-                          rows={2}
+                          rows={3}
                           value={productForm.description}
                           onChange={(e) => setProductForm({ ...productForm, description: e.target.value })}
+                          placeholder="Describe the seeds, extraction technique, culinary uses, or purity notes..."
                         />
                       </div>
 
                       {/* Pack Sizes & Pricing Configuration */}
                       <div style={{ marginTop: "1.25rem", marginBottom: "1.25rem" }}>
-                        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.5rem" }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.5rem" }}>
                           <label style={{ fontWeight: "700", color: "#09331d" }}>
-                            Pack Sizes, Prices (₹) & Stock Levels:
+                            Pack Sizes, Prices (₹), Stock Levels & Packaging: <span style={{ color: "#dc2626" }}>*</span>
                           </label>
                           <button
                             type="button"
                             onClick={addVariantRow}
-                            style={{ fontSize: "0.82rem", color: "#124e2c", fontWeight: "700" }}
+                            style={{
+                              fontSize: "0.82rem",
+                              color: "#124e2c",
+                              fontWeight: "700",
+                              background: "none",
+                              border: "none",
+                              cursor: "pointer",
+                            }}
                           >
                             + Add Another Pack Size
                           </button>
@@ -567,7 +877,7 @@ export const AdminModal = () => {
                             key={v.id || idx}
                             style={{
                               display: "grid",
-                              gridTemplateColumns: "1.2fr 1fr 1fr 1fr 40px",
+                              gridTemplateColumns: "1.3fr 1fr 1fr 1fr 40px",
                               gap: "0.5rem",
                               alignItems: "center",
                               marginBottom: "0.5rem",
@@ -577,30 +887,45 @@ export const AdminModal = () => {
                               type="text"
                               value={v.size}
                               onChange={(e) => updateVariantInForm(idx, "size", e.target.value)}
-                              placeholder="Pack size (e.g. 1 Litre)"
+                              placeholder="Size (e.g. 500 ml, 1 Litre, 5 Litre Can)"
+                              required
                             />
                             <input
                               type="number"
+                              min="1"
                               value={v.price}
                               onChange={(e) => updateVariantInForm(idx, "price", e.target.value)}
                               placeholder="Price in ₹"
+                              required
                             />
                             <input
                               type="number"
+                              min="0"
                               value={v.stock}
                               onChange={(e) => updateVariantInForm(idx, "stock", e.target.value)}
                               placeholder="Stock Qty"
+                              required
                             />
                             <input
                               type="text"
                               value={v.unit || "Bottle"}
                               onChange={(e) => updateVariantInForm(idx, "unit", e.target.value)}
-                              placeholder="Bottle / Can"
+                              placeholder="Bottle / Pouch / Tin Can"
                             />
                             <button
                               type="button"
                               onClick={() => removeVariantRow(idx)}
-                              style={{ color: "#dc2626" }}
+                              style={{
+                                color: "#dc2626",
+                                background: "none",
+                                border: "none",
+                                cursor: "pointer",
+                                padding: "4px",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                              }}
+                              title="Remove this pack size"
                             >
                               <Trash2 size={16} />
                             </button>
@@ -608,7 +933,7 @@ export const AdminModal = () => {
                         ))}
                       </div>
 
-                      <div style={{ display: "flex", gap: "1rem", marginTop: "1rem" }}>
+                      <div style={{ display: "flex", gap: "1rem", marginTop: "1.25rem" }}>
                         <button type="submit" className="btn-primary-glow">
                           <Save size={16} />
                           Save Product
@@ -890,14 +1215,14 @@ export const AdminModal = () => {
                 </div>
               )}
 
-              {/* TAB 5: BACKUP & DEMO RESET */}
+              {/* TAB 5: BACKUP & RESTORE */}
               {activeTab === "backup" && (
                 <div style={{ maxWidth: "560px" }}>
                   <h4 style={{ fontSize: "1.1rem", marginBottom: "1rem", color: "#09331d" }}>
-                    Database Backup, Restore & Demo Reset
+                    Database Backup & Restore
                   </h4>
                   <p style={{ fontSize: "0.88rem", color: "#57655d", marginBottom: "1.5rem" }}>
-                    Export your complete product catalog, shop settings, and order records as a JSON backup, or reset to original sample store data.
+                    Export your complete product catalog, shop settings, and order records as a JSON backup, or restore previously exported store data.
                   </p>
 
                   <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
@@ -937,22 +1262,22 @@ export const AdminModal = () => {
                       />
                     </div>
 
-                    <div style={{ padding: "1rem", background: "#fff5f5", borderRadius: "8px", border: "1px solid #fecaca" }}>
-                      <strong style={{ display: "block", marginBottom: "4px", color: "#991b1b" }}>
-                        Reset Store to Demo Data
+                    <div style={{ padding: "1rem", background: "#fef9ee", borderRadius: "8px", border: "1px solid #fed7aa" }}>
+                      <strong style={{ display: "block", marginBottom: "4px", color: "#9a3412" }}>
+                        Reset Settings & Categories
                       </strong>
                       <small style={{ display: "block", color: "#57655d", marginBottom: "0.75rem" }}>
-                        Restores original sample products, images, categories, and settings.
+                        Restores default shop settings and category definitions without adding any demo products.
                       </small>
                       <button
                         type="button"
                         onClick={() => {
-                          if (confirm("Reset all products and categories to default demo data?")) {
+                          if (confirm("Reset shop settings and categories to factory defaults?")) {
                             resetToDefaultData();
                           }
                         }}
                         style={{
-                          background: "#dc2626",
+                          background: "#c2410c",
                           color: "#ffffff",
                           padding: "0.5rem 1rem",
                           borderRadius: "9999px",
@@ -961,9 +1286,11 @@ export const AdminModal = () => {
                           display: "inline-flex",
                           alignItems: "center",
                           gap: "0.4rem",
+                          border: "none",
+                          cursor: "pointer",
                         }}
                       >
-                        <RefreshCw size={15} /> Reset Store
+                        <RefreshCw size={15} /> Reset Settings
                       </button>
                     </div>
                   </div>

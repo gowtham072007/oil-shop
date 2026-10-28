@@ -38,7 +38,14 @@ const ShopMain = () => {
   // Filter products by category and search
   const filteredProducts = products.filter((p) => {
     const matchesCategory =
-      selectedCategory === "all" || p.category === selectedCategory;
+      selectedCategory === "all" ||
+      p.category === selectedCategory ||
+      (!p.category && (
+        p.name?.toLowerCase().includes(selectedCategory) ||
+        p.regionalName?.toLowerCase().includes(selectedCategory) ||
+        p.oilType?.toLowerCase().includes(selectedCategory) ||
+        p.description?.toLowerCase().includes(selectedCategory)
+      ));
 
     const query = searchQuery.trim().toLowerCase();
     const matchesSearch =
@@ -95,59 +102,116 @@ const ShopMain = () => {
             </p>
           </div>
 
-          {/* Category Tabs */}
-          <CategoryTabs />
+          {/* Category Tabs & Controls (only when products exist) */}
+          {products.length > 0 && (
+            <>
+              <CategoryTabs />
 
-          {/* Search Result or Sort Controls Bar */}
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              marginBottom: "1.75rem",
-              flexWrap: "wrap",
-              gap: "1rem",
-            }}
-          >
-            <div style={{ fontSize: "0.92rem", color: "#57655d" }}>
-              Showing <strong>{sortedProducts.length}</strong> {sortedProducts.length === 1 ? "oil product" : "oil products"}
-              {searchQuery && (
-                <span>
-                  {" "}matching "<strong>{searchQuery}</strong>"
-                </span>
-              )}
-            </div>
-
-            {/* Sorting Dropdown */}
-            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-              <SlidersHorizontal size={15} color="#8c6819" />
-              <label htmlFor="sort-select" style={{ fontSize: "0.85rem", fontWeight: "600", color: "#1f2923" }}>
-                Sort By:
-              </label>
-              <select
-                id="sort-select"
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value)}
+              {/* Search Result or Sort Controls Bar */}
+              <div
                 style={{
-                  padding: "0.4rem 0.85rem",
-                  borderRadius: "9999px",
-                  border: "1px solid #e8e0d2",
-                  background: "#ffffff",
-                  fontSize: "0.85rem",
-                  color: "#1f2923",
-                  outline: "none",
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  marginBottom: "1.75rem",
+                  flexWrap: "wrap",
+                  gap: "1rem",
                 }}
               >
-                <option value="default">Featured Traditional</option>
-                <option value="price-low">Price: Low to High</option>
-                <option value="price-high">Price: High to Low</option>
-                <option value="rating">Highest Rated</option>
-              </select>
-            </div>
-          </div>
+                <div style={{ fontSize: "0.92rem", color: "#57655d" }}>
+                  Showing <strong>{sortedProducts.length}</strong> {sortedProducts.length === 1 ? "oil product" : "oil products"}
+                  {searchQuery && (
+                    <span>
+                      {" "}matching "<strong>{searchQuery}</strong>"
+                    </span>
+                  )}
+                </div>
 
-          {/* Products Grid */}
-          {sortedProducts.length === 0 ? (
+                {/* Sorting Dropdown */}
+                <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                  <SlidersHorizontal size={15} color="#8c6819" />
+                  <label htmlFor="sort-select" style={{ fontSize: "0.85rem", fontWeight: "600", color: "#1f2923" }}>
+                    Sort By:
+                  </label>
+                  <select
+                    id="sort-select"
+                    value={sortBy}
+                    onChange={(e) => setSortBy(e.target.value)}
+                    style={{
+                      padding: "0.4rem 0.85rem",
+                      borderRadius: "9999px",
+                      border: "1px solid #e8e0d2",
+                      background: "#ffffff",
+                      fontSize: "0.85rem",
+                      color: "#1f2923",
+                      outline: "none",
+                    }}
+                  >
+                    <option value="default">Featured Traditional</option>
+                    <option value="price-low">Price: Low to High</option>
+                    <option value="price-high">Price: High to Low</option>
+                    <option value="rating">Highest Rated</option>
+                  </select>
+                </div>
+              </div>
+            </>
+          )}
+
+          {/* Products Grid or Empty State */}
+          {products.length === 0 ? (
+            <div
+              className="empty-catalog-card"
+              style={{
+                textAlign: "center",
+                padding: "4.5rem 1.5rem",
+                background: "#ffffff",
+                borderRadius: "16px",
+                border: "1px solid #e8e0d2",
+                boxShadow: "0 4px 20px rgba(0, 0, 0, 0.03)",
+                maxWidth: "580px",
+                margin: "2rem auto",
+              }}
+            >
+              <div
+                style={{
+                  width: "68px",
+                  height: "68px",
+                  borderRadius: "50%",
+                  background: "rgba(18, 78, 44, 0.08)",
+                  color: "#124e2c",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  margin: "0 auto 1.25rem",
+                  fontSize: "2rem",
+                }}
+              >
+                🪔
+              </div>
+              <h3
+                style={{
+                  fontSize: "1.35rem",
+                  color: "#09331d",
+                  fontWeight: "700",
+                  marginBottom: "0.5rem",
+                }}
+              >
+                No products available yet. Please check back soon.
+              </h3>
+              <p
+                style={{
+                  color: "#57655d",
+                  fontSize: "0.95rem",
+                  lineHeight: "1.6",
+                  maxWidth: "420px",
+                  margin: "0 auto",
+                }}
+              >
+                We are currently preparing fresh batches of authentic wood-pressed oils.
+                Please check back shortly or reach out to us directly on WhatsApp.
+              </p>
+            </div>
+          ) : sortedProducts.length === 0 ? (
             <div
               style={{
                 textAlign: "center",
@@ -176,12 +240,15 @@ const ShopMain = () => {
                 No oils found matching your search
               </h3>
               <p style={{ color: "#57655d", fontSize: "0.9rem", marginBottom: "1.25rem" }}>
-                Try searching for groundnut, sesame, coconut, mustard, or pooja deepam oil.
+                Try adjusting your search terms or view all products.
               </p>
               <button
                 type="button"
                 className="btn-primary-glow"
-                onClick={() => setSearchQuery("")}
+                onClick={() => {
+                  setSearchQuery("");
+                  setSelectedCategory("all");
+                }}
               >
                 View All Traditional Oils
               </button>

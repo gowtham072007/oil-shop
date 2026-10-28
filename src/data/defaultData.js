@@ -25,164 +25,17 @@ export const DEFAULT_CATEGORIES = [
   { id: "pooja", name: "Deepam & Pooja Oil", regionalName: "தீப பூஜை எண்ணெய்", icon: "Flame", description: "Pancha Deepam aromatic sacred lamp oil" },
 ];
 
-export const DEFAULT_PRODUCTS = [
-  {
-    id: "prod-1",
-    name: "Wood-Pressed Groundnut Oil (Mara Chekku)",
-    regionalName: "மரச்செக்கு கடலை எண்ணெய்",
-    brand: "Poomani Oils",
-    category: "groundnut",
-    oilType: "Wood-Pressed Cold Extracted",
-    image: "/images/groundnut_oil.jpg",
-    description: "Extracted using traditional Vaagai wood churner at low RPM to retain 100% natural aroma, unrefined golden texture, vitamin E, and natural antioxidants. Zero chemicals, unbleached.",
-    isSample: true,
-    featured: true,
-    inStock: true,
-    rating: 4.9,
-    reviewsCount: 142,
-    benefits: [
-      "Extracted at under 40°C in Vaagai wood pestle",
-      "High smoke point, ideal for deep frying & everyday curries",
-      "Rich in monounsaturated fats (MUFA) and Vitamin E",
-      "Naturally sun-settled, zero trans-fats"
-    ],
-    variants: [
-      { id: "v1-1", size: "500 ml", price: 170, stock: 45, unit: "Bottle" },
-      { id: "v1-2", size: "1 Litre", price: 320, stock: 60, unit: "Bottle" },
-      { id: "v1-3", size: "5 Litre Can", price: 1550, stock: 18, unit: "Tin Can" },
-    ],
-  },
-  {
-    id: "prod-2",
-    name: "Pure Wood-Pressed Sesame / Gingelly Oil",
-    regionalName: "நாட்டு எள்ளு நல்லெண்ணெய்",
-    brand: "Poomani Oils",
-    category: "sesame",
-    oilType: "Wood-Pressed with Palm Jaggery",
-    image: "/images/sesame_oil.jpg",
-    description: "Crushed with original black sesame seeds and pure organic Karupatti (Palm Jaggery) to eliminate bitterness and impart the authentic South Indian aroma and nutritional perfection.",
-    isSample: true,
-    featured: true,
-    inStock: true,
-    rating: 5.0,
-    reviewsCount: 189,
-    benefits: [
-      "Contains organic Palm Jaggery (Karupatti) for smooth taste",
-      "Excellent for Idli podi, gravies, pickles and oil pulling",
-      "Packed with Sesamol & Sesamolin antioxidants",
-      "Zero added colors, preservative free"
-    ],
-    variants: [
-      { id: "v2-1", size: "500 ml", price: 230, stock: 30, unit: "Bottle" },
-      { id: "v2-2", size: "1 Litre", price: 440, stock: 40, unit: "Bottle" },
-      { id: "v2-3", size: "5 Litre Can", price: 2150, stock: 12, unit: "Tin Can" },
-    ],
-  },
-  {
-    id: "prod-3",
-    name: "Pure Cold-Pressed Virgin Coconut Oil",
-    regionalName: "மரச்செக்கு தேங்காய் எண்ணெய்",
-    brand: "Poomani Oils",
-    category: "coconut",
-    oilType: "100% Sulphur-Free Copra Cold Pressed",
-    image: "/images/coconut_oil.jpg",
-    description: "Crafted from fresh sun-dried sun-filtered coconuts. Crystal clear, with a delicate natural coconut fragrance. Multi-purpose oil suited for traditional Kerala cooking, baking, hair, and skin nourishment.",
-    isSample: true,
-    featured: true,
-    inStock: true,
-    rating: 4.8,
-    reviewsCount: 116,
-    benefits: [
-      "Natural Lauric Acid (Medium Chain Triglycerides)",
-      "Unrefined, non-hydrogenated, zero sulphur drying",
-      "Dual purpose: Gourmet cooking & Ayurvedic hair/skin care",
-      "100% Raw and pure natural aroma"
-    ],
-    variants: [
-      { id: "v3-1", size: "500 ml", price: 190, stock: 35, unit: "Bottle" },
-      { id: "v3-2", size: "1 Litre", price: 360, stock: 50, unit: "Bottle" },
-      { id: "v3-3", size: "5 Litre Can", price: 1750, stock: 10, unit: "Tin Can" },
-    ],
-  },
-  {
-    id: "prod-4",
-    name: "Kachi Ghani Raw Mustard Oil (Sarson Tel)",
-    regionalName: "கடுகு எண்ணெய் / सरसो का तेल",
-    brand: "Poomani Oils",
-    category: "mustard",
-    oilType: "Cold-Pressed Raw Pungent",
-    image: "/images/mustard_oil.jpg",
-    description: "Authentic first-press cold-pressed mustard oil with a robust natural aroma and characteristic pungency. Essential for traditional North Indian curries, Bengali fish fries, and medicinal pickle preserving.",
-    isSample: true,
-    featured: false,
-    inStock: true,
-    rating: 4.7,
-    reviewsCount: 84,
-    benefits: [
-      "First-press pungency with high allylisothiocyanate",
-      "Rich in Omega-3 and Omega-6 essential fatty acids",
-      "Natural antibacterial & antifungal properties for pickling",
-      "Traditional Kachi Ghani wooden expeller method"
-    ],
-    variants: [
-      { id: "v4-1", size: "500 ml", price: 150, stock: 25, unit: "Bottle" },
-      { id: "v4-2", size: "1 Litre", price: 280, stock: 35, unit: "Bottle" },
-      { id: "v4-3", size: "5 Litre Can", price: 1350, stock: 8, unit: "Tin Can" },
-    ],
-  },
-  {
-    id: "prod-5",
-    name: "Pancha Deepam Sacred Pooja Lamp Oil",
-    regionalName: "பஞ்ச தீப பூஜை எண்ணெய்",
-    brand: "Poomani Temple Collection",
-    category: "pooja",
-    oilType: "5-Blend Herbal Deepam Oil",
-    image: "/images/deepam_oil.jpg",
-    description: "Prepared as per ancient temple scriptures with 5 sacred oils (Sesame, Castor, Mahua / Iluppai, Neem, and pure Cow Ghee) infused with fragrant Sugandhi herbs. Burns long, bright, and soot-free for auspicious vibes.",
-    isSample: true,
-    featured: true,
-    inStock: true,
-    rating: 5.0,
-    reviewsCount: 220,
-    benefits: [
-      "Scriptural blend of 5 sacred oils for positive vibrations",
-      "Burns with a steady, smokeless golden divine flame",
-      "Infused with natural aromatic devotional herbs",
-      "Ideal for daily Vilakku pooja and festive occasions"
-    ],
-    variants: [
-      { id: "v5-1", size: "500 ml", price: 160, stock: 50, unit: "Bottle" },
-      { id: "v5-2", size: "1 Litre", price: 300, stock: 70, unit: "Bottle" },
-      { id: "v5-3", size: "5 Litre Can", price: 1400, stock: 20, unit: "Tin Can" },
-    ],
-  },
-  {
-    id: "prod-6",
-    name: "Cold-Pressed Natural Sunflower Cooking Oil",
-    regionalName: "மரச்செக்கு சூரியகாந்தி எண்ணெய்",
-    brand: "Poomani Oils",
-    category: "sunflower",
-    oilType: "Unrefined Cold-Pressed",
-    image: "/images/sunflower_oil.jpg",
-    description: "Light golden cold-pressed sunflower oil extracted from non-GMO sunflower seeds. Free from chemical hexane extraction and chemical bleaching. Light on the stomach and heart-healthy.",
-    isSample: true,
-    featured: false,
-    inStock: true,
-    rating: 4.8,
-    reviewsCount: 92,
-    benefits: [
-      "Non-GMO, single-pressed raw sunflower seeds",
-      "Free from synthetic bleaching and chemical dewaxing",
-      "Extremely light flavor that lets food flavors shine",
-      "High natural Vitamin E content"
-    ],
-    variants: [
-      { id: "v6-1", size: "500 ml", price: 140, stock: 20, unit: "Bottle" },
-      { id: "v6-2", size: "1 Litre", price: 260, stock: 40, unit: "Bottle" },
-      { id: "v6-3", size: "5 Litre Can", price: 1250, stock: 15, unit: "Tin Can" },
-    ],
-  },
+export const DEMO_PRODUCT_IDS = [
+  "prod-1",
+  "prod-2",
+  "prod-3",
+  "prod-4",
+  "prod-5",
+  "prod-6",
 ];
+
+// Start with empty catalog - no preloaded demo/sample products
+export const DEFAULT_PRODUCTS = [];
 
 export const DEFAULT_COUPONS = [
   { code: "WELCOME50", type: "flat", value: 50, minOrder: 500, description: "Flat ₹50 OFF on orders above ₹500" },

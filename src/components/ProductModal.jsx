@@ -6,6 +6,10 @@ import { X, CheckCircle, ShoppingBag, ShieldCheck, Star } from "lucide-react";
 export const ProductModal = () => {
   const { quickViewProduct, setQuickViewProduct, addToCart } = useShop();
 
+  const [selectedVariant, setSelectedVariant] = useState(null);
+  const [qty, setQty] = useState(1);
+  const [added, setAdded] = useState(false);
+
   if (!quickViewProduct) return null;
 
   const product = quickViewProduct;
@@ -13,12 +17,12 @@ export const ProductModal = () => {
     ? product.variants
     : [{ id: "v-default", size: "1 Litre", price: product.price || 300, stock: 10, unit: "Bottle" }];
 
-  const [selectedVariant, setSelectedVariant] = useState(variants[0]);
-  const [qty, setQty] = useState(1);
-  const [added, setAdded] = useState(false);
+  const activeVariant = selectedVariant && variants.some(v => v.id === selectedVariant.id)
+    ? selectedVariant
+    : variants[0];
 
   const handleAdd = () => {
-    addToCart(product, selectedVariant, qty);
+    addToCart(product, activeVariant, qty);
     setAdded(true);
     setTimeout(() => setAdded(false), 1500);
   };
@@ -104,7 +108,7 @@ export const ProductModal = () => {
                   <button
                     key={v.id}
                     type="button"
-                    className={`size-pill-btn ${selectedVariant.id === v.id ? "active" : ""}`}
+                    className={`size-pill-btn ${activeVariant.id === v.id ? "active" : ""}`}
                     onClick={() => setSelectedVariant(v)}
                   >
                     {v.size} — ₹{formatINR(v.price)}
@@ -126,7 +130,7 @@ export const ProductModal = () => {
             >
               <div>
                 <div style={{ fontSize: "1.6rem", fontWeight: "800", color: "#09331d" }}>
-                  ₹{formatINR(selectedVariant.price)}
+                  ₹{formatINR(activeVariant.price)}
                 </div>
                 <div style={{ fontSize: "0.75rem", color: "#85958c" }}>
                   Includes all local taxes • FSSAI compliant

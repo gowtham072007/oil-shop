@@ -56,22 +56,6 @@ export const ProductCard = ({ product }) => {
         <div className="card-top-badges">
           <div className="d-flex flex-column gap-1">
             {product.featured && <span className="badge-tag">⭐ Best Seller</span>}
-            {product.isSample && (
-              <span
-                style={{
-                  background: "#475569",
-                  color: "#f8fafc",
-                  fontSize: "0.68rem",
-                  fontWeight: "700",
-                  padding: "0.2rem 0.5rem",
-                  borderRadius: "9999px",
-                  marginTop: "4px",
-                  letterSpacing: "0.03em",
-                }}
-              >
-                Sample Demo Item
-              </span>
-            )}
           </div>
 
           <span

@@ -37,7 +37,14 @@ export const CategoryTabs = () => {
 
   const getProductCount = (catId) => {
     if (catId === "all") return products.length;
-    return products.filter((p) => p.category === catId).length;
+    return products.filter(
+      (p) =>
+        p.category === catId ||
+        p.name?.toLowerCase().includes(catId) ||
+        p.regionalName?.toLowerCase().includes(catId) ||
+        p.oilType?.toLowerCase().includes(catId) ||
+        p.description?.toLowerCase().includes(catId)
+    ).length;
   };
 
   return (

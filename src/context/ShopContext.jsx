@@ -1,9 +1,9 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import {
-  DEFAULT_PRODUCTS,
   DEFAULT_CATEGORIES,
   DEFAULT_SHOP_SETTINGS,
   DEFAULT_COUPONS,
+  DEMO_PRODUCT_IDS,
 } from "../data/defaultData";
 import {
   calculateOrderTotals,
@@ -24,22 +24,22 @@ export const useShop = () => {
 };
 
 export const ShopProvider = ({ children }) => {
-  // Load from LocalStorage with defaults
+  // Load products with safe one-time demo cleanup (keeps genuine owner products)
   const [products, setProducts] = useState(() => {
     try {
       const saved = localStorage.getItem("oil_shop_products");
       if (saved) {
         const parsed = JSON.parse(saved);
-        // Automatically migrate any legacy brand references
-        return parsed.map((p) =>
-          p.brand?.includes("Sri Lakshmi")
-            ? { ...p, brand: p.brand.replace("Sri Lakshmi", "Poomani") }
-            : p
-        );
+        if (Array.isArray(parsed)) {
+          // Filter out demo/placeholder items while keeping genuine products added by owner
+          return parsed.filter(
+            (p) => !p.isSample && !DEMO_PRODUCT_IDS.includes(p.id)
+          );
+        }
       }
-      return DEFAULT_PRODUCTS;
+      return [];
     } catch {
-      return DEFAULT_PRODUCTS;
+      return [];
     }
   });
 
@@ -101,7 +101,16 @@ export const ShopProvider = ({ children }) => {
   const [cart, setCart] = useState(() => {
     try {
       const saved = localStorage.getItem("oil_shop_cart");
-      return saved ? JSON.parse(saved) : [];
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) {
+          // Remove any lingering cart items from removed demo products
+          return parsed.filter(
+            (item) => !DEMO_PRODUCT_IDS.includes(item.productId)
+          );
+        }
+      }
+      return [];
     } catch {
       return [];
     }
@@ -337,6 +346,8 @@ export const ShopProvider = ({ children }) => {
 
   const deleteProduct = (id) => {
     setProducts((prev) => prev.filter((p) => p.id !== id));
+    // Also remove any cart items for the deleted product
+    setCart((prev) => prev.filter((item) => item.productId !== id));
     showNotification("Product removed successfully!");
   };
 
@@ -369,11 +380,12 @@ export const ShopProvider = ({ children }) => {
   };
 
   const resetToDefaultData = () => {
-    setProducts(DEFAULT_PRODUCTS);
+    // Catalog remains clean without preloaded demo products as required
+    setProducts([]);
     setCategories(DEFAULT_CATEGORIES);
     setShopSettings(DEFAULT_SHOP_SETTINGS);
     setCoupons(DEFAULT_COUPONS);
-    showNotification("Store reset to authentic demo data!");
+    showNotification("Settings & categories reset to defaults!");
   };
 
   const exportStoreData = () => {
