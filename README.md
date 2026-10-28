@@ -117,47 +117,66 @@ This application is ready for 1-click deployment as a **Static Site** on [Render
    - **Build Command**: `npm run build`
    - **Publish Directory**: `dist`
 6. Under **Advanced / Redirects and Rewrites**:
-   - Add a rewrite rule for Single Page Application routing:
-     - **Type**: `Rewrite`
-     - **Source**: `/*`
-     - **Destination**: `/index.html`
-7. Click **Create Static Site**. Your site will build and be live in less than a minute at `https://<your-name>.onrender.com`.
+## 🔄 Multi-Device Real-Time Sync & Central Database
 
-### Method 2: Using Blueprint (`render.yaml`)
-1. Render automatically detects the included `render.yaml` file.
-2. In the Render Dashboard, click **New +** > **Blueprint**.
-3. Select the `oil-shop` repository.
-4. Render will automatically read `render.yaml`, configure the static site, build commands, and rewrite rules, and deploy immediately.
+All products added, updated, or deleted on any device (phone, laptop, tablet) are synchronized instantly across all connected screens:
+
+- **Central Database**: Connects directly to **PostgreSQL** in production (via `DATABASE_URL` on Render/Neon/Supabase) with an automated **SQLite** fallback for local development (`server/data/poomani_oils.db`).
+- **Real-Time Updates (Server-Sent Events)**: Clients listen on `/api/events`. Any product creation, price update, stock change, or deletion broadcasts to all connected devices in real time with zero manual refresh required.
+- **Tab Focus & Resilient Polling**: Automatically refetches when a user switches back to the tab or unlocks their phone, plus silent background polling every 30 seconds.
+- **Persistent Photo Upload**: Product images are uploaded to persistent server storage (`server/uploads/`) and served globally at `/uploads/<filename>`.
+- **Admin Security**: Protected with signed HMAC bearer tokens; customer browsing is public.
+
+---
+
+## 🚀 Deployment on Render
+
+### Using Render Blueprint (`render.yaml`):
+1. In the Render Dashboard, click **New +** > **Blueprint**.
+2. Connect the GitHub repository `https://github.com/gowtham072007/oil-shop.git`.
+3. Render automatically provisions:
+   - A Node.js web service running `npm run build` and `npm start`.
+   - A free **PostgreSQL** database (`poomani-oils-db`) automatically wired to `DATABASE_URL`.
+   - Environment variables for `PORT: 10000`, `NODE_ENV: production`, and `ADMIN_PIN: 1234`.
+4. The website will be live at `https://mani-oils.onrender.com`.
 
 ---
 
 ## 📁 Project Architecture
 ```
 d:/oil shop/
+├── server/
+│   ├── index.js              # Express app, REST API, static hosting & SPA routing
+│   ├── db.js                 # PostgreSQL & SQLite database layer with auto-migration
+│   ├── auth.js               # Admin authentication & token generation
+│   ├── events.js             # Server-Sent Events (SSE) real-time broadcaster
+│   ├── upload.js             # Multer persistent image storage & validation
+│   ├── uploads/              # Persistent product photo storage
+│   └── data/                 # SQLite local data directory
 ├── public/
-│   └── images/               # High-res photography for hero and oil products
+│   └── images/               # High-res photography, official logo & favicon
 ├── src/
-│   ├── assets/               # Static assets & icons
 │   ├── components/
 │   │   ├── Header.jsx        # Navigation, search, announcement, WhatsApp & cart triggers
 │   │   ├── HeroBanner.jsx    # Hero visual presentation & USPs
-│   │   ├── TrustSection.jsx  # 4 pillars of Mara Chekku purity
+│   │   ├── TrustSection.jsx  # Mara Chekku purity pillars
 │   │   ├── CategoryTabs.jsx  # Category switcher with icons & count badges
 │   │   ├── ProductCard.jsx   # Product card with pack size selector & stepper
-│   │   ├── ProductModal.jsx  # Quick view modal with detailed benefits
-│   │   ├── CartDrawer.jsx    # Slide-over cart, coupon box, and customer details form
+│   │   ├── ProductModal.jsx  # Quick view modal with detailed extraction facts
+│   │   ├── CartDrawer.jsx    # Slide-over cart, coupon box, and customer checkout form
 │   │   ├── BillPreviewModal.jsx # WhatsApp formatted bill preview & wa.me redirect
 │   │   ├── AdminModal.jsx    # PIN-secured product & order management dashboard
 │   │   └── Footer.jsx        # Shop info, FSSAI registration, address & hours
 │   ├── context/
-│   │   └── ShopContext.jsx   # Global store state with LocalStorage persistence
-│   ├── data/
-│   │   └── defaultData.js    # Default oil products, variants, categories, coupons
+│   │   └── ShopContext.jsx   # Central database sync, SSE listener & global cart state
 │   ├── utils/
-│   │   └── billGenerator.js  # Bill formatter, authoritative calculator & WhatsApp URL generator
+│   │   ├── api.js            # Backend API client for products, photos, and sync
+│   │   ├── billGenerator.js  # WhatsApp bill formatter & authoritative calculator
+│   │   └── imageHandler.js   # Client-side image validation helpers
 │   ├── App.jsx               # Main application container
 │   ├── index.css             # Traditional Indian retail design system
 │   └── main.jsx              # React DOM entry point
+├── render.yaml               # Render Blueprint definition (Node.js web service + PostgreSQL)
 ├── package.json
 └── vite.config.js
 ```
@@ -167,4 +186,4 @@ d:/oil shop/
 ## 🔐 Admin Credentials
 - **Access**: Click the **Admin** shield icon in the header.
 - **Default PIN**: `1234`
-- You can change the PIN in **Admin > Shop & WhatsApp Settings**.
+- You can change the PIN in **Admin > Shop & WhatsApp Settings** or via `ADMIN_PIN` environment variable.

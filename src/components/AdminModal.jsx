@@ -27,13 +27,17 @@ export const AdminModal = () => {
     isAdminOpen,
     setIsAdminOpen,
     isAdminAuthenticated,
-    setIsAdminAuthenticated,
     shopSettings,
     updateShopSettings,
     products,
     addProduct,
     updateProduct,
     deleteProduct,
+    uploadPhoto,
+    loginAdmin,
+    logoutAdmin,
+    syncStatus,
+    refetchProducts,
     categories,
     addCategory,
     deleteCategory,
@@ -47,6 +51,8 @@ export const AdminModal = () => {
 
   const [enteredPin, setEnteredPin] = useState("");
   const [pinError, setPinError] = useState("");
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
+  const [isSavingProduct, setIsSavingProduct] = useState(false);
   const [activeTab, setActiveTab] = useState("products"); // 'products' | 'categories' | 'settings' | 'orders' | 'backup'
 
   // Product Form State (for Add / Edit)
@@ -82,21 +88,22 @@ export const AdminModal = () => {
   if (!isAdminOpen) return null;
 
   // Handle PIN Login
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
-    if (enteredPin === (shopSettings.adminPin || "1234")) {
-      setIsAdminAuthenticated(true);
-      setPinError("");
+    setPinError("");
+    setIsLoggingIn(true);
+    try {
+      await loginAdmin(enteredPin);
       setEnteredPin("");
-      showNotification("Admin authenticated successfully!");
-    } else {
-      setPinError("Incorrect PIN. Please enter the correct PIN (Default: 1234)");
+    } catch (err) {
+      setPinError(err.message || "Incorrect PIN. Please enter the correct PIN (Default: 1234)");
+    } finally {
+      setIsLoggingIn(false);
     }
   };
 
   const handleLogout = () => {
-    setIsAdminAuthenticated(false);
-    showNotification("Logged out of Admin Portal", "info");
+    logoutAdmin();
   };
 
   // Product Edit Handlers
@@ -143,12 +150,16 @@ export const AdminModal = () => {
     setIsProcessingImage(true);
 
     try {
-      const processed = await processProductImageFile(file);
-      setProductForm((prev) => ({
-        ...prev,
-        image: processed.dataUrl,
-        imageFileName: processed.fileName,
-      }));
+      const res = await uploadPhoto(file);
+      if (res.success && res.url) {
+        setProductForm((prev) => ({
+          ...prev,
+          image: res.url,
+          imageFileName: res.fileName || file.name,
+        }));
+      } else {
+        throw new Error(res.error || "Failed to upload image.");
+      }
     } catch (err) {
       setImageError(err.message || "Failed to upload image. Please try another photo.");
     } finally {
@@ -169,8 +180,9 @@ export const AdminModal = () => {
     }
   };
 
-  const saveProductForm = (e) => {
+  const saveProductForm = async (e) => {
     e.preventDefault();
+    if (isSavingProduct) return;
     setFormError("");
     setImageError("");
 
@@ -211,7 +223,8 @@ export const AdminModal = () => {
       }
     }
 
-    // 4. Save Product
+    // 4. Save Product to Shared Database
+    setIsSavingProduct(true);
     const cleanedProduct = {
       ...productForm,
       name: productForm.name.trim(),
@@ -220,13 +233,18 @@ export const AdminModal = () => {
       description: productForm.description?.trim() || "",
     };
 
-    if (editingProduct === "new") {
-      addProduct(cleanedProduct);
-    } else {
-      updateProduct(editingProduct, cleanedProduct);
+    try {
+      if (editingProduct === "new") {
+        await addProduct(cleanedProduct);
+      } else {
+        await updateProduct(editingProduct, cleanedProduct);
+      }
+      setEditingProduct(null);
+    } catch (err) {
+      setFormError(err.message || "Failed to save product to central database. Please check connection.");
+    } finally {
+      setIsSavingProduct(false);
     }
-
-    setEditingProduct(null);
   };
 
   const updateVariantInForm = (index, field, value) => {
@@ -275,9 +293,36 @@ export const AdminModal = () => {
       >
         {/* Header */}
         <div className="admin-modal-header">
-          <h3 style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+          <h3 style={{ display: "flex", alignItems: "center", gap: "0.5rem", flexWrap: "wrap" }}>
             <Settings size={20} color="#e5b94c" />
-            Shop Owner Admin Area
+            <span>Shop Owner Admin Area</span>
+            <span
+              style={{
+                fontSize: "0.72rem",
+                fontWeight: "600",
+                padding: "2px 8px",
+                borderRadius: "12px",
+                background: syncStatus === "connected" ? "rgba(34, 197, 94, 0.2)" : "rgba(234, 179, 8, 0.2)",
+                color: syncStatus === "connected" ? "#4ade80" : "#fef08a",
+                border: `1px solid ${syncStatus === "connected" ? "rgba(34, 197, 94, 0.4)" : "rgba(234, 179, 8, 0.4)"}`,
+                marginLeft: "0.4rem",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "5px",
+              }}
+              title="Products and changes sync in real time across all phones, tablets, and computers."
+            >
+              <span
+                style={{
+                  width: "6px",
+                  height: "6px",
+                  borderRadius: "50%",
+                  background: syncStatus === "connected" ? "#22c55e" : "#eab308",
+                  display: "inline-block",
+                }}
+              />
+              {syncStatus === "connected" ? "Shared Central DB Live" : "Syncing..."}
+            </span>
           </h3>
           <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
             {isAdminAuthenticated && (
@@ -345,9 +390,15 @@ export const AdminModal = () => {
               <button
                 type="submit"
                 className="btn-primary-glow"
-                style={{ width: "100%", justifyContent: "center" }}
+                disabled={isLoggingIn}
+                style={{
+                  width: "100%",
+                  justifyContent: "center",
+                  opacity: isLoggingIn ? 0.7 : 1,
+                  cursor: isLoggingIn ? "not-allowed" : "pointer",
+                }}
               >
-                Unlock Admin Dashboard
+                {isLoggingIn ? "Authenticating with Central DB..." : "Unlock Admin Dashboard"}
               </button>
             </form>
 
@@ -551,9 +602,13 @@ export const AdminModal = () => {
                                         </button>
                                         <button
                                           type="button"
-                                          onClick={() => {
-                                            if (confirm(`Are you sure you want to delete "${p.name}"?`)) {
-                                              deleteProduct(p.id);
+                                          onClick={async () => {
+                                            if (window.confirm(`Are you sure you want to permanently delete "${p.name}" across all devices?`)) {
+                                              try {
+                                                await deleteProduct(p.id);
+                                              } catch (err) {
+                                                alert(err.message || "Failed to delete product from database.");
+                                              }
                                             }
                                           }}
                                           style={{ padding: "4px", color: "#dc2626" }}
@@ -934,9 +989,17 @@ export const AdminModal = () => {
                       </div>
 
                       <div style={{ display: "flex", gap: "1rem", marginTop: "1.25rem" }}>
-                        <button type="submit" className="btn-primary-glow">
+                        <button
+                          type="submit"
+                          className="btn-primary-glow"
+                          disabled={isSavingProduct}
+                          style={{
+                            opacity: isSavingProduct ? 0.7 : 1,
+                            cursor: isSavingProduct ? "not-allowed" : "pointer",
+                          }}
+                        >
                           <Save size={16} />
-                          Save Product
+                          {isSavingProduct ? "Saving to Central Database..." : "Save Product"}
                         </button>
                         <button
                           type="button"

@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from "react";
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from "react";
 import {
   DEFAULT_CATEGORIES,
   DEFAULT_SHOP_SETTINGS,
@@ -12,6 +12,18 @@ import {
   buildWhatsAppUrl,
   cleanWhatsAppNumber,
 } from "../utils/billGenerator";
+import {
+  fetchAllProducts,
+  createProductApi,
+  updateProductApi,
+  deleteProductApi,
+  uploadProductPhoto,
+  fetchShopSettings,
+  saveShopSettingsApi,
+  adminLogin as apiAdminLogin,
+  verifyAdminToken,
+  syncMigrationApi,
+} from "../utils/api";
 
 const ShopContext = createContext();
 
@@ -24,17 +36,14 @@ export const useShop = () => {
 };
 
 export const ShopProvider = ({ children }) => {
-  // Load products with safe one-time demo cleanup (keeps genuine owner products)
+  // Shared Products from Central Database
   const [products, setProducts] = useState(() => {
     try {
       const saved = localStorage.getItem("oil_shop_products");
       if (saved) {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed)) {
-          // Filter out demo/placeholder items while keeping genuine products added by owner
-          return parsed.filter(
-            (p) => !p.isSample && !DEMO_PRODUCT_IDS.includes(p.id)
-          );
+          return parsed.filter((p) => !p.isSample && !DEMO_PRODUCT_IDS.includes(p.id));
         }
       }
       return [];
@@ -42,6 +51,9 @@ export const ShopProvider = ({ children }) => {
       return [];
     }
   });
+
+  const [isLoadingProducts, setIsLoadingProducts] = useState(true);
+  const [syncStatus, setSyncStatus] = useState("connecting"); // 'connected' | 'syncing' | 'offline'
 
   const [categories, setCategories] = useState(() => {
     try {
@@ -57,23 +69,11 @@ export const ShopProvider = ({ children }) => {
       const saved = localStorage.getItem("oil_shop_settings");
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (parsed.shopName?.includes("Sri Lakshmi")) {
-          return {
-            ...parsed,
-            shopName: DEFAULT_SHOP_SETTINGS.shopName,
-            shopNameTamil: DEFAULT_SHOP_SETTINGS.shopNameTamil,
-            taglineTamil: DEFAULT_SHOP_SETTINGS.taglineTamil,
-            email: DEFAULT_SHOP_SETTINGS.email,
-          };
-        }
-        const isOldDummyNumber = !parsed.whatsappNumber || parsed.whatsappNumber === "919876543210";
         return {
           ...DEFAULT_SHOP_SETTINGS,
           ...parsed,
-          whatsappNumber: isOldDummyNumber ? DEFAULT_SHOP_SETTINGS.whatsappNumber : parsed.whatsappNumber,
-          phoneDisplay: isOldDummyNumber ? DEFAULT_SHOP_SETTINGS.phoneDisplay : (parsed.phoneDisplay || DEFAULT_SHOP_SETTINGS.phoneDisplay),
-          shopNameTamil: parsed.shopNameTamil || DEFAULT_SHOP_SETTINGS.shopNameTamil,
-          taglineTamil: parsed.taglineTamil || DEFAULT_SHOP_SETTINGS.taglineTamil,
+          whatsappNumber: parsed.whatsappNumber || DEFAULT_SHOP_SETTINGS.whatsappNumber,
+          phoneDisplay: parsed.phoneDisplay || DEFAULT_SHOP_SETTINGS.phoneDisplay,
         };
       }
       return DEFAULT_SHOP_SETTINGS;
@@ -100,17 +100,13 @@ export const ShopProvider = ({ children }) => {
     }
   });
 
-  // Shopping cart items: array of { id, productId, name, image, selectedVariant, quantity, price }
   const [cart, setCart] = useState(() => {
     try {
       const saved = localStorage.getItem("oil_shop_cart");
       if (saved) {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed)) {
-          // Remove any lingering cart items from removed demo products
-          return parsed.filter(
-            (item) => !DEMO_PRODUCT_IDS.includes(item.productId)
-          );
+          return parsed.filter((item) => !DEMO_PRODUCT_IDS.includes(item.productId));
         }
       }
       return [];
@@ -126,7 +122,15 @@ export const ShopProvider = ({ children }) => {
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isAdminOpen, setIsAdminOpen] = useState(false);
   const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(false);
-  const [previewOrder, setPreviewOrder] = useState(null); // When reviewing bill before sending to WhatsApp
+  const [adminToken, setAdminToken] = useState(() => {
+    try {
+      return localStorage.getItem("oil_shop_admin_token") || "";
+    } catch {
+      return "";
+    }
+  });
+
+  const [previewOrder, setPreviewOrder] = useState(null);
   const [quickViewProduct, setQuickViewProduct] = useState(null);
 
   // Search & Filter state
@@ -134,40 +138,340 @@ export const ShopProvider = ({ children }) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [notification, setNotification] = useState(null);
 
-  // Sync state to LocalStorage
-  useEffect(() => {
-    localStorage.setItem("oil_shop_products", JSON.stringify(products));
-  }, [products]);
+  const eventSourceRef = useRef(null);
 
-  useEffect(() => {
-    localStorage.setItem("oil_shop_categories", JSON.stringify(categories));
-  }, [categories]);
+  // Show toast notification
+  const showNotification = useCallback((message, type = "success") => {
+    setNotification({ message, type });
+    setTimeout(() => {
+      setNotification(null);
+    }, 3500);
+  }, []);
 
+  // -------------------------------------------------------------
+  // Verify existing admin token on mount
+  // -------------------------------------------------------------
   useEffect(() => {
-    localStorage.setItem("oil_shop_settings", JSON.stringify(shopSettings));
-  }, [shopSettings]);
+    if (adminToken) {
+      verifyAdminToken(adminToken).then((isValid) => {
+        setIsAdminAuthenticated(isValid);
+        if (!isValid) {
+          localStorage.removeItem("oil_shop_admin_token");
+          setAdminToken("");
+        }
+      });
+    }
+  }, [adminToken]);
 
+  // -------------------------------------------------------------
+  // Central Database Loader
+  // -------------------------------------------------------------
+  const loadCentralProducts = useCallback(async (silent = false) => {
+    if (!silent) setIsLoadingProducts(true);
+    try {
+      const serverProducts = await fetchAllProducts();
+      setProducts(serverProducts);
+      localStorage.setItem("oil_shop_products", JSON.stringify(serverProducts));
+      setSyncStatus("connected");
+      return serverProducts;
+    } catch (err) {
+      console.warn("[Poomani Sync] Unable to fetch from central database:", err.message);
+      setSyncStatus("offline");
+      return null;
+    } finally {
+      if (!silent) setIsLoadingProducts(false);
+    }
+  }, []);
+
+  const loadCentralSettings = useCallback(async () => {
+    try {
+      const serverSettings = await fetchShopSettings();
+      if (serverSettings && Object.keys(serverSettings).length > 0) {
+        setShopSettings((prev) => ({
+          ...prev,
+          ...serverSettings,
+        }));
+      }
+    } catch (err) {
+      console.warn("[Poomani Sync] Unable to load central settings:", err.message);
+    }
+  }, []);
+
+  // Initial load
   useEffect(() => {
-    localStorage.setItem("oil_shop_coupons", JSON.stringify(coupons));
-  }, [coupons]);
+    loadCentralProducts();
+    loadCentralSettings();
+  }, [loadCentralProducts, loadCentralSettings]);
+
+  // -------------------------------------------------------------
+  // Real-Time Server-Sent Events (SSE) Multi-Device Sync
+  // -------------------------------------------------------------
+  useEffect(() => {
+    let sseTimeout;
+
+    const setupSSE = () => {
+      if (eventSourceRef.current) {
+        eventSourceRef.current.close();
+      }
+
+      try {
+        const es = new EventSource("/api/events");
+        eventSourceRef.current = es;
+
+        es.onopen = () => {
+          setSyncStatus("connected");
+        };
+
+        es.addEventListener("connected", () => {
+          setSyncStatus("connected");
+        });
+
+        es.addEventListener("product:created", (e) => {
+          try {
+            const newProduct = JSON.parse(e.data);
+            setProducts((prev) => {
+              const filtered = prev.filter((p) => p.id !== newProduct.id);
+              const updated = [newProduct, ...filtered];
+              localStorage.setItem("oil_shop_products", JSON.stringify(updated));
+              return updated;
+            });
+            showNotification(`New product added: ${newProduct.name}`, "info");
+          } catch (err) {
+            console.error("[SSE] Failed to parse product:created event:", err);
+          }
+        });
+
+        es.addEventListener("product:updated", (e) => {
+          try {
+            const updatedProduct = JSON.parse(e.data);
+            setProducts((prev) => {
+              const updated = prev.map((p) => (p.id === updatedProduct.id ? updatedProduct : p));
+              localStorage.setItem("oil_shop_products", JSON.stringify(updated));
+              return updated;
+            });
+            // Also update any matching item in active cart with updated price/stock
+            setCart((prevCart) =>
+              prevCart.map((item) => {
+                if (item.productId === updatedProduct.id) {
+                  const matchingVariant = updatedProduct.variants?.find(
+                    (v) => v.size === item.selectedVariant?.size
+                  );
+                  return matchingVariant
+                    ? {
+                        ...item,
+                        name: updatedProduct.name,
+                        image: updatedProduct.image,
+                        price: matchingVariant.price,
+                        selectedVariant: matchingVariant,
+                      }
+                    : item;
+                }
+                return item;
+              })
+            );
+          } catch (err) {
+            console.error("[SSE] Failed to parse product:updated event:", err);
+          }
+        });
+
+        es.addEventListener("product:deleted", (e) => {
+          try {
+            const { id } = JSON.parse(e.data);
+            setProducts((prev) => {
+              const updated = prev.filter((p) => p.id !== id);
+              localStorage.setItem("oil_shop_products", JSON.stringify(updated));
+              return updated;
+            });
+            setCart((prev) => prev.filter((item) => item.productId !== id));
+          } catch (err) {
+            console.error("[SSE] Failed to parse product:deleted event:", err);
+          }
+        });
+
+        es.addEventListener("settings:updated", (e) => {
+          try {
+            const newSettings = JSON.parse(e.data);
+            setShopSettings((prev) => ({ ...prev, ...newSettings }));
+          } catch (err) {
+            console.error("[SSE] Failed to parse settings:updated event:", err);
+          }
+        });
+
+        es.onerror = () => {
+          setSyncStatus("offline");
+          es.close();
+          // Attempt reconnection after 8 seconds
+          sseTimeout = setTimeout(setupSSE, 8000);
+        };
+      } catch (err) {
+        console.warn("[SSE] EventSource setup error:", err);
+        setSyncStatus("offline");
+      }
+    };
+
+    setupSSE();
+
+    return () => {
+      if (eventSourceRef.current) {
+        eventSourceRef.current.close();
+      }
+      clearTimeout(sseTimeout);
+    };
+  }, [showNotification]);
+
+  // -------------------------------------------------------------
+  // Automatic Refetch on Tab Focus & Periodic Polling
+  // Ensures devices that were asleep or offline immediately re-sync
+  // -------------------------------------------------------------
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        loadCentralProducts(true);
+        loadCentralSettings();
+      }
+    };
+
+    const handleWindowFocus = () => {
+      loadCentralProducts(true);
+    };
+
+    window.addEventListener("focus", handleWindowFocus);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    // Periodic silent refresh every 30 seconds
+    const interval = setInterval(() => {
+      loadCentralProducts(true);
+    }, 30000);
+
+    return () => {
+      window.removeEventListener("focus", handleWindowFocus);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      clearInterval(interval);
+    };
+  }, [loadCentralProducts, loadCentralSettings]);
+
+  // -------------------------------------------------------------
+  // LocalStorage Persist for offline cache & cart
+  // -------------------------------------------------------------
+  useEffect(() => {
+    localStorage.setItem("oil_shop_cart", JSON.stringify(cart));
+  }, [cart]);
 
   useEffect(() => {
     localStorage.setItem("oil_shop_orders", JSON.stringify(orders));
   }, [orders]);
 
   useEffect(() => {
-    localStorage.setItem("oil_shop_cart", JSON.stringify(cart));
-  }, [cart]);
+    localStorage.setItem("oil_shop_settings", JSON.stringify(shopSettings));
+  }, [shopSettings]);
 
-  // Show toast notification
-  const showNotification = (message, type = "success") => {
-    setNotification({ message, type });
-    setTimeout(() => {
-      setNotification(null);
-    }, 3500);
+  // -------------------------------------------------------------
+  // Admin Operations (Save to Shared Database)
+  // -------------------------------------------------------------
+  const loginAdmin = async (pin) => {
+    const res = await apiAdminLogin(pin);
+    if (res.success && res.token) {
+      setAdminToken(res.token);
+      setIsAdminAuthenticated(true);
+      localStorage.setItem("oil_shop_admin_token", res.token);
+
+      // Check if central database is empty and local products exist
+      try {
+        const saved = localStorage.getItem("oil_shop_products");
+        if (saved) {
+          const localItems = JSON.parse(saved);
+          if (Array.isArray(localItems) && localItems.length > 0) {
+            const currentDb = await fetchAllProducts();
+            if (currentDb.length === 0) {
+              await syncMigrationApi(localItems, res.token);
+              await loadCentralProducts(true);
+              showNotification("Local products migrated to central database!", "info");
+            }
+          }
+        }
+      } catch (e) {
+        console.warn("Auto-migration check skipped:", e);
+      }
+
+      showNotification("Admin login successful!");
+      return true;
+    }
+    throw new Error(res.error || "Login failed");
   };
 
+  const logoutAdmin = () => {
+    setAdminToken("");
+    setIsAdminAuthenticated(false);
+    localStorage.removeItem("oil_shop_admin_token");
+    showNotification("Logged out of admin area", "info");
+  };
+
+  const addProduct = async (newProduct) => {
+    if (!adminToken) {
+      throw new Error("Admin authentication required. Please log in again.");
+    }
+    const res = await createProductApi(newProduct, adminToken);
+    if (res.success && res.product) {
+      setProducts((prev) => [res.product, ...prev.filter((p) => p.id !== res.product.id)]);
+      showNotification("Product saved and synced to all devices!");
+      return res.product;
+    }
+    throw new Error(res.error || "Failed to create product in central database.");
+  };
+
+  const updateProduct = async (id, updatedFields) => {
+    if (!adminToken) {
+      throw new Error("Admin authentication required. Please log in again.");
+    }
+    const res = await updateProductApi(id, updatedFields, adminToken);
+    if (res.success && res.product) {
+      setProducts((prev) => prev.map((p) => (p.id === id ? res.product : p)));
+      showNotification("Product updated and synced across all devices!");
+      return res.product;
+    }
+    throw new Error(res.error || "Failed to update product in database.");
+  };
+
+  const deleteProduct = async (id) => {
+    if (!adminToken) {
+      throw new Error("Admin authentication required. Please log in again.");
+    }
+    const res = await deleteProductApi(id, adminToken);
+    if (res.success) {
+      setProducts((prev) => prev.filter((p) => p.id !== id));
+      setCart((prev) => prev.filter((item) => item.productId !== id));
+      showNotification("Product deleted from central database!");
+      return true;
+    }
+    throw new Error(res.error || "Failed to delete product from database.");
+  };
+
+  const uploadPhoto = async (file) => {
+    if (!adminToken) {
+      throw new Error("Admin authentication required. Please log in again.");
+    }
+    return await uploadProductPhoto(file, adminToken);
+  };
+
+  const updateShopSettings = async (newSettings) => {
+    const cleaned = {
+      ...newSettings,
+      whatsappNumber: cleanWhatsAppNumber(newSettings.whatsappNumber || shopSettings.whatsappNumber),
+    };
+    if (adminToken) {
+      try {
+        await saveShopSettingsApi(cleaned, adminToken);
+      } catch (err) {
+        console.warn("Could not save settings to central DB, saving locally:", err);
+      }
+    }
+    setShopSettings((prev) => ({ ...prev, ...cleaned }));
+    showNotification("Shop & WhatsApp settings updated!");
+  };
+
+  // -------------------------------------------------------------
   // Cart Management
+  // -------------------------------------------------------------
   const addToCart = (product, selectedVariant, quantity = 1) => {
     const variant = selectedVariant || (product.variants && product.variants[0]) || {
       id: "default",
@@ -258,11 +562,10 @@ export const ShopProvider = ({ children }) => {
     showNotification("Coupon removed", "info");
   };
 
-  // Calculations for current cart
   const cartSummary = calculateOrderTotals(cart, shopSettings, appliedCoupon);
   const totalCartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
 
-  // Prepare Order and open Bill Preview Modal
+  // WhatsApp Order Flow
   const initiateWhatsAppCheckout = (customerDetails) => {
     const now = new Date();
     const formattedDate = `${now.toLocaleDateString("en-IN", {
@@ -312,15 +615,11 @@ export const ShopProvider = ({ children }) => {
       waUrl,
     };
 
-    // Save into Order History for shop tracking
     setOrders((prev) => [completeOrder, ...prev]);
-
-    // Open Bill Preview Modal
     setPreviewOrder(completeOrder);
     setIsCartOpen(false);
   };
 
-  // Mark as sent / confirmed
   const confirmOrderRedirect = (orderNumber) => {
     setOrders((prev) =>
       prev.map((ord) =>
@@ -329,106 +628,15 @@ export const ShopProvider = ({ children }) => {
           : ord
       )
     );
-    // Don't auto-clear cart until customer chooses or confirms
-  };
-
-  // Admin Management Actions
-  const addProduct = (newProduct) => {
-    const id = `prod-${Date.now()}`;
-    const product = { ...newProduct, id };
-    setProducts((prev) => [product, ...prev]);
-    showNotification("Product added successfully!");
-  };
-
-  const updateProduct = (id, updatedFields) => {
-    setProducts((prev) =>
-      prev.map((p) => (p.id === id ? { ...p, ...updatedFields } : p))
-    );
-    showNotification("Product updated successfully!");
-  };
-
-  const deleteProduct = (id) => {
-    setProducts((prev) => prev.filter((p) => p.id !== id));
-    // Also remove any cart items for the deleted product
-    setCart((prev) => prev.filter((item) => item.productId !== id));
-    showNotification("Product removed successfully!");
-  };
-
-  const updateShopSettings = (newSettings) => {
-    setShopSettings((prev) => ({
-      ...prev,
-      ...newSettings,
-      whatsappNumber: cleanWhatsAppNumber(newSettings.whatsappNumber || prev.whatsappNumber),
-    }));
-    showNotification("Shop & WhatsApp settings updated!");
-  };
-
-  const addCategory = (newCat) => {
-    const id = newCat.id || newCat.name.toLowerCase().replace(/\s+/g, "-");
-    setCategories((prev) => [...prev, { ...newCat, id }]);
-    showNotification("Category added!");
-  };
-
-  const deleteCategory = (id) => {
-    if (id === "all") return;
-    setCategories((prev) => prev.filter((c) => c.id !== id));
-    showNotification("Category removed!");
-  };
-
-  const updateOrderStatus = (orderNumber, newStatus) => {
-    setOrders((prev) =>
-      prev.map((o) => (o.orderNumber === orderNumber ? { ...o, status: newStatus } : o))
-    );
-    showNotification(`Order ${orderNumber} status updated to: ${newStatus}`);
-  };
-
-  const resetToDefaultData = () => {
-    // Catalog remains clean without preloaded demo products as required
-    setProducts([]);
-    setCategories(DEFAULT_CATEGORIES);
-    setShopSettings(DEFAULT_SHOP_SETTINGS);
-    setCoupons(DEFAULT_COUPONS);
-    showNotification("Settings & categories reset to defaults!");
-  };
-
-  const exportStoreData = () => {
-    const data = {
-      products,
-      categories,
-      shopSettings,
-      coupons,
-      orders,
-      exportedAt: new Date().toISOString(),
-    };
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `oil-shop-backup-${new Date().toISOString().slice(0, 10)}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
-  };
-
-  const importStoreData = (jsonData) => {
-    try {
-      const data = JSON.parse(jsonData);
-      if (data.products) setProducts(data.products);
-      if (data.categories) setCategories(data.categories);
-      if (data.shopSettings) setShopSettings(data.shopSettings);
-      if (data.coupons) setCoupons(data.coupons);
-      if (data.orders) setOrders(data.orders);
-      showNotification("Store data imported successfully!");
-      return true;
-    } catch {
-      showNotification("Failed to import: Invalid JSON file", "error");
-      return false;
-    }
   };
 
   return (
     <ShopContext.Provider
       value={{
         products,
+        isLoadingProducts,
+        syncStatus,
+        refetchProducts: loadCentralProducts,
         categories,
         shopSettings,
         coupons,
@@ -443,7 +651,6 @@ export const ShopProvider = ({ children }) => {
         isAdminOpen,
         setIsAdminOpen,
         isAdminAuthenticated,
-        setIsAdminAuthenticated,
         previewOrder,
         setPreviewOrder,
         quickViewProduct,
@@ -454,7 +661,6 @@ export const ShopProvider = ({ children }) => {
         setSearchQuery,
         notification,
         showNotification,
-        // Methods
         addToCart,
         updateCartQuantity,
         removeFromCart,
@@ -463,17 +669,13 @@ export const ShopProvider = ({ children }) => {
         removeCoupon,
         initiateWhatsAppCheckout,
         confirmOrderRedirect,
-        // Admin Methods
+        loginAdmin,
+        logoutAdmin,
         addProduct,
         updateProduct,
         deleteProduct,
+        uploadPhoto,
         updateShopSettings,
-        addCategory,
-        deleteCategory,
-        updateOrderStatus,
-        resetToDefaultData,
-        exportStoreData,
-        importStoreData,
       }}
     >
       {children}
