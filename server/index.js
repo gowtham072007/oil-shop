@@ -18,6 +18,7 @@ import {
   getShopSettings,
   saveShopSettings,
   isUsingPostgres,
+  getDatabaseDiagnostics,
 } from './db.js';
 import {
   verifyAdminPin,
@@ -58,9 +59,11 @@ app.get('/api/events', (req, res) => {
 // Health Check
 // -------------------------------------------------------------
 app.get('/api/health', (req, res) => {
+  const diag = getDatabaseDiagnostics();
   res.json({
     status: 'ok',
-    database: isUsingPostgres() ? 'postgresql' : 'sqlite',
+    database: diag.engine === 'postgres' ? 'postgresql' : 'persistent-file-store',
+    diagnostics: diag,
     timestamp: Date.now(),
   });
 });
@@ -365,14 +368,14 @@ if (fs.existsSync(distDir)) {
 async function startServer() {
   try {
     await initDb();
-    app.listen(PORT, '0.0.0.0', () => {
-      console.log(`[Poomani Oils Server] Running on http://0.0.0.0:${PORT}`);
-      console.log(`[Poomani Oils Server] Mode: ${process.env.NODE_ENV || 'development'}`);
-    });
   } catch (err) {
-    console.error('[Poomani Oils Server] Startup error:', err);
-    process.exit(1);
+    console.error('[Poomani Oils Server] Database init warning (server will still start):', err);
   }
+
+  app.listen(PORT, '0.0.0.0', () => {
+    console.log(`[Poomani Oils Server] Running on http://0.0.0.0:${PORT}`);
+    console.log(`[Poomani Oils Server] Database Engine: ${isUsingPostgres() ? 'PostgreSQL' : 'Persistent Central File Store'}`);
+  });
 }
 
 startServer();
