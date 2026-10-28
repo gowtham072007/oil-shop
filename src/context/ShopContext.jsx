@@ -66,9 +66,12 @@ export const ShopProvider = ({ children }) => {
             email: DEFAULT_SHOP_SETTINGS.email,
           };
         }
+        const isOldDummyNumber = !parsed.whatsappNumber || parsed.whatsappNumber === "919876543210";
         return {
           ...DEFAULT_SHOP_SETTINGS,
           ...parsed,
+          whatsappNumber: isOldDummyNumber ? DEFAULT_SHOP_SETTINGS.whatsappNumber : parsed.whatsappNumber,
+          phoneDisplay: isOldDummyNumber ? DEFAULT_SHOP_SETTINGS.phoneDisplay : (parsed.phoneDisplay || DEFAULT_SHOP_SETTINGS.phoneDisplay),
           shopNameTamil: parsed.shopNameTamil || DEFAULT_SHOP_SETTINGS.shopNameTamil,
           taglineTamil: parsed.taglineTamil || DEFAULT_SHOP_SETTINGS.taglineTamil,
         };

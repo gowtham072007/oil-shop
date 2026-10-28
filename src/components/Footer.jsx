@@ -12,11 +12,16 @@ export const Footer = () => {
           {/* Shop Column */}
           <div className="footer-col">
             <h4 style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
-              <span style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                🪔 {shopSettings.shopName}
+              <span style={{ display: "flex", alignItems: "center", gap: "0.65rem" }}>
+                <img
+                  src="/images/logo.png"
+                  alt="Poomani Oils Logo"
+                  style={{ width: "36px", height: "36px", objectFit: "contain", borderRadius: "50%", flexShrink: 0 }}
+                />
+                {shopSettings.shopName}
               </span>
               {shopSettings.shopNameTamil && (
-                <span style={{ fontSize: "0.92rem", color: "#e5b94c", paddingLeft: "1.75rem", fontWeight: "600" }}>
+                <span style={{ fontSize: "0.92rem", color: "#e5b94c", paddingLeft: "2.6rem", fontWeight: "600" }}>
                   {shopSettings.shopNameTamil}
                 </span>
               )}

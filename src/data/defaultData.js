@@ -3,10 +3,10 @@ export const DEFAULT_SHOP_SETTINGS = {
   shopNameTamil: "பூமணி ஆயில்ஸ்",
   tagline: "Authentic Wood-Pressed (Mara Chekku) Cold Pressed Oils",
   taglineTamil: "பாரம்பரிய மரச்செக்கு சுத்தமான எண்ணெய்",
-  whatsappNumber: "919876543210", // Strictly Country Code + Digits without +, spaces, or dashes
-  phoneDisplay: "+91 98765 43210",
+  whatsappNumber: "916385755368", // Official phone number from brand poster
+  phoneDisplay: "+91 63857 55368",
   email: "contact@poomanioils.com",
-  address: "Shop No. 18, Temple Car Street, Near Raja Veedhi, Erode, Tamil Nadu - 638001",
+  address: "Gopalasamuthiram (கோபாலசமுத்திரம்), Tamil Nadu",
   fssaiNumber: "12421008000421",
   workingHours: "Mon - Sat: 8:00 AM - 9:00 PM | Sun: 8:00 AM - 2:00 PM",
   deliveryCharge: 50,

@@ -40,7 +40,11 @@ export const Header = () => {
               onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
               title="Return to top"
             >
-              <div className="brand-icon-emblem">🪔</div>
+              <img
+                src="/images/logo.png"
+                alt="Poomani Oils Logo"
+                className="brand-logo-img"
+              />
               <div className="brand-text">
                 <h1>
                   <span className="brand-name-en">{shopSettings.shopName}</span>
