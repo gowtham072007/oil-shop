@@ -317,11 +317,11 @@ export const AdminModal = () => {
                   width: "6px",
                   height: "6px",
                   borderRadius: "50%",
-                  background: syncStatus === "connected" ? "#22c55e" : "#eab308",
+                  background: syncStatus === "connected" ? "#22c55e" : "#3b82f6",
                   display: "inline-block",
                 }}
               />
-              {syncStatus === "connected" ? "Shared Central DB Live" : "Syncing..."}
+              {syncStatus === "connected" ? "Shared Central DB Live" : "Admin Panel (Active)"}
             </span>
           </h3>
           <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>

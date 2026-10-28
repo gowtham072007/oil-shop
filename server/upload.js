@@ -45,3 +45,4 @@ export const uploadMiddleware = multer({
 }).single('photo');
 
 export { uploadsDir };
+

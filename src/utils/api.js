@@ -187,3 +187,4 @@ export async function syncMigrationApi(localProducts, token) {
   });
   return await handleResponse(res);
 }
+

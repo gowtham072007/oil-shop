@@ -376,3 +376,4 @@ export async function saveShopSettings(settingsObject) {
 export function isUsingPostgres() {
   return isPostgres;
 }
+
