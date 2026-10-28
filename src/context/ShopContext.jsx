@@ -28,7 +28,16 @@ export const ShopProvider = ({ children }) => {
   const [products, setProducts] = useState(() => {
     try {
       const saved = localStorage.getItem("oil_shop_products");
-      return saved ? JSON.parse(saved) : DEFAULT_PRODUCTS;
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        // Automatically migrate any legacy brand references
+        return parsed.map((p) =>
+          p.brand?.includes("Sri Lakshmi")
+            ? { ...p, brand: p.brand.replace("Sri Lakshmi", "Poomani") }
+            : p
+        );
+      }
+      return DEFAULT_PRODUCTS;
     } catch {
       return DEFAULT_PRODUCTS;
     }
@@ -46,7 +55,25 @@ export const ShopProvider = ({ children }) => {
   const [shopSettings, setShopSettings] = useState(() => {
     try {
       const saved = localStorage.getItem("oil_shop_settings");
-      return saved ? JSON.parse(saved) : DEFAULT_SHOP_SETTINGS;
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed.shopName?.includes("Sri Lakshmi")) {
+          return {
+            ...parsed,
+            shopName: DEFAULT_SHOP_SETTINGS.shopName,
+            shopNameTamil: DEFAULT_SHOP_SETTINGS.shopNameTamil,
+            taglineTamil: DEFAULT_SHOP_SETTINGS.taglineTamil,
+            email: DEFAULT_SHOP_SETTINGS.email,
+          };
+        }
+        return {
+          ...DEFAULT_SHOP_SETTINGS,
+          ...parsed,
+          shopNameTamil: parsed.shopNameTamil || DEFAULT_SHOP_SETTINGS.shopNameTamil,
+          taglineTamil: parsed.taglineTamil || DEFAULT_SHOP_SETTINGS.taglineTamil,
+        };
+      }
+      return DEFAULT_SHOP_SETTINGS;
     } catch {
       return DEFAULT_SHOP_SETTINGS;
     }

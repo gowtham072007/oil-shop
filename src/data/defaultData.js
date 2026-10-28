@@ -1,9 +1,11 @@
 export const DEFAULT_SHOP_SETTINGS = {
-  shopName: "Sri Lakshmi Traditional Oil Mill",
+  shopName: "Poomani Oils",
+  shopNameTamil: "பூமணி ஆயில்ஸ்",
   tagline: "Authentic Wood-Pressed (Mara Chekku) Cold Pressed Oils",
+  taglineTamil: "பாரம்பரிய மரச்செக்கு சுத்தமான எண்ணெய்",
   whatsappNumber: "919876543210", // Strictly Country Code + Digits without +, spaces, or dashes
   phoneDisplay: "+91 98765 43210",
-  email: "contact@srilakshmioils.com",
+  email: "contact@poomanioils.com",
   address: "Shop No. 18, Temple Car Street, Near Raja Veedhi, Erode, Tamil Nadu - 638001",
   fssaiNumber: "12421008000421",
   workingHours: "Mon - Sat: 8:00 AM - 9:00 PM | Sun: 8:00 AM - 2:00 PM",
@@ -14,13 +16,13 @@ export const DEFAULT_SHOP_SETTINGS = {
 };
 
 export const DEFAULT_CATEGORIES = [
-  { id: "all", name: "All Oils", icon: "Droplets", description: "Complete range of cold-pressed oils" },
+  { id: "all", name: "All Oils", regionalName: "அனைத்து எண்ணெய்", icon: "Droplets", description: "Complete range of cold-pressed oils" },
   { id: "groundnut", name: "Groundnut Oil", regionalName: "கடலை எண்ணெய்", icon: "Nut", description: "Wood pressed Kadalai Ennai for daily cooking" },
   { id: "sesame", name: "Sesame / Gingelly", regionalName: "நல்லெண்ணெய்", icon: "Sparkles", description: "Traditional Nalla Ennai with palm jaggery" },
   { id: "coconut", name: "Coconut Oil", regionalName: "தேங்காய் எண்ணெய்", icon: "Palmtree", description: "100% Pure sulphur-free copra oil" },
   { id: "mustard", name: "Mustard Oil", regionalName: "கடுகு எண்ணெய்", icon: "Flower2", description: "Pungent Kachi Ghani cold-pressed mustard oil" },
   { id: "sunflower", name: "Sunflower Oil", regionalName: "சூரியகாந்தி எண்ணெய்", icon: "Sun", description: "Light & heart-friendly unrefined sunflower oil" },
-  { id: "pooja", name: "Deepam & Pooja Oil", regionalName: "தீப எண்ணெய்", icon: "Flame", description: "Pancha Deepam aromatic sacred lamp oil" },
+  { id: "pooja", name: "Deepam & Pooja Oil", regionalName: "தீப பூஜை எண்ணெய்", icon: "Flame", description: "Pancha Deepam aromatic sacred lamp oil" },
 ];
 
 export const DEFAULT_PRODUCTS = [
@@ -28,7 +30,7 @@ export const DEFAULT_PRODUCTS = [
     id: "prod-1",
     name: "Wood-Pressed Groundnut Oil (Mara Chekku)",
     regionalName: "மரச்செக்கு கடலை எண்ணெய்",
-    brand: "Sri Lakshmi Heritage",
+    brand: "Poomani Oils",
     category: "groundnut",
     oilType: "Wood-Pressed Cold Extracted",
     image: "/images/groundnut_oil.jpg",
@@ -54,7 +56,7 @@ export const DEFAULT_PRODUCTS = [
     id: "prod-2",
     name: "Pure Wood-Pressed Sesame / Gingelly Oil",
     regionalName: "நாட்டு எள்ளு நல்லெண்ணெய்",
-    brand: "Sri Lakshmi Heritage",
+    brand: "Poomani Oils",
     category: "sesame",
     oilType: "Wood-Pressed with Palm Jaggery",
     image: "/images/sesame_oil.jpg",
@@ -80,7 +82,7 @@ export const DEFAULT_PRODUCTS = [
     id: "prod-3",
     name: "Pure Cold-Pressed Virgin Coconut Oil",
     regionalName: "மரச்செக்கு தேங்காய் எண்ணெய்",
-    brand: "Sri Lakshmi Heritage",
+    brand: "Poomani Oils",
     category: "coconut",
     oilType: "100% Sulphur-Free Copra Cold Pressed",
     image: "/images/coconut_oil.jpg",
@@ -106,7 +108,7 @@ export const DEFAULT_PRODUCTS = [
     id: "prod-4",
     name: "Kachi Ghani Raw Mustard Oil (Sarson Tel)",
     regionalName: "கடுகு எண்ணெய் / सरसो का तेल",
-    brand: "Sri Lakshmi Heritage",
+    brand: "Poomani Oils",
     category: "mustard",
     oilType: "Cold-Pressed Raw Pungent",
     image: "/images/mustard_oil.jpg",
@@ -132,7 +134,7 @@ export const DEFAULT_PRODUCTS = [
     id: "prod-5",
     name: "Pancha Deepam Sacred Pooja Lamp Oil",
     regionalName: "பஞ்ச தீப பூஜை எண்ணெய்",
-    brand: "Sri Lakshmi Temple Collection",
+    brand: "Poomani Temple Collection",
     category: "pooja",
     oilType: "5-Blend Herbal Deepam Oil",
     image: "/images/deepam_oil.jpg",
@@ -158,7 +160,7 @@ export const DEFAULT_PRODUCTS = [
     id: "prod-6",
     name: "Cold-Pressed Natural Sunflower Cooking Oil",
     regionalName: "மரச்செக்கு சூரியகாந்தி எண்ணெய்",
-    brand: "Sri Lakshmi Heritage",
+    brand: "Poomani Oils",
     category: "sunflower",
     oilType: "Unrefined Cold-Pressed",
     image: "/images/sunflower_oil.jpg",

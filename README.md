@@ -1,4 +1,4 @@
-# 🪔 Sri Lakshmi Traditional Oil Mill — E-Commerce Website with WhatsApp Billing
+# 🪔 Poomani Oils (பூமணி ஆயில்ஸ்) — E-Commerce Website with WhatsApp Billing
 
 An authentic, responsive e-commerce web application designed for a traditional Indian retail oil shop (Cold-Pressed / Mara Chekku wood-pressed oils) featuring real-time catalog browsing, pack size variants, cart management, PIN-protected admin portal, and **official WhatsApp Click-to-Chat Billing integration**.
 

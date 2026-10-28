@@ -54,7 +54,7 @@ export const AdminModal = () => {
   const [productForm, setProductForm] = useState({
     name: "",
     regionalName: "",
-    brand: "Sri Lakshmi Heritage",
+    brand: "Poomani Oils",
     category: "groundnut",
     oilType: "Wood-Pressed Cold Extracted",
     image: "/images/groundnut_oil.jpg",
@@ -99,7 +99,7 @@ export const AdminModal = () => {
     setProductForm({
       name: "",
       regionalName: "",
-      brand: shopSettings.shopName || "Sri Lakshmi Heritage",
+      brand: shopSettings.shopName || "Poomani Oils",
       category: categories[1]?.id || "groundnut",
       oilType: "Wood-Pressed Cold Extracted",
       image: "/images/groundnut_oil.jpg",
@@ -686,7 +686,7 @@ export const AdminModal = () => {
 
                   <div className="form-grid-2">
                     <div className="form-group">
-                      <label>Shop Name</label>
+                      <label>Shop Name (English)</label>
                       <input
                         type="text"
                         value={settingsForm.shopName}
@@ -695,11 +695,33 @@ export const AdminModal = () => {
                     </div>
 
                     <div className="form-group">
-                      <label>Shop Tagline</label>
+                      <label>Shop Name (Tamil / தமிழ் பெயர்)</label>
+                      <input
+                        type="text"
+                        value={settingsForm.shopNameTamil || ""}
+                        onChange={(e) => setSettingsForm({ ...settingsForm, shopNameTamil: e.target.value })}
+                        placeholder="e.g. பூமணி ஆயில்ஸ்"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="form-grid-2">
+                    <div className="form-group">
+                      <label>Shop Tagline (English)</label>
                       <input
                         type="text"
                         value={settingsForm.tagline}
                         onChange={(e) => setSettingsForm({ ...settingsForm, tagline: e.target.value })}
+                      />
+                    </div>
+
+                    <div className="form-group">
+                      <label>Shop Tagline (Tamil / தமிழ் விவரம்)</label>
+                      <input
+                        type="text"
+                        value={settingsForm.taglineTamil || ""}
+                        onChange={(e) => setSettingsForm({ ...settingsForm, taglineTamil: e.target.value })}
+                        placeholder="e.g. பாரம்பரிய மரச்செக்கு எண்ணெய்"
                       />
                     </div>
                   </div>

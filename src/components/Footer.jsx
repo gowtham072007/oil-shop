@@ -12,7 +12,7 @@ export const Footer = () => {
           {/* Shop Column */}
           <div className="footer-col">
             <h4 style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-              🪔 {shopSettings.shopName}
+              🪔 {shopSettings.shopName} <span style={{ fontSize: "0.95rem", color: "#e5b94c" }}>| {shopSettings.shopNameTamil || "பூமணி ஆயில்ஸ்"}</span>
             </h4>
             <p>
               Preserving ancient South Indian wood pestle (Mara Chekku) oil extraction traditions.
@@ -115,7 +115,7 @@ export const Footer = () => {
         {/* Footer Bottom */}
         <div className="footer-bottom">
           <div>
-            © {new Date().getFullYear()} {shopSettings.shopName}. All rights reserved. Made with purity & tradition.
+            © {new Date().getFullYear()} {shopSettings.shopName} ({shopSettings.shopNameTamil || "பூமணி ஆயில்ஸ்"}). All rights reserved. Made with purity & tradition.
           </div>
           <div>
             100% Mara Chekku • Unrefined • Zero Hexane • Direct WhatsApp Billing
