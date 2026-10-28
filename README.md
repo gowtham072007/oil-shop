@@ -102,6 +102,35 @@ The optimized production bundle will be generated in `dist/`.
 
 ---
 
+## 🌐 Deploy to Render
+
+This application is ready for 1-click deployment as a **Static Site** on [Render.com](https://render.com/).
+
+### Method 1: Using Render Dashboard (Recommended)
+1. Push your latest code to GitHub: `git push origin main`
+2. Log in to [dashboard.render.com](https://dashboard.render.com/)
+3. Click **New +** and select **Static Site**
+4. Connect your GitHub repository: `gowtham072007/oil-shop`
+5. Configure the deployment settings:
+   - **Name**: `poomani-oils` (or your choice)
+   - **Branch**: `main`
+   - **Build Command**: `npm run build`
+   - **Publish Directory**: `dist`
+6. Under **Advanced / Redirects and Rewrites**:
+   - Add a rewrite rule for Single Page Application routing:
+     - **Type**: `Rewrite`
+     - **Source**: `/*`
+     - **Destination**: `/index.html`
+7. Click **Create Static Site**. Your site will build and be live in less than a minute at `https://<your-name>.onrender.com`.
+
+### Method 2: Using Blueprint (`render.yaml`)
+1. Render automatically detects the included `render.yaml` file.
+2. In the Render Dashboard, click **New +** > **Blueprint**.
+3. Select the `oil-shop` repository.
+4. Render will automatically read `render.yaml`, configure the static site, build commands, and rewrite rules, and deploy immediately.
+
+---
+
 ## 📁 Project Architecture
 ```
 d:/oil shop/
