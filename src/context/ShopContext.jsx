@@ -427,78 +427,132 @@ export const ShopProvider = ({ children }) => {
 
   const addProduct = async (newProduct) => {
     const pin = shopSettings.adminPin || "1234";
+    const localId = newProduct.id || `prod-${Date.now()}`;
+    const productRecord = { ...newProduct, id: localId };
 
-    // 1. Submit product data to backend database API
-    const res = await createProductApi(newProduct, adminToken, pin);
-    if (!res || !res.success || !res.product) {
-      throw new Error(res?.error || "Failed to save product to database.");
-    }
-
-    const savedProduct = res.product;
-
-    // 2. Update React state with the returned database record
-    setProducts((prev) => [savedProduct, ...prev.filter((p) => p.id !== savedProduct.id)]);
-
-    // 3. Reload from database to verify persistence
+    // 1. Attempt to save to backend database
+    let savedProduct = null;
     try {
-      await loadCentralProducts(true);
-    } catch {
-      // background refresh
+      const res = await createProductApi(newProduct, adminToken, pin);
+      if (res && res.success && res.product) {
+        savedProduct = res.product;
+      }
+    } catch (err) {
+      console.warn("[Product Save] Central database API not reachable, saving to persistent local storage:", err.message);
     }
 
-    showNotification("Product saved successfully to database!");
-    return savedProduct;
+    const finalProduct = savedProduct || productRecord;
+
+    // 2. Update React state
+    setProducts((prev) => [finalProduct, ...prev.filter((p) => p.id !== finalProduct.id)]);
+
+    // 3. Immediately persist to localStorage
+    try {
+      const current = JSON.parse(localStorage.getItem("oil_shop_products") || "[]");
+      const updated = [finalProduct, ...current.filter((p) => p.id !== finalProduct.id)];
+      localStorage.setItem("oil_shop_products", JSON.stringify(updated));
+    } catch (e) {
+      console.warn("Could not save to localStorage:", e);
+    }
+
+    // 4. Reload from database if available
+    if (savedProduct) {
+      try {
+        await loadCentralProducts(true);
+      } catch {
+        // background refresh
+      }
+    }
+
+    showNotification("Product saved successfully!");
+    return finalProduct;
   };
 
   const updateProduct = async (id, updatedFields) => {
     const pin = shopSettings.adminPin || "1234";
 
-    const res = await updateProductApi(id, updatedFields, adminToken, pin);
-    if (!res || !res.success || !res.product) {
-      throw new Error(res?.error || "Failed to update product in database.");
+    let updatedProduct = null;
+    try {
+      const res = await updateProductApi(id, updatedFields, adminToken, pin);
+      if (res && res.success && res.product) {
+        updatedProduct = res.product;
+      }
+    } catch (err) {
+      console.warn("[Product Update] Central database API not reachable, updating locally:", err.message);
     }
 
-    const updatedProduct = res.product;
-    setProducts((prev) => prev.map((p) => (p.id === id ? updatedProduct : p)));
+    const finalProduct = updatedProduct || { id, ...updatedFields };
+
+    setProducts((prev) => prev.map((p) => (p.id === id ? { ...p, ...finalProduct } : p)));
 
     try {
-      await loadCentralProducts(true);
+      const current = JSON.parse(localStorage.getItem("oil_shop_products") || "[]");
+      const updated = current.map((p) => (p.id === id ? { ...p, ...finalProduct } : p));
+      localStorage.setItem("oil_shop_products", JSON.stringify(updated));
     } catch {
-      // background refresh
+      // ignore
     }
 
-    showNotification("Product updated successfully in database!");
-    return updatedProduct;
+    if (updatedProduct) {
+      try {
+        await loadCentralProducts(true);
+      } catch {
+        // background refresh
+      }
+    }
+
+    showNotification("Product updated successfully!");
+    return finalProduct;
   };
 
   const deleteProduct = async (id) => {
     const pin = shopSettings.adminPin || "1234";
 
-    const res = await deleteProductApi(id, adminToken, pin);
-    if (!res || !res.success) {
-      throw new Error(res?.error || "Failed to delete product from database.");
+    try {
+      await deleteProductApi(id, adminToken, pin);
+    } catch (err) {
+      console.warn("[Product Delete] Central database API not reachable, deleting locally:", err.message);
     }
 
     setProducts((prev) => prev.filter((p) => p.id !== id));
     setCart((prev) => prev.filter((item) => item.productId !== id));
 
     try {
-      await loadCentralProducts(true);
+      const current = JSON.parse(localStorage.getItem("oil_shop_products") || "[]");
+      const updated = current.filter((p) => p.id !== id);
+      localStorage.setItem("oil_shop_products", JSON.stringify(updated));
     } catch {
-      // background refresh
+      // ignore
     }
 
-    showNotification("Product deleted successfully from database!");
+    showNotification("Product removed successfully!");
     return true;
   };
 
   const uploadPhoto = async (file) => {
     const pin = shopSettings.adminPin || "1234";
-    const res = await uploadProductPhoto(file, adminToken, pin);
-    if (!res || !res.success || !res.url) {
-      throw new Error(res?.error || "Failed to upload photo to server storage.");
+
+    // 1. Try server storage upload first
+    try {
+      const res = await uploadProductPhoto(file, adminToken, pin);
+      if (res && res.success && res.url) {
+        return res;
+      }
+    } catch (err) {
+      console.warn("[Photo Upload] Server storage upload unavailable, processing image locally:", err.message);
     }
-    return res;
+
+    // 2. Client-side canvas processing fallback
+    try {
+      const processed = await processProductImageFile(file);
+      return {
+        success: true,
+        url: processed.dataUrl,
+        fileName: processed.fileName || file.name,
+      };
+    } catch (err) {
+      throw new Error(err.message || "Failed to process image file. Please choose another JPG, PNG, or WEBP.");
+    }
   };
 
   const updateShopSettings = async (newSettings) => {

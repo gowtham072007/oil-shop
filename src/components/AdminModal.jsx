@@ -1,7 +1,6 @@
 import React, { useState, useRef } from "react";
 import { useShop } from "../context/ShopContext";
 import { formatINR } from "../utils/billGenerator";
-import { processProductImageFile } from "../utils/imageHandler";
 import {
   X,
   Lock,
