@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { useShop } from "../context/ShopContext";
 import {
   Search,
@@ -6,13 +6,11 @@ import {
   PhoneCall,
   ShieldCheck,
   X,
-  Sparkles,
 } from "lucide-react";
 
 export const Header = () => {
   const {
     shopSettings,
-    cart,
     totalCartCount,
     setIsCartOpen,
     setIsAdminOpen,
@@ -20,13 +18,15 @@ export const Header = () => {
     setSearchQuery,
   } = useShop();
 
+  const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
+
   return (
     <>
       {/* Top Announcement Bar */}
       <div className="top-announcement">
-        <span className="badge">100% Traditional Mara Chekku</span>
-        <span>
-          🌾 Stone & Wood-Churned Cold-Pressed Oils • FSSAI Lic. #{shopSettings.fssaiNumber || "12421008000421"} • Free delivery on orders above ₹{shopSettings.freeDeliveryThreshold}
+        <span className="badge">Mara Chekku Purity</span>
+        <span className="announcement-text">
+          Stone & Wood-Churned Cold-Pressed Oils • FSSAI #{shopSettings.fssaiNumber || "12421008000421"} • Free delivery on orders above ₹{shopSettings.freeDeliveryThreshold}
         </span>
       </div>
 
@@ -61,7 +61,7 @@ export const Header = () => {
               </div>
             </div>
 
-            {/* Live Search Bar */}
+            {/* Desktop Live Search Bar */}
             <div className="header-search">
               <Search className="search-icon" size={18} />
               <input
@@ -79,6 +79,9 @@ export const Header = () => {
                     top: "50%",
                     transform: "translateY(-50%)",
                     color: "#85958c",
+                    background: "none",
+                    border: "none",
+                    cursor: "pointer",
                   }}
                   onClick={() => setSearchQuery("")}
                   title="Clear search"
@@ -88,20 +91,31 @@ export const Header = () => {
               )}
             </div>
 
-            {/* Actions */}
+            {/* Header Actions */}
             <div className="header-actions">
-              {/* WhatsApp Quick Link */}
+              {/* Mobile Search Toggle Icon */}
+              <button
+                type="button"
+                className="btn-mobile-search-toggle d-block-sm"
+                onClick={() => setMobileSearchOpen(!mobileSearchOpen)}
+                aria-label="Toggle mobile search"
+                title="Search oils"
+              >
+                {mobileSearchOpen ? <X size={20} /> : <Search size={20} />}
+              </button>
+
+              {/* WhatsApp Quick Link (Desktop/Tablet) */}
               <a
                 href={`https://wa.me/${shopSettings.whatsappNumber}?text=Hello%20${encodeURIComponent(
                   shopSettings.shopName
                 )}%2C%20I%20have%20an%20inquiry%20about%20your%20cold%20pressed%20oils.`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="btn-whatsapp-pill"
+                className="btn-whatsapp-pill d-none-sm"
                 title="Chat with Shop on WhatsApp"
               >
                 <PhoneCall size={16} />
-                <span className="d-none-sm">WhatsApp</span>
+                <span>WhatsApp</span>
               </a>
 
               {/* Admin Portal Toggle */}
@@ -110,6 +124,7 @@ export const Header = () => {
                 className="btn-admin-pill"
                 onClick={() => setIsAdminOpen(true)}
                 title="Shop Owner Admin Area"
+                aria-label="Admin Portal"
               >
                 <ShieldCheck size={16} />
                 <span className="d-none-sm">Admin</span>
@@ -121,6 +136,7 @@ export const Header = () => {
                 className="btn-cart-bubble"
                 onClick={() => setIsCartOpen(true)}
                 title="View Shopping Cart"
+                aria-label="Open Shopping Cart"
               >
                 <ShoppingCart size={20} />
                 {totalCartCount > 0 && (
@@ -129,6 +145,32 @@ export const Header = () => {
               </button>
             </div>
           </div>
+
+          {/* Expandable Mobile Search Bar */}
+          {mobileSearchOpen && (
+            <div className="mobile-search-dropdown">
+              <div className="mobile-search-input-wrap">
+                <Search size={18} className="mobile-search-icon" />
+                <input
+                  type="text"
+                  placeholder="Search groundnut, sesame, coconut..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  autoFocus
+                />
+                {searchQuery && (
+                  <button
+                    type="button"
+                    onClick={() => setSearchQuery("")}
+                    className="mobile-search-clear"
+                    aria-label="Clear search"
+                  >
+                    <X size={16} />
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       </header>
     </>

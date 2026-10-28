@@ -127,7 +127,7 @@ export const ProductCard = ({ product }) => {
           </div>
 
           {/* Stepper + Add to Cart */}
-          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+          <div className="card-controls-group">
             <div className="qty-stepper">
               <button
                 type="button"
@@ -165,7 +165,7 @@ export const ProductCard = ({ product }) => {
               ) : (
                 <>
                   <ShoppingBag size={15} />
-                  Add
+                  Add to Cart
                 </>
               )}
             </button>

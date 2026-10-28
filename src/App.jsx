@@ -10,6 +10,7 @@ import { CartDrawer } from "./components/CartDrawer";
 import { BillPreviewModal } from "./components/BillPreviewModal";
 import { AdminModal } from "./components/AdminModal";
 import { Footer } from "./components/Footer";
+import { MobileBottomNav } from "./components/MobileBottomNav";
 import {
   MessageCircle,
   Sparkles,
@@ -285,6 +286,9 @@ const ShopMain = () => {
       <BillPreviewModal />
       <ProductModal />
       <AdminModal />
+
+      {/* Mobile Bottom Fixed Navigation */}
+      <MobileBottomNav />
 
       {/* Floating Notification Toast */}
       {notification && (
