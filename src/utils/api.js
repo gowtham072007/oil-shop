@@ -84,10 +84,17 @@ export async function verifyAdminToken(token) {
   }
 }
 
+function buildAuthHeaders(token, pin) {
+  const headers = {};
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  if (pin) headers['x-admin-pin'] = String(pin).trim();
+  return headers;
+}
+
 /**
  * Upload Product Photo to persistent server storage
  */
-export async function uploadProductPhoto(file, token) {
+export async function uploadProductPhoto(file, token, pin) {
   if (!file) throw new Error('No photo file provided.');
 
   const formData = new FormData();
@@ -95,9 +102,7 @@ export async function uploadProductPhoto(file, token) {
 
   const res = await fetch(`${API_BASE}/api/upload`, {
     method: 'POST',
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
+    headers: buildAuthHeaders(token, pin),
     body: formData,
   });
 
@@ -107,12 +112,12 @@ export async function uploadProductPhoto(file, token) {
 /**
  * Create Product in central database (Admin)
  */
-export async function createProductApi(productData, token) {
+export async function createProductApi(productData, token, pin) {
   const res = await fetch(`${API_BASE}/api/products`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      Authorization: `Bearer ${token}`,
+      ...buildAuthHeaders(token, pin),
     },
     body: JSON.stringify(productData),
   });
@@ -122,12 +127,12 @@ export async function createProductApi(productData, token) {
 /**
  * Update Product in central database (Admin)
  */
-export async function updateProductApi(id, productData, token) {
+export async function updateProductApi(id, productData, token, pin) {
   const res = await fetch(`${API_BASE}/api/products/${encodeURIComponent(id)}`, {
     method: 'PUT',
     headers: {
       'Content-Type': 'application/json',
-      Authorization: `Bearer ${token}`,
+      ...buildAuthHeaders(token, pin),
     },
     body: JSON.stringify(productData),
   });
@@ -137,12 +142,10 @@ export async function updateProductApi(id, productData, token) {
 /**
  * Delete Product in central database (Admin)
  */
-export async function deleteProductApi(id, token) {
+export async function deleteProductApi(id, token, pin) {
   const res = await fetch(`${API_BASE}/api/products/${encodeURIComponent(id)}`, {
     method: 'DELETE',
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
+    headers: buildAuthHeaders(token, pin),
   });
   return await handleResponse(res);
 }

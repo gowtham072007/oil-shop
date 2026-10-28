@@ -60,6 +60,7 @@ export function verifyAdminToken(token) {
  */
 export function requireAdminAuth(req, res, next) {
   const authHeader = req.headers.authorization || req.headers['x-admin-token'];
+  const pinHeader = req.headers['x-admin-pin'];
   let token = null;
 
   if (authHeader) {
@@ -71,14 +72,14 @@ export function requireAdminAuth(req, res, next) {
   }
 
   const validPayload = verifyAdminToken(token);
-  if (!validPayload) {
-    return res.status(401).json({
-      success: false,
-      error: 'Unauthorized: Admin authentication required to perform this action.',
-    });
+  if (validPayload || (pinHeader && verifyAdminPin(pinHeader))) {
+    req.admin = validPayload || { role: 'admin' };
+    return next();
   }
 
-  req.admin = validPayload;
-  next();
+  return res.status(401).json({
+    success: false,
+    error: 'Unauthorized: Admin authentication required to perform this action.',
+  });
 }
 

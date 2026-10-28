@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import express from 'express';
 import cors from 'cors';
@@ -112,6 +113,29 @@ app.get('/api/products/:id', async (req, res) => {
   }
 });
 
+/**
+ * Helper to ensure an image is stored permanently on disk rather than as a temporary base64 string
+ */
+function ensurePersistentImageUrl(imageUrl, originalFileName = 'product.jpg') {
+  if (!imageUrl || typeof imageUrl !== 'string' || !imageUrl.startsWith('data:image/')) {
+    return imageUrl;
+  }
+  try {
+    const matches = imageUrl.match(/^data:image\/([a-zA-Z0-9+]+);base64,(.+)$/);
+    if (!matches) return imageUrl;
+    const ext = matches[1].replace('jpeg', 'jpg');
+    const base64Data = matches[2];
+    const buffer = Buffer.from(base64Data, 'base64');
+    const filename = `product-${Date.now()}-${crypto.randomBytes(4).toString('hex')}.${ext}`;
+    const filePath = path.join(uploadsDir, filename);
+    fs.writeFileSync(filePath, buffer);
+    return `/uploads/${filename}`;
+  } catch (err) {
+    console.error('[Upload] Failed to convert base64 image to permanent file:', err);
+    return imageUrl;
+  }
+}
+
 // POST create product (Admin only)
 app.post('/api/products', requireAdminAuth, async (req, res) => {
   try {
@@ -142,7 +166,11 @@ app.post('/api/products', requireAdminAuth, async (req, res) => {
       }
     }
 
-    const created = await createProduct(req.body);
+    const persistentImageUrl = ensurePersistentImageUrl(image, req.body.imageFileName);
+    const created = await createProduct({
+      ...req.body,
+      image: persistentImageUrl,
+    });
 
     // Broadcast real-time update to all connected devices immediately!
     broadcast('product:created', created);
@@ -185,7 +213,11 @@ app.put('/api/products/:id', requireAdminAuth, async (req, res) => {
       }
     }
 
-    const updated = await updateProduct(id, req.body);
+    const persistentImageUrl = ensurePersistentImageUrl(image, req.body.imageFileName);
+    const updated = await updateProduct(id, {
+      ...req.body,
+      image: persistentImageUrl,
+    });
 
     // Broadcast real-time update to all connected devices immediately!
     broadcast('product:updated', updated);

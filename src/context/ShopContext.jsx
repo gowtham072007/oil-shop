@@ -355,6 +355,10 @@ export const ShopProvider = ({ children }) => {
   // LocalStorage Persist for offline cache & cart
   // -------------------------------------------------------------
   useEffect(() => {
+    localStorage.setItem("oil_shop_products", JSON.stringify(products));
+  }, [products]);
+
+  useEffect(() => {
     localStorage.setItem("oil_shop_cart", JSON.stringify(cart));
   }, [cart]);
 
@@ -422,89 +426,79 @@ export const ShopProvider = ({ children }) => {
   };
 
   const addProduct = async (newProduct) => {
-    const localId = newProduct.id || `prod-${Date.now()}`;
-    const productRecord = { ...newProduct, id: localId };
+    const pin = shopSettings.adminPin || "1234";
 
-    // 1. Try central database if token exists
-    if (adminToken) {
-      try {
-        const res = await createProductApi(newProduct, adminToken);
-        if (res && res.success && res.product) {
-          setProducts((prev) => [res.product, ...prev.filter((p) => p.id !== res.product.id)]);
-          showNotification("Product saved and synced to all devices!");
-          return res.product;
-        }
-      } catch (err) {
-        console.warn("[Product Save] Backend unavailable, saving locally:", err.message);
-      }
+    // 1. Submit product data to backend database API
+    const res = await createProductApi(newProduct, adminToken, pin);
+    if (!res || !res.success || !res.product) {
+      throw new Error(res?.error || "Failed to save product to database.");
     }
 
-    // 2. Fallback: Save to local state and localStorage
-    setProducts((prev) => [productRecord, ...prev.filter((p) => p.id !== localId)]);
-    showNotification("Product saved successfully!");
-    return productRecord;
+    const savedProduct = res.product;
+
+    // 2. Update React state with the returned database record
+    setProducts((prev) => [savedProduct, ...prev.filter((p) => p.id !== savedProduct.id)]);
+
+    // 3. Reload from database to verify persistence
+    try {
+      await loadCentralProducts(true);
+    } catch {
+      // background refresh
+    }
+
+    showNotification("Product saved successfully to database!");
+    return savedProduct;
   };
 
   const updateProduct = async (id, updatedFields) => {
-    // 1. Try central database if token exists
-    if (adminToken) {
-      try {
-        const res = await updateProductApi(id, updatedFields, adminToken);
-        if (res && res.success && res.product) {
-          setProducts((prev) => prev.map((p) => (p.id === id ? res.product : p)));
-          showNotification("Product updated and synced across all devices!");
-          return res.product;
-        }
-      } catch (err) {
-        console.warn("[Product Update] Backend unavailable, updating locally:", err.message);
-      }
+    const pin = shopSettings.adminPin || "1234";
+
+    const res = await updateProductApi(id, updatedFields, adminToken, pin);
+    if (!res || !res.success || !res.product) {
+      throw new Error(res?.error || "Failed to update product in database.");
     }
 
-    // 2. Fallback: Update locally
-    setProducts((prev) =>
-      prev.map((p) => (p.id === id ? { ...p, ...updatedFields } : p))
-    );
-    showNotification("Product updated successfully!");
-    return { id, ...updatedFields };
+    const updatedProduct = res.product;
+    setProducts((prev) => prev.map((p) => (p.id === id ? updatedProduct : p)));
+
+    try {
+      await loadCentralProducts(true);
+    } catch {
+      // background refresh
+    }
+
+    showNotification("Product updated successfully in database!");
+    return updatedProduct;
   };
 
   const deleteProduct = async (id) => {
-    // 1. Try central database if token exists
-    if (adminToken) {
-      try {
-        await deleteProductApi(id, adminToken);
-      } catch (err) {
-        console.warn("[Product Delete] Backend unavailable, deleting locally:", err.message);
-      }
+    const pin = shopSettings.adminPin || "1234";
+
+    const res = await deleteProductApi(id, adminToken, pin);
+    if (!res || !res.success) {
+      throw new Error(res?.error || "Failed to delete product from database.");
     }
 
-    // 2. Delete locally
     setProducts((prev) => prev.filter((p) => p.id !== id));
     setCart((prev) => prev.filter((item) => item.productId !== id));
-    showNotification("Product removed successfully!");
+
+    try {
+      await loadCentralProducts(true);
+    } catch {
+      // background refresh
+    }
+
+    showNotification("Product deleted successfully from database!");
     return true;
   };
 
   const uploadPhoto = async (file) => {
-    // 1. Try backend photo upload if token exists
-    if (adminToken) {
-      try {
-        const res = await uploadProductPhoto(file, adminToken);
-        if (res && res.success && res.url) {
-          return res;
-        }
-      } catch (err) {
-        console.warn("[Photo Upload] Backend unavailable, processing image locally:", err.message);
-      }
+    const pin = shopSettings.adminPin || "1234";
+    const res = await uploadProductPhoto(file, adminToken, pin);
+    if (!res || !res.success || !res.url) {
+      throw new Error(res?.error || "Failed to upload photo to server storage.");
     }
-
-    // 2. Fallback: client-side processing
-    const processed = await processProductImageFile(file);
-    return {
-      success: true,
-      url: processed.dataUrl,
-      fileName: processed.fileName,
-    };
+    return res;
   };
 
   const updateShopSettings = async (newSettings) => {
