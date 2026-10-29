@@ -60,7 +60,16 @@ export const ShopProvider = ({ children }) => {
   const [categories, setCategories] = useState(() => {
     try {
       const saved = localStorage.getItem("oil_shop_categories");
-      return saved ? JSON.parse(saved) : DEFAULT_CATEGORIES;
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) {
+          const cleaned = parsed.filter((c) =>
+            ["all", "coconut", "sesame", "groundnut"].includes(c.id)
+          );
+          if (cleaned.length > 0) return cleaned;
+        }
+      }
+      return DEFAULT_CATEGORIES;
     } catch {
       return DEFAULT_CATEGORIES;
     }

@@ -5,14 +5,13 @@ import { HeroBanner } from "./components/HeroBanner";
 import { TrustSection } from "./components/TrustSection";
 import { CategoryTabs } from "./components/CategoryTabs";
 import { ProductCard } from "./components/ProductCard";
-import { UnavailableOilCard } from "./components/UnavailableOilCard";
 import { ProductModal } from "./components/ProductModal";
 import { CartDrawer } from "./components/CartDrawer";
 import { BillPreviewModal } from "./components/BillPreviewModal";
 import { AdminModal } from "./components/AdminModal";
 import { Footer } from "./components/Footer";
 import { MobileBottomNav } from "./components/MobileBottomNav";
-import { filterCustomerProducts, PERMITTED_OILS } from "./utils/customerOilFilter";
+import { filterCustomerProducts } from "./utils/customerOilFilter";
 import {
   MessageCircle,
   SlidersHorizontal,
@@ -54,23 +53,6 @@ const ShopMain = () => {
     return 0;
   });
 
-  // Check which of the 3 permitted oils should be visible based on tab selection & search
-  const visibleOilDefs = PERMITTED_OILS.filter((oil) => {
-    if (selectedCategory !== "all" && selectedCategory !== oil.id) {
-      return false;
-    }
-    const query = searchQuery.trim().toLowerCase();
-    if (query) {
-      const matchName = oil.name.toLowerCase().includes(query);
-      const matchReg = oil.regionalName.toLowerCase().includes(query);
-      const matchDesc = oil.description.toLowerCase().includes(query);
-      const matchKeywords = oil.keywords.some((kw) => kw.includes(query));
-      const hasMatchingProduct = sortedProducts.some((p) => p.customerOilId === oil.id);
-      return matchName || matchReg || matchDesc || matchKeywords || hasMatchingProduct;
-    }
-    return true;
-  });
-
   return (
     <div className="shop-app">
       {/* Header */}
@@ -110,7 +92,7 @@ const ShopMain = () => {
             }}
           >
             <div style={{ fontSize: "0.92rem", color: "#57655d" }}>
-              Displaying <strong>{visibleOilDefs.length}</strong> {visibleOilDefs.length === 1 ? "oil category" : "oil categories"}
+              Displaying <strong>{sortedProducts.length}</strong> {sortedProducts.length === 1 ? "product" : "products"}
               {searchQuery && (
                 <span>
                   {" "}matching "<strong>{searchQuery}</strong>"
@@ -147,8 +129,8 @@ const ShopMain = () => {
             )}
           </div>
 
-          {/* Products Grid: Render each permitted oil (actual product if configured, or unavailable notice) */}
-          {visibleOilDefs.length === 0 ? (
+          {/* Products Grid: Render actual products, or clean empty message */}
+          {sortedProducts.length === 0 ? (
             <div
               style={{
                 textAlign: "center",
@@ -176,39 +158,46 @@ const ShopMain = () => {
                 <Search size={28} />
               </div>
               <h3 style={{ fontSize: "1.25rem", marginBottom: "0.5rem", color: "#09331d" }}>
-                No oils found matching your search
+                {searchQuery
+                  ? "No oils found matching your search"
+                  : "No products listed in catalog yet"}
               </h3>
               <p style={{ color: "#57655d", fontSize: "0.9rem", marginBottom: "1.5rem", lineHeight: "1.6" }}>
-                We specialize exclusively in three pure edible cooking oils: <strong>Coconut Oil (தேங்காய் எண்ணெய்)</strong>, <strong>Sesame Oil (நல்லெண்ணெய்)</strong>, and <strong>Groundnut Oil (கடலை எண்ணெய்)</strong>.
+                {searchQuery
+                  ? "We offer pure Coconut Oil (தேங்காய் எண்ணெய்), Sesame Oil (நல்லெண்ணெய்), and Groundnut Oil (கடலை எண்ணெய்). Try searching for these names or clear your search."
+                  : "Fresh batches of pure Coconut Oil, Sesame Oil, and Groundnut Oil are prepared fresh at the mill. You can inquire directly with the mill via WhatsApp."}
               </p>
-              <button
-                type="button"
-                className="btn-primary-glow"
-                onClick={() => {
-                  setSearchQuery("");
-                  setSelectedCategory("all");
-                }}
-              >
-                View Our Three Pure Oils
-              </button>
+              <div style={{ display: "flex", gap: "0.75rem", justifyContent: "center", flexWrap: "wrap" }}>
+                {searchQuery && (
+                  <button
+                    type="button"
+                    className="btn-secondary-outline"
+                    onClick={() => {
+                      setSearchQuery("");
+                      setSelectedCategory("all");
+                    }}
+                  >
+                    Clear Search
+                  </button>
+                )}
+                <a
+                  href={`https://wa.me/${shopSettings.whatsappNumber}?text=Hello%20${encodeURIComponent(
+                    shopSettings.shopName
+                  )}%2C%20I%20would%20like%20to%20inquire%20about%20pure%20edible%20cooking%20oils.`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="btn-primary-glow"
+                  style={{ textDecoration: "none" }}
+                >
+                  💬 Inquire on WhatsApp
+                </a>
+              </div>
             </div>
           ) : (
             <div className="product-grid">
-              {visibleOilDefs.map((oilDef) => {
-                // Check if the shop owner has configured real products for this oil
-                const matchingProducts = sortedProducts.filter(
-                  (p) => p.customerOilId === oilDef.id
-                );
-
-                if (matchingProducts.length > 0) {
-                  return matchingProducts.map((prod) => (
-                    <ProductCard key={prod.id} product={prod} />
-                  ));
-                }
-
-                // If no product is configured in the database, show clean unavailable card (never invent fake prices or stock)
-                return <UnavailableOilCard key={oilDef.id} oilDefinition={oilDef} />;
-              })}
+              {sortedProducts.map((prod) => (
+                <ProductCard key={prod.id} product={prod} />
+              ))}
             </div>
           )}
         </div>

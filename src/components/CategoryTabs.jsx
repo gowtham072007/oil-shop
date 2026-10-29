@@ -27,6 +27,12 @@ export const CategoryTabs = () => {
   const { selectedCategory, setSelectedCategory, products } = useShop();
   const customerTabs = getCustomerCategories(products);
 
+  // If there are no products in the catalog at all, don't show the category filter bar
+  const totalCount = customerTabs.find((c) => c.id === "all")?.count || 0;
+  if (totalCount === 0) {
+    return null;
+  }
+
   return (
     <div className="category-nav-wrapper">
       {customerTabs.map((cat) => {

@@ -16,13 +16,10 @@ export const DEFAULT_SHOP_SETTINGS = {
 };
 
 export const DEFAULT_CATEGORIES = [
-  { id: "all", name: "All Oils", regionalName: "அனைத்து எண்ணெய்", icon: "Droplets", description: "Complete range of cold-pressed oils" },
-  { id: "groundnut", name: "Groundnut Oil", regionalName: "கடலை எண்ணெய்", icon: "Nut", description: "Wood pressed Kadalai Ennai for daily cooking" },
-  { id: "sesame", name: "Sesame / Gingelly", regionalName: "நல்லெண்ணெய்", icon: "Sparkles", description: "Traditional Nalla Ennai with palm jaggery" },
-  { id: "coconut", name: "Coconut Oil", regionalName: "தேங்காய் எண்ணெய்", icon: "Palmtree", description: "100% Pure sulphur-free copra oil" },
-  { id: "mustard", name: "Mustard Oil", regionalName: "கடுகு எண்ணெய்", icon: "Flower2", description: "Pungent Kachi Ghani cold-pressed mustard oil" },
-  { id: "sunflower", name: "Sunflower Oil", regionalName: "சூரியகாந்தி எண்ணெய்", icon: "Sun", description: "Light & heart-friendly unrefined sunflower oil" },
-  { id: "pooja", name: "Deepam & Pooja Oil", regionalName: "தீப பூஜை எண்ணெய்", icon: "Flame", description: "Pancha Deepam aromatic sacred lamp oil" },
+  { id: "all", name: "All Oils", regionalName: "அனைத்து எண்ணெய்", icon: "Droplets", description: "Complete range of pure edible cooking oils" },
+  { id: "coconut", name: "Coconut Oil", regionalName: "தேங்காய் எண்ணெய்", icon: "Palmtree", description: "100% Pure edible coconut oil" },
+  { id: "sesame", name: "Sesame Oil", regionalName: "நல்லெண்ணெய்", icon: "Sparkles", description: "Pure edible sesame / gingelly oil" },
+  { id: "groundnut", name: "Groundnut Oil", regionalName: "கடலை எண்ணெய்", icon: "Nut", description: "Pure edible groundnut / peanut oil" },
 ];
 
 export const DEMO_PRODUCT_IDS = [
