@@ -864,21 +864,27 @@ input, textarea, select {
 .product-image-wrap {
   position: relative;
   width: 100%;
-  aspect-ratio: 1 / 1;
-  background: #f5f2eb;
+  aspect-ratio: 3 / 4;
+  background: linear-gradient(180deg, #faf7f0 0%, #f1ebe0 100%);
   overflow: hidden;
   cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem;
 }
 
 .product-image-wrap img {
   width: 100%;
   height: 100%;
-  object-fit: cover;
-  transition: transform 0.5s ease;
+  object-fit: contain;
+  object-position: center;
+  transition: transform 0.4s ease;
+  display: block;
 }
 
 .product-card:hover .product-image-wrap img {
-  transform: scale(1.05);
+  transform: scale(1.04);
 }
 
 .card-top-badges {
@@ -1798,7 +1804,7 @@ input, textarea, select {
 }
 
 .quick-view-media {
-  background: #f5f2ea;
+  background: linear-gradient(180deg, #faf7f0 0%, #f1ebe0 100%);
   padding: 1.5rem;
   display: flex;
   align-items: center;
@@ -1807,10 +1813,9 @@ input, textarea, select {
 
 .quick-view-media img {
   width: 100%;
-  max-height: 400px;
-  object-fit: cover;
+  max-height: 420px;
+  object-fit: contain;
   border-radius: var(--radius-md);
-  box-shadow: var(--shadow-md);
 }
 
 .quick-view-content {
@@ -2480,7 +2485,8 @@ input, textarea, select {
   }
 
   .product-image-wrap {
-    aspect-ratio: 1 / 1;
+    aspect-ratio: 3 / 4;
+    padding: 0.35rem;
   }
 
   .card-top-badges {
