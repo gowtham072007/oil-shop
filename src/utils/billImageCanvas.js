@@ -1,16 +1,21 @@
 import { formatINR } from './billGenerator';
 
 /**
- * Generate a high-resolution, professional invoice-style bill image (PNG)
+ * Generate a high-resolution, professional invoice-style bill image (PNG / JPEG)
  * using HTML5 Canvas with sharp 2x retina scaling.
  *
  * @param {Object} order - Full order object with items, customer details, and totals
  * @param {Object} shopSettings - Shop configuration (name, phone, address, fssai, etc.)
- * @returns {Promise<{ dataUrl: string, blob: Blob }>}
+ * @param {string} format - 'png' or 'jpeg'
+ * @returns {Promise<{ dataUrl: string, blob: Blob, canvas: HTMLCanvasElement, mimeType: string, ext: string }>}
  */
-export async function generateBillImage(order, shopSettings = {}) {
+export async function generateBillImage(order, shopSettings = {}, format = 'png') {
   const scale = 2; // Retina scale factor for ultra-sharp text and borders
   const width = 800;
+  const isJpeg = format.toLowerCase() === 'jpeg' || format.toLowerCase() === 'jpg';
+  const mimeType = isJpeg ? 'image/jpeg' : 'image/png';
+  const ext = isJpeg ? 'jpg' : 'png';
+  const fontStack = '"Nirmala UI", "Mukta Malar", "Tamil Sangam MN", -apple-system, BlinkMacSystemFont, Arial, sans-serif';
   
   // Calculate dynamic height based on number of items
   const itemsCount = Math.max(1, order.items?.length || 1);
@@ -307,13 +312,43 @@ export async function generateBillImage(order, shopSettings = {}) {
   ctx.font = '11px Arial, sans-serif';
   ctx.fillText('Official WhatsApp Order Confirmation • Gopalasamuthiram, Tamil Nadu', width / 2, footerY + 40);
 
-  // Export as PNG
+  // Export as PNG or JPEG
   return new Promise((resolve) => {
-    const dataUrl = canvas.toDataURL('image/png');
-    canvas.toBlob((blob) => {
-      resolve({ dataUrl, blob, canvas });
-    }, 'image/png');
+    const quality = isJpeg ? 0.95 : undefined;
+    const dataUrl = canvas.toDataURL(mimeType, quality);
+    canvas.toBlob(
+      (blob) => {
+        resolve({ dataUrl, blob, canvas, mimeType, ext });
+      },
+      mimeType,
+      quality
+    );
   });
+}
+
+/**
+ * Generates and triggers automatic browser download of the bill image file
+ */
+export async function downloadBillImageFile(order, shopSettings = {}, format = 'png') {
+  const result = await generateBillImage(order, shopSettings, format);
+  const cleanOrder = String(order.orderNumber || 'order').replace(/[^a-zA-Z0-9_-]/g, '_');
+  const fileName = `Poomani_Oils_Bill_${cleanOrder}.${result.ext}`;
+
+  const link = document.createElement('a');
+  link.download = fileName;
+  link.href = result.dataUrl;
+  document.body.appendChild(link);
+  link.click();
+  setTimeout(() => {
+    if (document.body.contains(link)) {
+      document.body.removeChild(link);
+    }
+  }, 200);
+
+  return {
+    ...result,
+    fileName,
+  };
 }
 
 /**

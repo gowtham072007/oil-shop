@@ -1209,6 +1209,92 @@ export const AdminModal = () => {
                     </div>
                   </div>
 
+                  {/* Official Meta WhatsApp Business Platform (Cloud API) Section */}
+                  <div
+                    style={{
+                      background: "#f0fdf4",
+                      border: "1.5px solid #86efac",
+                      borderRadius: "10px",
+                      padding: "1.25rem",
+                      marginTop: "1.25rem",
+                    }}
+                  >
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.75rem", flexWrap: "wrap", gap: "0.5rem" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                        <span style={{ fontSize: "1.2rem" }}>💬</span>
+                        <strong style={{ color: "#166534", fontSize: "0.95rem" }}>
+                          Official Meta WhatsApp Business Cloud API (Optional Automatic Image Delivery)
+                        </strong>
+                      </div>
+                      <span
+                        style={{
+                          fontSize: "0.74rem",
+                          fontWeight: "700",
+                          padding: "0.2rem 0.6rem",
+                          borderRadius: "9999px",
+                          background: settingsForm.whatsappCloudApiEnabled ? "#16a34a" : "#94a3b8",
+                          color: "#ffffff",
+                        }}
+                      >
+                        {settingsForm.whatsappCloudApiEnabled ? "Enabled" : "Disabled (Assisted Mode)"}
+                      </span>
+                    </div>
+
+                    <p style={{ fontSize: "0.82rem", color: "#1e3a29", margin: "0 0 1rem 0", lineHeight: 1.5 }}>
+                      When enabled and configured with Meta Graph API credentials, the server can dispatch the bill image directly to the customer's WhatsApp number. When disabled, the site uses standard client-assisted click-to-chat with automatic download and attachment guidance.
+                    </p>
+
+                    <div style={{ marginBottom: "1rem" }}>
+                      <label style={{ display: "flex", alignItems: "center", gap: "0.5rem", cursor: "pointer", fontSize: "0.86rem", fontWeight: "600", color: "#166534" }}>
+                        <input
+                          type="checkbox"
+                          checked={Boolean(settingsForm.whatsappCloudApiEnabled)}
+                          onChange={(e) => setSettingsForm({ ...settingsForm, whatsappCloudApiEnabled: e.target.checked })}
+                          style={{ width: "auto" }}
+                        />
+                        Enable Meta WhatsApp Business Cloud API Integration
+                      </label>
+                    </div>
+
+                    <div className="form-grid-2">
+                      <div className="form-group">
+                        <label>Meta Phone Number ID</label>
+                        <input
+                          type="text"
+                          placeholder="e.g. 104829104829104"
+                          value={settingsForm.whatsappPhoneNumberId || ""}
+                          onChange={(e) => setSettingsForm({ ...settingsForm, whatsappPhoneNumberId: e.target.value })}
+                        />
+                        <small style={{ fontSize: "0.72rem", color: "#57655d" }}>
+                          From Meta Developer Console &gt; WhatsApp &gt; API Setup
+                        </small>
+                      </div>
+
+                      <div className="form-group">
+                        <label>WhatsApp Business Account ID (WABA ID)</label>
+                        <input
+                          type="text"
+                          placeholder="e.g. 192837465019283"
+                          value={settingsForm.whatsappWabaId || ""}
+                          onChange={(e) => setSettingsForm({ ...settingsForm, whatsappWabaId: e.target.value })}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="form-group" style={{ marginTop: "0.5rem" }}>
+                      <label>Permanent System User Access Token</label>
+                      <input
+                        type="password"
+                        placeholder="EAA..."
+                        value={settingsForm.whatsappCloudApiToken || ""}
+                        onChange={(e) => setSettingsForm({ ...settingsForm, whatsappCloudApiToken: e.target.value })}
+                      />
+                      <small style={{ fontSize: "0.72rem", color: "#57655d" }}>
+                        🔒 Securely stored in backend database. Never exposed to customer browser bundles.
+                      </small>
+                    </div>
+                  </div>
+
                   <button type="submit" className="btn-primary-glow" style={{ marginTop: "1rem" }}>
                     <Save size={16} />
                     Save Shop & WhatsApp Settings

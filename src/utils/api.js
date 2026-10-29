@@ -191,3 +191,39 @@ export async function syncMigrationApi(localProducts, token) {
   return await handleResponse(res);
 }
 
+/**
+ * Upload dynamically generated bill image to server persistent storage
+ */
+export async function uploadBillImageApi(orderNumber, dataUrl) {
+  const res = await fetch(`${API_BASE}/api/orders/upload-bill`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ orderNumber, dataUrl }),
+  });
+  return await handleResponse(res);
+}
+
+/**
+ * Dispatches bill via Meta WhatsApp Cloud API (if enabled on server)
+ */
+export async function sendWhatsAppBillApi(params) {
+  const res = await fetch(`${API_BASE}/api/orders/send-whatsapp-bill`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(params),
+  });
+  return await handleResponse(res);
+}
+
+/**
+ * Check if Meta WhatsApp Cloud API is configured on server
+ */
+export async function fetchWhatsAppStatusApi() {
+  try {
+    const res = await fetch(`${API_BASE}/api/whatsapp/status`);
+    return await handleResponse(res);
+  } catch {
+    return { success: false, isConfigured: false, isEnabled: false };
+  }
+}
+

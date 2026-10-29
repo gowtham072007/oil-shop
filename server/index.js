@@ -33,6 +33,11 @@ import {
   uploadMiddleware,
   uploadsDir,
 } from './upload.js';
+import {
+  saveBillImageFile,
+  getWhatsAppCloudConfig,
+  sendWhatsAppCloudImage,
+} from './whatsappCloudApi.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -293,6 +298,91 @@ app.post('/api/upload', requireAdminAuth, (req, res) => {
       size: req.file.size,
     });
   });
+});
+
+// -------------------------------------------------------------
+// WhatsApp Bill Image & Cloud API Routes
+// -------------------------------------------------------------
+
+// Upload dynamically generated bill image from frontend canvas to persistent server storage
+app.post('/api/orders/upload-bill', async (req, res) => {
+  try {
+    const { orderNumber, dataUrl } = req.body;
+    if (!orderNumber || !dataUrl) {
+      return res.status(400).json({ success: false, error: 'orderNumber and dataUrl are required.' });
+    }
+
+    const saved = await saveBillImageFile(orderNumber, dataUrl, req);
+    res.json({
+      success: true,
+      ...saved,
+      message: 'Bill image saved successfully on persistent storage.',
+    });
+  } catch (err) {
+    console.error('[API] Error saving bill image:', err);
+    res.status(500).json({ success: false, error: err.message || 'Failed to save bill image.' });
+  }
+});
+
+// Dispatch bill via Meta WhatsApp Cloud API (if configured)
+app.post('/api/orders/send-whatsapp-bill', async (req, res) => {
+  try {
+    const { orderNumber, customerPhone, billDataUrl, billText } = req.body;
+
+    let publicUrl = '';
+    let relativeUrl = '';
+
+    if (billDataUrl) {
+      const saved = await saveBillImageFile(orderNumber, billDataUrl, req);
+      publicUrl = saved.publicUrl;
+      relativeUrl = saved.relativeUrl;
+    }
+
+    const config = await getWhatsAppCloudConfig();
+    if (!config.isConfigured || !config.isEnabled) {
+      return res.json({
+        success: true,
+        apiSent: false,
+        relativeUrl,
+        publicUrl,
+        reason: 'WhatsApp Cloud API not enabled or configured. Use client-side assisted dispatch.',
+      });
+    }
+
+    const result = await sendWhatsAppCloudImage({
+      to: customerPhone,
+      imageUrl: publicUrl,
+      caption: billText,
+      orderNumber,
+    });
+
+    res.json({
+      success: true,
+      ...result,
+      relativeUrl,
+      publicUrl,
+    });
+  } catch (err) {
+    console.error('[API] Error dispatching WhatsApp Cloud message:', err);
+    res.status(500).json({ success: false, error: err.message || 'Failed to dispatch WhatsApp message.' });
+  }
+});
+
+// Check WhatsApp Cloud API configuration status (safe, no secret tokens leaked)
+app.get('/api/whatsapp/status', async (_req, res) => {
+  try {
+    const config = await getWhatsAppCloudConfig();
+    res.json({
+      success: true,
+      isConfigured: config.isConfigured,
+      isEnabled: config.isEnabled,
+      phoneNumberId: config.phoneNumberId,
+      hasToken: config.hasToken,
+      wabaId: config.wabaId,
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
 });
 
 // -------------------------------------------------------------
