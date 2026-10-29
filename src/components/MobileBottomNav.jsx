@@ -46,7 +46,7 @@ export const MobileBottomNav = () => {
 
   const waUrl = `https://wa.me/${shopSettings.whatsappNumber}?text=Hello%20${encodeURIComponent(
     shopSettings.shopName
-  )}%2C%20I%20would%20like%20to%20inquire%20about%20ordering%20cold%20pressed%20oils.`;
+  )}%2C%20I%20would%20like%20to%20inquire%20about%20ordering%20pure%20cooking%20oils.`;
 
   return (
     <nav className="mobile-bottom-nav" aria-label="Mobile Navigation">

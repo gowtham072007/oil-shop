@@ -1,6 +1,6 @@
 import React from "react";
 import { useShop } from "../context/ShopContext";
-import { MapPin, Phone, Mail, Clock, ShieldCheck, Heart } from "lucide-react";
+import { MapPin, Phone, Clock, ShieldCheck } from "lucide-react";
 
 export const Footer = () => {
   const { shopSettings, setSelectedCategory } = useShop();
@@ -27,8 +27,8 @@ export const Footer = () => {
               )}
             </h4>
             <p>
-              Preserving ancient South Indian wood pestle (Mara Chekku) oil extraction traditions.
-              Pure, unheated, unrefined, and full of natural life-giving nutrition.
+              Wholesome edible cooking oils crafted with pure quality and honesty.
+              100% unadulterated, unrefined, and packed with everyday natural nutrition.
             </p>
             <div style={{ display: "flex", alignItems: "center", gap: "0.4rem", color: "#e5b94c", fontSize: "0.82rem", fontWeight: "600", marginTop: "0.5rem" }}>
               <ShieldCheck size={16} />
@@ -38,14 +38,14 @@ export const Footer = () => {
 
           {/* Quick Categories */}
           <div className="footer-col">
-            <h4>Traditional Oils</h4>
+            <h4>Our Three Pure Oils</h4>
             <ul>
               <li>
                 <a
                   href="#oil-catalog-section"
-                  onClick={() => setSelectedCategory("groundnut")}
+                  onClick={() => setSelectedCategory("coconut")}
                 >
-                  Wood-Pressed Groundnut Oil
+                  Coconut Oil — தேங்காய் எண்ணெய்
                 </a>
               </li>
               <li>
@@ -53,31 +53,15 @@ export const Footer = () => {
                   href="#oil-catalog-section"
                   onClick={() => setSelectedCategory("sesame")}
                 >
-                  Pure Sesame / Gingelly Oil
+                  Sesame Oil — நல்லெண்ணெய்
                 </a>
               </li>
               <li>
                 <a
                   href="#oil-catalog-section"
-                  onClick={() => setSelectedCategory("coconut")}
+                  onClick={() => setSelectedCategory("groundnut")}
                 >
-                  Cold-Pressed Virgin Coconut Oil
-                </a>
-              </li>
-              <li>
-                <a
-                  href="#oil-catalog-section"
-                  onClick={() => setSelectedCategory("mustard")}
-                >
-                  Raw Kachi Ghani Mustard Oil
-                </a>
-              </li>
-              <li>
-                <a
-                  href="#oil-catalog-section"
-                  onClick={() => setSelectedCategory("pooja")}
-                >
-                  Pancha Deepam Pooja Oil
+                  Groundnut Oil — கடலை எண்ணெய்
                 </a>
               </li>
             </ul>
@@ -113,7 +97,7 @@ export const Footer = () => {
               Need bulk quantity for marriages, functions, or temples? Chat directly with the oil master on WhatsApp!
             </p>
             <a
-              href={`https://wa.me/${shopSettings.whatsappNumber}?text=Hello%2C%20I%20would%20like%20to%20inquire%20about%20cold%20pressed%20oils.`}
+              href={`https://wa.me/${shopSettings.whatsappNumber}?text=Hello%2C%20I%20would%20like%20to%20inquire%20about%20pure%20edible%20cooking%20oils.`}
               target="_blank"
               rel="noopener noreferrer"
               className="btn-whatsapp-pill"
@@ -127,10 +111,10 @@ export const Footer = () => {
         {/* Footer Bottom */}
         <div className="footer-bottom">
           <div>
-            © {new Date().getFullYear()} {shopSettings.shopName} ({shopSettings.shopNameTamil || "பூமணி ஆயில்ஸ்"}). All rights reserved. Made with purity & tradition.
+            © {new Date().getFullYear()} {shopSettings.shopName} ({shopSettings.shopNameTamil || "பூமணி ஆயில்ஸ்"}). All rights reserved. Pure edible cooking oils.
           </div>
           <div>
-            100% Mara Chekku • Unrefined • Zero Hexane • Direct WhatsApp Billing
+            100% Pure Edible Oils • Pure Quality • Direct WhatsApp Billing
           </div>
         </div>
       </div>

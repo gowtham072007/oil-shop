@@ -5,18 +5,18 @@ import { HeroBanner } from "./components/HeroBanner";
 import { TrustSection } from "./components/TrustSection";
 import { CategoryTabs } from "./components/CategoryTabs";
 import { ProductCard } from "./components/ProductCard";
+import { UnavailableOilCard } from "./components/UnavailableOilCard";
 import { ProductModal } from "./components/ProductModal";
 import { CartDrawer } from "./components/CartDrawer";
 import { BillPreviewModal } from "./components/BillPreviewModal";
 import { AdminModal } from "./components/AdminModal";
 import { Footer } from "./components/Footer";
 import { MobileBottomNav } from "./components/MobileBottomNav";
+import { filterCustomerProducts, PERMITTED_OILS } from "./utils/customerOilFilter";
 import {
   MessageCircle,
-  Sparkles,
   SlidersHorizontal,
   Search,
-  ShoppingCart,
   CheckCircle2,
   AlertCircle,
 } from "lucide-react";
@@ -26,42 +26,20 @@ const ShopMain = () => {
   const {
     products,
     selectedCategory,
+    setSelectedCategory,
     searchQuery,
     setSearchQuery,
     shopSettings,
-    setIsCartOpen,
     notification,
-    totalCartCount,
   } = useShop();
 
-  const [sortBy, setSortBy] = useState("default"); // 'default' | 'price-low' | 'price-high' | 'rating'
+  const [sortBy, setSortBy] = useState("default"); // 'default' | 'price-low' | 'price-high'
 
-  // Filter products by category and search
-  const filteredProducts = products.filter((p) => {
-    const matchesCategory =
-      selectedCategory === "all" ||
-      p.category === selectedCategory ||
-      (!p.category && (
-        p.name?.toLowerCase().includes(selectedCategory) ||
-        p.regionalName?.toLowerCase().includes(selectedCategory) ||
-        p.oilType?.toLowerCase().includes(selectedCategory) ||
-        p.description?.toLowerCase().includes(selectedCategory)
-      ));
+  // Filter public products strictly by permitted 3 oil types and search query
+  const customerProducts = filterCustomerProducts(products, selectedCategory, searchQuery);
 
-    const query = searchQuery.trim().toLowerCase();
-    const matchesSearch =
-      !query ||
-      p.name.toLowerCase().includes(query) ||
-      (p.regionalName && p.regionalName.toLowerCase().includes(query)) ||
-      (p.brand && p.brand.toLowerCase().includes(query)) ||
-      (p.oilType && p.oilType.toLowerCase().includes(query)) ||
-      (p.description && p.description.toLowerCase().includes(query));
-
-    return matchesCategory && matchesSearch;
-  });
-
-  // Sort products
-  const sortedProducts = [...filteredProducts].sort((a, b) => {
+  // Sort customer products
+  const sortedProducts = [...customerProducts].sort((a, b) => {
     const getBasePrice = (prod) =>
       prod.variants && prod.variants.length > 0
         ? prod.variants[0].price
@@ -73,10 +51,24 @@ const ShopMain = () => {
     if (sortBy === "price-high") {
       return getBasePrice(b) - getBasePrice(a);
     }
-    if (sortBy === "rating") {
-      return (b.rating || 0) - (a.rating || 0);
-    }
     return 0;
+  });
+
+  // Check which of the 3 permitted oils should be visible based on tab selection & search
+  const visibleOilDefs = PERMITTED_OILS.filter((oil) => {
+    if (selectedCategory !== "all" && selectedCategory !== oil.id) {
+      return false;
+    }
+    const query = searchQuery.trim().toLowerCase();
+    if (query) {
+      const matchName = oil.name.toLowerCase().includes(query);
+      const matchReg = oil.regionalName.toLowerCase().includes(query);
+      const matchDesc = oil.description.toLowerCase().includes(query);
+      const matchKeywords = oil.keywords.some((kw) => kw.includes(query));
+      const hasMatchingProduct = sortedProducts.some((p) => p.customerOilId === oil.id);
+      return matchName || matchReg || matchDesc || matchKeywords || hasMatchingProduct;
+    }
+    return true;
   });
 
   return (
@@ -84,10 +76,10 @@ const ShopMain = () => {
       {/* Header */}
       <Header />
 
-      {/* Hero Banner with Photography */}
+      {/* Hero Banner featuring our 3 pure oils */}
       <HeroBanner />
 
-      {/* 4 Pillars of Purity */}
+      {/* 4 Pillars of Pure Edible Oils */}
       <TrustSection />
 
       {/* Product Catalog Section */}
@@ -95,131 +87,77 @@ const ShopMain = () => {
         <div className="container">
           {/* Section Header */}
           <div className="section-head">
-            <div className="section-subtitle">Farm Fresh • Unrefined • Wood Churned</div>
-            <h2 className="section-title">Authentic Cold-Pressed Oils</h2>
+            <div className="section-subtitle">100% Pure • Unrefined • Natural Goodness</div>
+            <h2 className="section-title">Our Three Pure Edible Oils</h2>
             <p className="section-desc">
-              Extracted slowly at room temperature using traditional Vaagai wood mortars.
-              Preserves authentic aroma, natural vitamins, and zero chemical residues.
+              Coconut Oil (தேங்காய் எண்ணெய்), Sesame Oil (நல்லெண்ணெய்), and Groundnut Oil (கடலை எண்ணெய்).
+              Pure, wholesome, and authentic for everyday healthy cooking.
             </p>
           </div>
 
-          {/* Category Tabs & Controls (only when products exist) */}
-          {products.length > 0 && (
-            <>
-              <CategoryTabs />
+          {/* Category Tabs & Filter Controls */}
+          <CategoryTabs />
 
-              {/* Search Result or Sort Controls Bar */}
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  marginBottom: "1.75rem",
-                  flexWrap: "wrap",
-                  gap: "1rem",
-                }}
-              >
-                <div style={{ fontSize: "0.92rem", color: "#57655d" }}>
-                  Showing <strong>{sortedProducts.length}</strong> {sortedProducts.length === 1 ? "oil product" : "oil products"}
-                  {searchQuery && (
-                    <span>
-                      {" "}matching "<strong>{searchQuery}</strong>"
-                    </span>
-                  )}
-                </div>
-
-                {/* Sorting Dropdown */}
-                <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                  <SlidersHorizontal size={15} color="#8c6819" />
-                  <label htmlFor="sort-select" style={{ fontSize: "0.85rem", fontWeight: "600", color: "#1f2923" }}>
-                    Sort By:
-                  </label>
-                  <select
-                    id="sort-select"
-                    value={sortBy}
-                    onChange={(e) => setSortBy(e.target.value)}
-                    style={{
-                      padding: "0.4rem 0.85rem",
-                      borderRadius: "9999px",
-                      border: "1px solid #e8e0d2",
-                      background: "#ffffff",
-                      fontSize: "0.85rem",
-                      color: "#1f2923",
-                      outline: "none",
-                    }}
-                  >
-                    <option value="default">Featured Traditional</option>
-                    <option value="price-low">Price: Low to High</option>
-                    <option value="price-high">Price: High to Low</option>
-                    <option value="rating">Highest Rated</option>
-                  </select>
-                </div>
-              </div>
-            </>
-          )}
-
-          {/* Products Grid or Empty State */}
-          {products.length === 0 ? (
-            <div
-              className="empty-catalog-card"
-              style={{
-                textAlign: "center",
-                padding: "4.5rem 1.5rem",
-                background: "#ffffff",
-                borderRadius: "16px",
-                border: "1px solid #e8e0d2",
-                boxShadow: "0 4px 20px rgba(0, 0, 0, 0.03)",
-                maxWidth: "580px",
-                margin: "2rem auto",
-              }}
-            >
-              <div
-                style={{
-                  width: "68px",
-                  height: "68px",
-                  borderRadius: "50%",
-                  background: "rgba(18, 78, 44, 0.08)",
-                  color: "#124e2c",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  margin: "0 auto 1.25rem",
-                  fontSize: "2rem",
-                }}
-              >
-                🪔
-              </div>
-              <h3
-                style={{
-                  fontSize: "1.35rem",
-                  color: "#09331d",
-                  fontWeight: "700",
-                  marginBottom: "0.5rem",
-                }}
-              >
-                No products available yet. Please check back soon.
-              </h3>
-              <p
-                style={{
-                  color: "#57655d",
-                  fontSize: "0.95rem",
-                  lineHeight: "1.6",
-                  maxWidth: "420px",
-                  margin: "0 auto",
-                }}
-              >
-                We are currently preparing fresh batches of authentic wood-pressed oils.
-                Please check back shortly or reach out to us directly on WhatsApp.
-              </p>
+          {/* Search Result or Sort Controls Bar */}
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              marginBottom: "1.75rem",
+              flexWrap: "wrap",
+              gap: "1rem",
+            }}
+          >
+            <div style={{ fontSize: "0.92rem", color: "#57655d" }}>
+              Displaying <strong>{visibleOilDefs.length}</strong> {visibleOilDefs.length === 1 ? "oil category" : "oil categories"}
+              {searchQuery && (
+                <span>
+                  {" "}matching "<strong>{searchQuery}</strong>"
+                </span>
+              )}
             </div>
-          ) : sortedProducts.length === 0 ? (
+
+            {/* Sorting Dropdown (when configured products exist) */}
+            {sortedProducts.length > 0 && (
+              <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                <SlidersHorizontal size={15} color="#8c6819" />
+                <label htmlFor="sort-select" style={{ fontSize: "0.85rem", fontWeight: "600", color: "#1f2923" }}>
+                  Sort By:
+                </label>
+                <select
+                  id="sort-select"
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value)}
+                  style={{
+                    padding: "0.4rem 0.85rem",
+                    borderRadius: "9999px",
+                    border: "1px solid #e8e0d2",
+                    background: "#ffffff",
+                    fontSize: "0.85rem",
+                    color: "#1f2923",
+                    outline: "none",
+                  }}
+                >
+                  <option value="default">Default Order</option>
+                  <option value="price-low">Price: Low to High</option>
+                  <option value="price-high">Price: High to Low</option>
+                </select>
+              </div>
+            )}
+          </div>
+
+          {/* Products Grid: Render each permitted oil (actual product if configured, or unavailable notice) */}
+          {visibleOilDefs.length === 0 ? (
             <div
               style={{
                 textAlign: "center",
-                padding: "4rem 1rem",
+                padding: "4rem 1.5rem",
                 background: "#ffffff",
                 borderRadius: "16px",
                 border: "1px solid #e8e0d2",
+                maxWidth: "600px",
+                margin: "0 auto",
               }}
             >
               <div
@@ -237,11 +175,11 @@ const ShopMain = () => {
               >
                 <Search size={28} />
               </div>
-              <h3 style={{ fontSize: "1.25rem", marginBottom: "0.5rem" }}>
+              <h3 style={{ fontSize: "1.25rem", marginBottom: "0.5rem", color: "#09331d" }}>
                 No oils found matching your search
               </h3>
-              <p style={{ color: "#57655d", fontSize: "0.9rem", marginBottom: "1.25rem" }}>
-                Try adjusting your search terms or view all products.
+              <p style={{ color: "#57655d", fontSize: "0.9rem", marginBottom: "1.5rem", lineHeight: "1.6" }}>
+                We specialize exclusively in three pure edible cooking oils: <strong>Coconut Oil (தேங்காய் எண்ணெய்)</strong>, <strong>Sesame Oil (நல்லெண்ணெய்)</strong>, and <strong>Groundnut Oil (கடலை எண்ணெய்)</strong>.
               </p>
               <button
                 type="button"
@@ -251,14 +189,26 @@ const ShopMain = () => {
                   setSelectedCategory("all");
                 }}
               >
-                View All Traditional Oils
+                View Our Three Pure Oils
               </button>
             </div>
           ) : (
             <div className="product-grid">
-              {sortedProducts.map((product) => (
-                <ProductCard key={product.id} product={product} />
-              ))}
+              {visibleOilDefs.map((oilDef) => {
+                // Check if the shop owner has configured real products for this oil
+                const matchingProducts = sortedProducts.filter(
+                  (p) => p.customerOilId === oilDef.id
+                );
+
+                if (matchingProducts.length > 0) {
+                  return matchingProducts.map((prod) => (
+                    <ProductCard key={prod.id} product={prod} />
+                  ));
+                }
+
+                // If no product is configured in the database, show clean unavailable card (never invent fake prices or stock)
+                return <UnavailableOilCard key={oilDef.id} oilDefinition={oilDef} />;
+              })}
             </div>
           )}
         </div>
@@ -271,12 +221,12 @@ const ShopMain = () => {
       <a
         href={`https://wa.me/${shopSettings.whatsappNumber}?text=Hello%20${encodeURIComponent(
           shopSettings.shopName
-        )}%2C%20I%20would%20like%20to%20place%20an%20order%20for%20cold%20pressed%20oils.`}
+        )}%2C%20I%20would%20like%20to%20place%20an%20order%20for%20pure%20edible%20cooking%20oils.`}
         target="_blank"
         rel="noopener noreferrer"
         className="floating-wa-btn"
-        title="Direct WhatsApp with Oil Mill"
-        aria-label="Direct WhatsApp with Oil Mill"
+        title="Direct WhatsApp with Oil Shop"
+        aria-label="Direct WhatsApp with Oil Shop"
       >
         <MessageCircle size={28} />
       </a>

@@ -1,17 +1,14 @@
 import React from "react";
 import { useShop } from "../context/ShopContext";
+import { getCustomerCategories } from "../utils/customerOilFilter";
 import {
   Droplets,
   Nut,
   Sparkles,
   Palmtree,
-  Flower2,
-  Sun,
-  Flame,
-  LayoutGrid,
 } from "lucide-react";
 
-// Icon mapping helper
+// Icon mapping helper for the 3 permitted oils
 const getCategoryIcon = (iconName) => {
   switch (iconName) {
     case "Nut":
@@ -20,12 +17,6 @@ const getCategoryIcon = (iconName) => {
       return <Sparkles size={16} />;
     case "Palmtree":
       return <Palmtree size={16} />;
-    case "Flower2":
-      return <Flower2 size={16} />;
-    case "Sun":
-      return <Sun size={16} />;
-    case "Flame":
-      return <Flame size={16} />;
     case "Droplets":
     default:
       return <Droplets size={16} />;
@@ -33,24 +24,12 @@ const getCategoryIcon = (iconName) => {
 };
 
 export const CategoryTabs = () => {
-  const { categories, selectedCategory, setSelectedCategory, products } = useShop();
-
-  const getProductCount = (catId) => {
-    if (catId === "all") return products.length;
-    return products.filter(
-      (p) =>
-        p.category === catId ||
-        p.name?.toLowerCase().includes(catId) ||
-        p.regionalName?.toLowerCase().includes(catId) ||
-        p.oilType?.toLowerCase().includes(catId) ||
-        p.description?.toLowerCase().includes(catId)
-    ).length;
-  };
+  const { selectedCategory, setSelectedCategory, products } = useShop();
+  const customerTabs = getCustomerCategories(products);
 
   return (
     <div className="category-nav-wrapper">
-      {categories.map((cat) => {
-        const count = getProductCount(cat.id);
+      {customerTabs.map((cat) => {
         const isActive = selectedCategory === cat.id;
 
         return (
@@ -65,7 +44,7 @@ export const CategoryTabs = () => {
             {cat.regionalName && (
               <span style={{ fontSize: "0.78rem", opacity: 0.85 }}>({cat.regionalName})</span>
             )}
-            <span className="badge-pill">{count}</span>
+            <span className="badge-pill">{cat.count}</span>
           </button>
         );
       })}

@@ -25,6 +25,7 @@ import {
   syncMigrationApi,
 } from "../utils/api";
 import { processProductImageFile } from "../utils/imageHandler";
+import { identifyPermittedOilType } from "../utils/customerOilFilter";
 
 const ShopContext = createContext();
 
@@ -107,7 +108,10 @@ export const ShopProvider = ({ children }) => {
       if (saved) {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed)) {
-          return parsed.filter((item) => !DEMO_PRODUCT_IDS.includes(item.productId));
+          return parsed.filter((item) => {
+            if (DEMO_PRODUCT_IDS.includes(item.productId)) return false;
+            return identifyPermittedOilType(item) !== null;
+          });
         }
       }
       return [];
@@ -608,6 +612,13 @@ export const ShopProvider = ({ children }) => {
   // Cart Management
   // -------------------------------------------------------------
   const addToCart = (product, selectedVariant, quantity = 1) => {
+    // Only allow Coconut, Sesame, and Groundnut oils in public cart
+    const permittedOil = identifyPermittedOilType(product);
+    if (!permittedOil) {
+      showNotification("Only Coconut, Sesame, and Groundnut oils are available for ordering.", "error");
+      return;
+    }
+
     const variant = selectedVariant || (product.variants && product.variants[0]) || {
       id: "default",
       size: "1 Litre",

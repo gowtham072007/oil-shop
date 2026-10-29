@@ -11,8 +11,8 @@ export const TrustSection = () => {
               <Award size={22} />
             </div>
             <div className="trust-info">
-              <h4>Vaagai Mara Chekku</h4>
-              <p>Traditional wood pestle rotates slowly under 40°C to preserve vital nutrients.</p>
+              <h4>100% Pure & Natural</h4>
+              <p>Natural edible oil extracted from premium whole coconut, sesame, and groundnut seeds.</p>
             </div>
           </div>
 
@@ -21,8 +21,8 @@ export const TrustSection = () => {
               <ShieldCheck size={22} />
             </div>
             <div className="trust-info">
-              <h4>100% Unrefined & Pure</h4>
-              <p>Naturally settled through cotton muslin cloth. Zero chemical bleaching or hexane.</p>
+              <h4>Unrefined & Unadulterated</h4>
+              <p>Naturally settled and filtered. Zero chemical bleaching, zero artificial preservatives.</p>
             </div>
           </div>
 
@@ -31,8 +31,8 @@ export const TrustSection = () => {
               <Heart size={22} />
             </div>
             <div className="trust-info">
-              <h4>Rich in Antioxidants</h4>
-              <p>Natural Vitamin E, plant sterols, and authentic nutty aroma preserved intact.</p>
+              <h4>Rich in Nutrients</h4>
+              <p>Natural Vitamin E, plant sterols, and authentic culinary aroma preserved for healthy living.</p>
             </div>
           </div>
 
@@ -42,7 +42,7 @@ export const TrustSection = () => {
             </div>
             <div className="trust-info">
               <h4>WhatsApp Billing & Delivery</h4>
-              <p>Instant itemized WhatsApp invoice generation with prompt door delivery.</p>
+              <p>Instant itemized WhatsApp invoice generation with reliable doorstep delivery.</p>
             </div>
           </div>
         </div>

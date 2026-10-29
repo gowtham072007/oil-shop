@@ -1,10 +1,11 @@
 import React, { useState } from "react";
 import { useShop } from "../context/ShopContext";
 import { formatINR } from "../utils/billGenerator";
-import { Plus, Minus, ShoppingBag, Eye, Check, AlertCircle } from "lucide-react";
+import { sanitizeCustomerText } from "../utils/customerOilFilter";
+import { Plus, Minus, ShoppingBag, Check, MessageCircle } from "lucide-react";
 
 export const ProductCard = ({ product }) => {
-  const { addToCart, setQuickViewProduct } = useShop();
+  const { addToCart, setQuickViewProduct, shopSettings } = useShop();
 
   // Selected Pack Size / Variant
   const variants = product.variants && product.variants.length > 0
@@ -42,13 +43,24 @@ export const ProductCard = ({ product }) => {
     }, 1200);
   };
 
+  const lineTotal = (selectedVariant.price || 0) * quantity;
+  const productWaText = encodeURIComponent(
+    `Hello ${shopSettings.shopName}, I would like to order:\n` +
+    `• Product: ${product.name} (${product.regionalName || ""})\n` +
+    `• Pack Size: ${selectedVariant.size}\n` +
+    `• Quantity: ${quantity}\n` +
+    `• Price: ₹${formatINR(lineTotal)}\n\n` +
+    `Please confirm availability and delivery details.`
+  );
+  const productWaUrl = `https://wa.me/${shopSettings.whatsappNumber}?text=${productWaText}`;
+
   return (
     <div className="product-card" id={`product-${product.id}`}>
       {/* Product Image Area */}
       <div
         className="product-image-wrap"
         onClick={() => setQuickViewProduct(product)}
-        title="Click to view detailed extraction & nutritional facts"
+        title="Click to view detailed product information"
       >
         <img src={product.image} alt={product.name} loading="lazy" />
 
@@ -74,7 +86,7 @@ export const ProductCard = ({ product }) => {
 
       {/* Body Details */}
       <div className="product-card-body">
-        <div className="product-brand">{product.brand || "Traditional Mill"}</div>
+        <div className="product-brand">{product.brand || shopSettings.shopName || "Poomani Oils"}</div>
 
         <h3
           className="product-title"
@@ -88,10 +100,10 @@ export const ProductCard = ({ product }) => {
         )}
 
         <div className="product-oil-type">
-          <span>🌿 {product.oilType}</span>
+          <span>🌿 100% Pure Edible Oil</span>
         </div>
 
-        <p className="product-desc-excerpt">{product.description}</p>
+        <p className="product-desc-excerpt">{sanitizeCustomerText(product.description)}</p>
 
         {/* Pack Size Selector */}
         <div className="pack-size-selector-wrap">
@@ -117,8 +129,8 @@ export const ProductCard = ({ product }) => {
           </div>
         </div>
 
-        {/* Price & Action Row */}
-        <div className="card-price-action-row">
+        {/* Price & Quantity Stepper Row */}
+        <div className="card-price-action-row" style={{ alignItems: "center", marginBottom: "0.5rem" }}>
           <div className="product-price-box">
             <span className="product-price-value">₹{formatINR(selectedVariant.price)}</span>
             <span className="product-price-unit">
@@ -126,50 +138,70 @@ export const ProductCard = ({ product }) => {
             </span>
           </div>
 
-          {/* Stepper + Add to Cart */}
-          <div className="card-controls-group">
-            <div className="qty-stepper">
-              <button
-                type="button"
-                onClick={handleDecrement}
-                disabled={quantity <= 1 || isOutOfStock}
-                aria-label="Decrease quantity"
-              >
-                <Minus size={14} />
-              </button>
-              <span className="qty-val">{quantity}</span>
-              <button
-                type="button"
-                onClick={handleIncrement}
-                disabled={quantity >= currentStock || isOutOfStock}
-                aria-label="Increase quantity"
-              >
-                <Plus size={14} />
-              </button>
-            </div>
-
+          {/* Stepper */}
+          <div className="qty-stepper">
             <button
-              id={`add-to-cart-${product.id}`}
               type="button"
-              className="btn-add-cart"
-              onClick={handleAddToCart}
-              disabled={isOutOfStock}
+              onClick={handleDecrement}
+              disabled={quantity <= 1 || isOutOfStock}
+              aria-label="Decrease quantity"
             >
-              {isAddedAnim ? (
-                <>
-                  <Check size={16} />
-                  Added!
-                </>
-              ) : isOutOfStock ? (
-                "Sold Out"
-              ) : (
-                <>
-                  <ShoppingBag size={15} />
-                  Add to Cart
-                </>
-              )}
+              <Minus size={14} />
+            </button>
+            <span className="qty-val">{quantity}</span>
+            <button
+              type="button"
+              onClick={handleIncrement}
+              disabled={quantity >= currentStock || isOutOfStock}
+              aria-label="Increase quantity"
+            >
+              <Plus size={14} />
             </button>
           </div>
+        </div>
+
+        {/* Dual Actions: Add to Cart + Order on WhatsApp */}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.5rem", marginTop: "0.6rem" }}>
+          <button
+            id={`add-to-cart-${product.id}`}
+            type="button"
+            className="btn-add-cart"
+            onClick={handleAddToCart}
+            disabled={isOutOfStock}
+            style={{ width: "100%", justifyContent: "center", padding: "0.6rem 0.5rem", fontSize: "0.84rem" }}
+          >
+            {isAddedAnim ? (
+              <>
+                <Check size={15} />
+                Added!
+              </>
+            ) : isOutOfStock ? (
+              "Sold Out"
+            ) : (
+              <>
+                <ShoppingBag size={15} />
+                Add to Cart
+              </>
+            )}
+          </button>
+
+          <a
+            href={productWaUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="btn-whatsapp-pill"
+            style={{
+              width: "100%",
+              justifyContent: "center",
+              padding: "0.6rem 0.5rem",
+              fontSize: "0.84rem",
+              whiteSpace: "nowrap",
+            }}
+            title={`Order ${product.name} on WhatsApp`}
+          >
+            <MessageCircle size={15} />
+            <span>WhatsApp</span>
+          </a>
         </div>
       </div>
     </div>

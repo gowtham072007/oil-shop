@@ -131,13 +131,13 @@ export const CartDrawer = () => {
                 <ShoppingBag size={40} />
               </div>
               <h4>Your cart is empty</h4>
-              <p>Explore our fresh wood-churned oils and add pure health to your home.</p>
+              <p>Explore our pure Coconut, Sesame, and Groundnut cooking oils.</p>
               <button
                 type="button"
                 className="btn-primary-glow"
                 onClick={() => setIsCartOpen(false)}
               >
-                Browse Traditional Oils
+                Browse Pure Cooking Oils
               </button>
             </div>
           ) : (

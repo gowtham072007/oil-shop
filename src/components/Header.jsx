@@ -24,9 +24,9 @@ export const Header = () => {
     <>
       {/* Top Announcement Bar */}
       <div className="top-announcement">
-        <span className="badge">Mara Chekku Purity</span>
+        <span className="badge">100% Pure & Natural</span>
         <span className="announcement-text">
-          Stone & Wood-Churned Cold-Pressed Oils • FSSAI #{shopSettings.fssaiNumber || "12421008000421"} • Free delivery on orders above ₹{shopSettings.freeDeliveryThreshold}
+          Pure Edible Cooking Oils • FSSAI #{shopSettings.fssaiNumber || "12421008000421"} • Free delivery on orders above ₹{shopSettings.freeDeliveryThreshold}
         </span>
       </div>
 
@@ -55,12 +55,8 @@ export const Header = () => {
                   )}
                 </h1>
                 <div className="tagline">
-                  <span className="tagline-en">{shopSettings.tagline}</span>
-                  {shopSettings.taglineTamil && (
-                    <span className="tagline-ta">
-                      {shopSettings.taglineTamil}
-                    </span>
-                  )}
+                  <span className="tagline-en">Pure Edible Cooking Oils</span>
+                  <span className="tagline-ta">தூய சமையல் எண்ணெய்</span>
                 </div>
               </div>
             </div>
@@ -71,7 +67,7 @@ export const Header = () => {
               <input
                 id="search-input"
                 type="text"
-                placeholder="Search groundnut, sesame, coconut, pooja oil..."
+                placeholder="Search Coconut, Sesame, or Groundnut Oil..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
@@ -112,7 +108,7 @@ export const Header = () => {
               <a
                 href={`https://wa.me/${shopSettings.whatsappNumber}?text=Hello%20${encodeURIComponent(
                   shopSettings.shopName
-                )}%2C%20I%20have%20an%20inquiry%20about%20your%20cold%20pressed%20oils.`}
+                )}%2C%20I%20have%20an%20inquiry%20about%20your%20pure%20edible%20cooking%20oils.`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="btn-whatsapp-pill d-none-sm"
@@ -157,7 +153,7 @@ export const Header = () => {
                 <Search size={18} className="mobile-search-icon" />
                 <input
                   type="text"
-                  placeholder="Search groundnut, sesame, coconut..."
+                  placeholder="Search Coconut, Sesame, or Groundnut Oil..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   autoFocus

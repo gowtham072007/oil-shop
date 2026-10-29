@@ -1,9 +1,9 @@
 import React from "react";
 import { useShop } from "../context/ShopContext";
-import { Sparkles, Check, ArrowRight, ShieldCheck, HeartHandshake } from "lucide-react";
+import { Sparkles, Check, ArrowRight } from "lucide-react";
 
 export const HeroBanner = () => {
-  const { shopSettings, setIsCartOpen } = useShop();
+  const { shopSettings } = useShop();
 
   const scrollToCatalog = () => {
     const el = document.getElementById("oil-catalog-section");
@@ -20,18 +20,19 @@ export const HeroBanner = () => {
           <div className="hero-content">
             <div className="hero-badge-tag">
               <Sparkles size={14} />
-              100% Traditional Vaagai Wood Churned (Mara Chekku)
+              100% Pure & Natural Edible Oils • தூய சமையல் எண்ணெய்
             </div>
 
             <h2 className="hero-title">
-              Purest Cold-Pressed Oils,{" "}
+              Pure Edible Cooking Oils,{" "}
               <span className="gold-highlight">Direct From Mill</span> To Your Kitchen
             </h2>
 
             <p className="hero-description">
-              Crushed at low RPM in traditional wooden pestles below 40°C.
-              Retains natural antioxidants, authentic rural flavor, golden clarity,
-              and rich vitamins. Zero chemical refining, zero mineral oils, zero preservatives.
+              Naturally extracted edible cooking oils for wholesome everyday family meals.
+              Enjoy the authentic natural aroma, golden clarity, and natural nutrients
+              of pure Coconut Oil, Sesame Oil, and Groundnut Oil.
+              Zero chemical refining, zero artificial additives, zero preservatives.
             </p>
 
             {/* USPs Row */}
@@ -40,19 +41,19 @@ export const HeroBanner = () => {
                 <span className="check-icon">
                   <Check size={14} />
                 </span>
-                <span>Traditional Wood Chekku</span>
+                <span>100% Pure & Unrefined</span>
               </div>
               <div className="hero-usp-item">
                 <span className="check-icon">
                   <Check size={14} />
                 </span>
-                <span>Unbleached & Unrefined</span>
+                <span>Zero Chemical Additives</span>
               </div>
               <div className="hero-usp-item">
                 <span className="check-icon">
                   <Check size={14} />
                 </span>
-                <span>FSSAI Certified Purity</span>
+                <span>FSSAI Certified Quality</span>
               </div>
               <div className="hero-usp-item">
                 <span className="check-icon">
@@ -69,19 +70,19 @@ export const HeroBanner = () => {
                 className="btn-primary-glow"
                 onClick={scrollToCatalog}
               >
-                Browse Fresh Oils
+                Browse Our 3 Pure Oils
                 <ArrowRight size={18} />
               </button>
 
               <a
                 href={`https://wa.me/${shopSettings.whatsappNumber}?text=Hello%20${encodeURIComponent(
                   shopSettings.shopName
-                )}%2C%20I%20would%20like%20to%20order%20cold%20pressed%20oils.`}
+                )}%2C%20I%20would%20like%20to%20order%20pure%20edible%20cooking%20oils.`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="btn-secondary-outline"
               >
-                <span>💬 Direct Mill WhatsApp</span>
+                <span>💬 Order on WhatsApp</span>
               </a>
             </div>
           </div>
@@ -90,13 +91,13 @@ export const HeroBanner = () => {
           <div className="hero-visual-card">
             <img
               src="/images/hero_banner.jpg"
-              alt="Traditional Indian Cold Pressed Oils in Glass Bottles and Brass Urns"
+              alt="Pure Natural Edible Cooking Oils in Traditional Bottles"
               loading="eager"
             />
             <div className="hero-visual-overlay">
-              <div className="caption-title">Heritage Stone & Wood Cold Press</div>
+              <div className="caption-title">Three Pure Edible Oils</div>
               <div className="caption-sub">
-                Groundnut • Sesame (Gingelly) • Virgin Coconut • Mustard • Pooja Deepam
+                Coconut Oil (தேங்காய் எண்ணெய்) • Sesame Oil (நல்லெண்ணெய்) • Groundnut Oil (கடலை எண்ணெய்)
               </div>
             </div>
           </div>

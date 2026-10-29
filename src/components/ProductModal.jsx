@@ -1,7 +1,8 @@
 import React, { useState } from "react";
 import { useShop } from "../context/ShopContext";
 import { formatINR } from "../utils/billGenerator";
-import { X, CheckCircle, ShoppingBag, ShieldCheck, Star } from "lucide-react";
+import { sanitizeCustomerText } from "../utils/customerOilFilter";
+import { X, CheckCircle, ShoppingBag, ShieldCheck, Plus, Minus } from "lucide-react";
 
 export const ProductModal = () => {
   const { quickViewProduct, setQuickViewProduct, addToCart } = useShop();
@@ -37,7 +38,7 @@ export const ProductModal = () => {
         <div className="cart-drawer-header">
           <h3>
             <ShieldCheck size={20} color="#e5b94c" />
-            Product Details & Extraction Process
+            Product Details & Quality Highlights
           </h3>
           <button
             type="button"
@@ -56,7 +57,7 @@ export const ProductModal = () => {
           </div>
 
           <div className="quick-view-content">
-            <div className="product-brand">{product.brand}</div>
+            <div className="product-brand">{product.brand || "Poomani Oils"}</div>
             <h2 style={{ fontSize: "1.5rem", marginBottom: "0.25rem", color: "#09331d" }}>
               {product.name}
             </h2>
@@ -67,11 +68,11 @@ export const ProductModal = () => {
             )}
 
             <div className="product-oil-type" style={{ marginBottom: "1rem" }}>
-              <span>🍃 {product.oilType}</span>
+              <span>🌿 100% Pure Edible Oil</span>
             </div>
 
             <p style={{ fontSize: "0.92rem", color: "#57655d", marginBottom: "1.25rem", lineHeight: "1.55" }}>
-              {product.description}
+              {sanitizeCustomerText(product.description)}
             </p>
 
             {/* Benefits */}
@@ -137,24 +138,45 @@ export const ProductModal = () => {
                 </div>
               </div>
 
-              <button
-                type="button"
-                className="btn-add-cart"
-                onClick={handleAdd}
-                style={{ padding: "0.75rem 1.4rem", fontSize: "0.95rem" }}
-              >
-                {added ? (
-                  <>
-                    <CheckCircle size={18} />
-                    Added to Cart!
-                  </>
-                ) : (
-                  <>
-                    <ShoppingBag size={18} />
-                    Add to Cart
-                  </>
-                )}
-              </button>
+              <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+                <div className="qty-stepper" style={{ height: "42px" }}>
+                  <button
+                    type="button"
+                    onClick={() => setQty((q) => Math.max(1, q - 1))}
+                    disabled={qty <= 1}
+                    aria-label="Decrease quantity"
+                  >
+                    <Minus size={14} />
+                  </button>
+                  <span className="qty-val">{qty}</span>
+                  <button
+                    type="button"
+                    onClick={() => setQty((q) => q + 1)}
+                    aria-label="Increase quantity"
+                  >
+                    <Plus size={14} />
+                  </button>
+                </div>
+
+                <button
+                  type="button"
+                  className="btn-add-cart"
+                  onClick={handleAdd}
+                  style={{ padding: "0.75rem 1.4rem", fontSize: "0.95rem" }}
+                >
+                  {added ? (
+                    <>
+                      <CheckCircle size={18} />
+                      Added to Cart!
+                    </>
+                  ) : (
+                    <>
+                      <ShoppingBag size={18} />
+                      Add to Cart
+                    </>
+                  )}
+                </button>
+              </div>
             </div>
           </div>
         </div>
