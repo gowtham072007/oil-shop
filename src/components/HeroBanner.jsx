@@ -94,12 +94,6 @@ export const HeroBanner = () => {
               alt="Poomani Oils - Pure Coconut Oil, Sesame Oil, and Groundnut Oil"
               loading="eager"
             />
-            <div className="hero-visual-overlay">
-              <div className="caption-title">Three Pure Edible Oils</div>
-              <div className="caption-sub">
-                Coconut Oil (தேங்காய் எண்ணெய்) • Sesame Oil (நல்லெண்ணெய்) • Groundnut Oil (கடலை எண்ணெய்)
-              </div>
-            </div>
           </div>
         </div>
       </div>
