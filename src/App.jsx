@@ -18,7 +18,34 @@ import {
   Search,
   CheckCircle2,
   AlertCircle,
+  Palmtree,
+  Sparkles,
+  Nut,
 } from "lucide-react";
+
+const OIL_CATEGORY_SECTIONS = [
+  {
+    id: "coconut",
+    name: "Coconut Oil",
+    regionalName: "தேங்காய் எண்ணெய்",
+    description: "100% Pure edible coconut oil with authentic natural aroma, perfect for wholesome cooking, traditional recipes, and wellness.",
+    icon: Palmtree,
+  },
+  {
+    id: "sesame",
+    name: "Sesame Oil",
+    regionalName: "நல்லெண்ணெய்",
+    description: "Premium pure edible sesame (gingelly) oil offering authentic rich taste and golden aroma for traditional cooking and seasoning.",
+    icon: Sparkles,
+  },
+  {
+    id: "groundnut",
+    name: "Groundnut Oil",
+    regionalName: "கடலை எண்ணெய்",
+    description: "Pure edible groundnut (peanut) oil with a high smoke point, ideal for everyday deep frying, sauteing, and flavorful family meals.",
+    icon: Nut,
+  },
+];
 
 // Main Shop Content Component
 const ShopMain = () => {
@@ -194,10 +221,48 @@ const ShopMain = () => {
               </div>
             </div>
           ) : (
-            <div className="product-grid">
-              {sortedProducts.map((prod) => (
-                <ProductCard key={prod.id} product={prod} />
-              ))}
+            <div className="catalog-category-sections">
+              {OIL_CATEGORY_SECTIONS.filter((cat) => {
+                if (selectedCategory !== "all" && selectedCategory !== cat.id) return false;
+                return sortedProducts.some((p) => p.customerOilId === cat.id);
+              }).map((cat) => {
+                const catProducts = sortedProducts.filter((p) => p.customerOilId === cat.id);
+                const IconComp = cat.icon;
+
+                return (
+                  <section
+                    key={cat.id}
+                    className="category-products-section"
+                    id={`section-${cat.id}`}
+                  >
+                    {/* Category Section Header in English & Tamil */}
+                    <div className="category-section-header">
+                      <div className="category-header-info">
+                        <span className="category-icon-bubble">
+                          <IconComp size={22} />
+                        </span>
+                        <div>
+                          <h3 className="category-section-title">
+                            {cat.name}{" "}
+                            <span className="category-tamil-title">/ {cat.regionalName}</span>
+                          </h3>
+                          <p className="category-section-desc">{cat.description}</p>
+                        </div>
+                      </div>
+                      <span className="category-count-badge">
+                        {catProducts.length} {catProducts.length === 1 ? "Product" : "Products"}
+                      </span>
+                    </div>
+
+                    {/* Products Grid under this category */}
+                    <div className="product-grid">
+                      {catProducts.map((prod) => (
+                        <ProductCard key={prod.id} product={prod} />
+                      ))}
+                    </div>
+                  </section>
+                );
+              })}
             </div>
           )}
         </div>

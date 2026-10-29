@@ -123,8 +123,8 @@ export function formatCustomerProduct(product) {
   return {
     ...product,
     customerOilId: oilType,
-    name: def.name,
-    regionalName: def.regionalName,
+    name: product.name ? sanitizeCustomerText(product.name) : def.name,
+    regionalName: product.regionalName ? sanitizeCustomerText(product.regionalName) : def.regionalName,
     oilType: "100% Pure Edible Oil",
     description: sanitizeCustomerText(product.description) || def.description,
     image: product.image || def.defaultImage,
@@ -184,8 +184,8 @@ export function getCustomerCategories(products = []) {
   return [
     {
       id: "all",
-      name: "All Three Oils",
-      regionalName: "அனைத்து 3 எண்ணெய்",
+      name: "All Oils",
+      regionalName: "அனைத்து எண்ணெய்",
       icon: "Droplets",
       count: getCount("all"),
     },

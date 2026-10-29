@@ -4,6 +4,7 @@ import {
   DEFAULT_SHOP_SETTINGS,
   DEFAULT_COUPONS,
   DEMO_PRODUCT_IDS,
+  DEFAULT_8_PRODUCTS,
 } from "../data/defaultData";
 import {
   calculateOrderTotals,
@@ -44,13 +45,14 @@ export const ShopProvider = ({ children }) => {
       const saved = localStorage.getItem("oil_shop_products");
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed)) {
-          return parsed.filter((p) => !p.isSample && !DEMO_PRODUCT_IDS.includes(p.id));
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          const valid = parsed.filter((p) => !p.isSample && !DEMO_PRODUCT_IDS.includes(p.id));
+          if (valid.length > 0) return valid;
         }
       }
-      return [];
+      return DEFAULT_8_PRODUCTS;
     } catch {
-      return [];
+      return DEFAULT_8_PRODUCTS;
     }
   });
 
@@ -184,8 +186,11 @@ export const ShopProvider = ({ children }) => {
     if (!silent) setIsLoadingProducts(true);
     try {
       const serverProducts = await fetchAllProducts();
-      setProducts(serverProducts);
-      localStorage.setItem("oil_shop_products", JSON.stringify(serverProducts));
+      const finalProducts = Array.isArray(serverProducts) && serverProducts.length > 0
+        ? serverProducts
+        : DEFAULT_8_PRODUCTS;
+      setProducts(finalProducts);
+      localStorage.setItem("oil_shop_products", JSON.stringify(finalProducts));
       setSyncStatus("connected");
 
       // Auto-sync any queued local changes that were saved while server was sleeping/suspended

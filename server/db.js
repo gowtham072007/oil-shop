@@ -132,6 +132,9 @@ export async function initDb() {
   if (!fs.existsSync(jsonStorePath)) {
     writeJsonStore({ products: [], settings: {} });
   }
+
+  // Seed default 8 products if they do not exist
+  await seedDefaultProducts();
 }
 
 /**
@@ -491,4 +494,178 @@ export function getDatabaseDiagnostics() {
     productsCount: store.products.length,
     storageFile: jsonStorePath,
   };
+}
+
+export const DEFAULT_8_PRODUCTS = [
+  // Coconut Oil — தேங்காய் எண்ணெய்
+  {
+    id: 'prod-coconut-200ml',
+    name: 'Coconut Oil – 200 ml',
+    regional_name: 'தேங்காய் எண்ணெய் – 200 மி.லி',
+    regionalName: 'தேங்காய் எண்ணெய் – 200 மி.லி',
+    brand: 'Poomani Oils',
+    oil_type: '100% Pure Edible Oil',
+    oilType: '100% Pure Edible Oil',
+    category: 'coconut',
+    description: '100% pure edible coconut oil with authentic natural aroma, perfect for daily cooking, traditional recipes, and dietary wellness.',
+    image: '/images/coconut_oil.jpg',
+    image_file_name: 'coconut_oil.jpg',
+    imageFileName: 'coconut_oil.jpg',
+    price: 90,
+    inStock: true,
+    variants: [
+      { id: 'v-coconut-200ml', size: '200 ml', price: 90, stock: 50, unit: 'Bottle', sort_order: 1, sortOrder: 1 },
+    ],
+  },
+  {
+    id: 'prod-coconut-500ml',
+    name: 'Coconut Oil – 500 ml',
+    regional_name: 'தேங்காய் எண்ணெய் – 500 மி.லி',
+    regionalName: 'தேங்காய் எண்ணெய் – 500 மி.லி',
+    brand: 'Poomani Oils',
+    oil_type: '100% Pure Edible Oil',
+    oilType: '100% Pure Edible Oil',
+    category: 'coconut',
+    description: '100% pure edible coconut oil with authentic natural aroma, perfect for daily cooking, traditional recipes, and dietary wellness.',
+    image: '/images/coconut_oil.jpg',
+    image_file_name: 'coconut_oil.jpg',
+    imageFileName: 'coconut_oil.jpg',
+    price: 190,
+    inStock: true,
+    variants: [
+      { id: 'v-coconut-500ml', size: '500 ml', price: 190, stock: 50, unit: 'Bottle', sort_order: 2, sortOrder: 2 },
+    ],
+  },
+  {
+    id: 'prod-coconut-1l',
+    name: 'Coconut Oil – 1 Litre',
+    regional_name: 'தேங்காய் எண்ணெய் – 1 லிட்டர்',
+    regionalName: 'தேங்காய் எண்ணெய் – 1 லிட்டர்',
+    brand: 'Poomani Oils',
+    oil_type: '100% Pure Edible Oil',
+    oilType: '100% Pure Edible Oil',
+    category: 'coconut',
+    description: '100% pure edible coconut oil with authentic natural aroma, perfect for daily cooking, traditional recipes, and dietary wellness.',
+    image: '/images/coconut_oil.jpg',
+    image_file_name: 'coconut_oil.jpg',
+    imageFileName: 'coconut_oil.jpg',
+    price: 360,
+    inStock: true,
+    variants: [
+      { id: 'v-coconut-1l', size: '1 Litre', price: 360, stock: 50, unit: 'Bottle', sort_order: 3, sortOrder: 3 },
+    ],
+  },
+
+  // Sesame Oil — நல்லெண்ணெய்
+  {
+    id: 'prod-sesame-200ml',
+    name: 'Sesame Oil – 200 ml',
+    regional_name: 'நல்லெண்ணெய் – 200 மி.லி',
+    regionalName: 'நல்லெண்ணெய் – 200 மி.லி',
+    brand: 'Poomani Oils',
+    oil_type: '100% Pure Edible Oil',
+    oilType: '100% Pure Edible Oil',
+    category: 'sesame',
+    description: 'Premium pure edible sesame oil offering authentic rich taste and golden aroma for traditional cooking and seasoning.',
+    image: '/images/sesame_oil.jpg',
+    image_file_name: 'sesame_oil.jpg',
+    imageFileName: 'sesame_oil.jpg',
+    price: 110,
+    inStock: true,
+    variants: [
+      { id: 'v-sesame-200ml', size: '200 ml', price: 110, stock: 40, unit: 'Bottle', sort_order: 1, sortOrder: 1 },
+    ],
+  },
+  {
+    id: 'prod-sesame-500ml',
+    name: 'Sesame Oil – 500 ml',
+    regional_name: 'நல்லெண்ணெய் – 500 மி.லி',
+    regionalName: 'நல்லெண்ணெய் – 500 மி.லி',
+    brand: 'Poomani Oils',
+    oil_type: '100% Pure Edible Oil',
+    oilType: '100% Pure Edible Oil',
+    category: 'sesame',
+    description: 'Premium pure edible sesame oil offering authentic rich taste and golden aroma for traditional cooking and seasoning.',
+    image: '/images/sesame_oil.jpg',
+    image_file_name: 'sesame_oil.jpg',
+    imageFileName: 'sesame_oil.jpg',
+    price: 230,
+    inStock: true,
+    variants: [
+      { id: 'v-sesame-500ml', size: '500 ml', price: 230, stock: 40, unit: 'Bottle', sort_order: 2, sortOrder: 2 },
+    ],
+  },
+  {
+    id: 'prod-sesame-1l',
+    name: 'Sesame Oil – 1 Litre',
+    regional_name: 'நல்லெண்ணெய் – 1 லிட்டர்',
+    regionalName: 'நல்லெண்ணெய் – 1 லிட்டர்',
+    brand: 'Poomani Oils',
+    oil_type: '100% Pure Edible Oil',
+    oilType: '100% Pure Edible Oil',
+    category: 'sesame',
+    description: 'Premium pure edible sesame oil offering authentic rich taste and golden aroma for traditional cooking and seasoning.',
+    image: '/images/sesame_oil.jpg',
+    image_file_name: 'sesame_oil.jpg',
+    imageFileName: 'sesame_oil.jpg',
+    price: 440,
+    inStock: true,
+    variants: [
+      { id: 'v-sesame-1l', size: '1 Litre', price: 440, stock: 40, unit: 'Bottle', sort_order: 3, sortOrder: 3 },
+    ],
+  },
+
+  // Groundnut Oil — கடலை எண்ணெய்
+  {
+    id: 'prod-groundnut-500ml',
+    name: 'Groundnut Oil – 500 ml',
+    regional_name: 'கடலை எண்ணெய் – 500 மி.லி',
+    regionalName: 'கடலை எண்ணெய் – 500 மி.லி',
+    brand: 'Poomani Oils',
+    oil_type: '100% Pure Edible Oil',
+    oilType: '100% Pure Edible Oil',
+    category: 'groundnut',
+    description: 'Pure edible groundnut oil with a high smoke point, ideal for everyday deep frying, sauteing, and flavorful family meals.',
+    image: '/images/groundnut_oil.jpg',
+    image_file_name: 'groundnut_oil.jpg',
+    imageFileName: 'groundnut_oil.jpg',
+    price: 170,
+    inStock: true,
+    variants: [
+      { id: 'v-groundnut-500ml', size: '500 ml', price: 170, stock: 45, unit: 'Bottle', sort_order: 1, sortOrder: 1 },
+    ],
+  },
+  {
+    id: 'prod-groundnut-1l',
+    name: 'Groundnut Oil – 1 Litre',
+    regional_name: 'கடலை எண்ணெய் – 1 லிட்டர்',
+    regionalName: 'கடலை எண்ணெய் – 1 லிட்டர்',
+    brand: 'Poomani Oils',
+    oil_type: '100% Pure Edible Oil',
+    oilType: '100% Pure Edible Oil',
+    category: 'groundnut',
+    description: 'Pure edible groundnut oil with a high smoke point, ideal for everyday deep frying, sauteing, and flavorful family meals.',
+    image: '/images/groundnut_oil.jpg',
+    image_file_name: 'groundnut_oil.jpg',
+    imageFileName: 'groundnut_oil.jpg',
+    price: 320,
+    inStock: true,
+    variants: [
+      { id: 'v-groundnut-1l', size: '1 Litre', price: 320, stock: 60, unit: 'Bottle', sort_order: 2, sortOrder: 2 },
+    ],
+  },
+];
+
+export async function seedDefaultProducts() {
+  for (const defProd of DEFAULT_8_PRODUCTS) {
+    try {
+      const existing = await getProductById(defProd.id);
+      if (!existing) {
+        await createProduct(defProd);
+        console.log(`[Database] Seeded default product: ${defProd.name}`);
+      }
+    } catch (err) {
+      console.warn(`[Database] Could not seed product ${defProd.id}:`, err.message);
+    }
+  }
 }

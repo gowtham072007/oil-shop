@@ -12,9 +12,12 @@ export const ProductCard = ({ product }) => {
     ? product.variants
     : [{ id: "v-default", size: "1 Litre", price: product.price || 300, stock: 10, unit: "Bottle" }];
 
-  const [selectedVariant, setSelectedVariant] = useState(variants[1] || variants[0]);
+  const [selectedVariant, setSelectedVariant] = useState(variants[0]);
   const [quantity, setQuantity] = useState(1);
   const [isAddedAnim, setIsAddedAnim] = useState(false);
+
+  // Extract display size (e.g., "200 ml", "500 ml", "1 Litre")
+  const displaySize = selectedVariant?.size || (product.name.match(/\b(200\s*ml|500\s*ml|1\s*Litre|1\s*L)\b/i)?.[0]) || "1 Litre";
 
   // Stock status logic
   const currentStock = selectedVariant.stock ?? 10;
@@ -67,7 +70,7 @@ export const ProductCard = ({ product }) => {
         {/* Top Badges */}
         <div className="card-top-badges">
           <div className="d-flex flex-column gap-1">
-            {product.featured && <span className="badge-tag">⭐ Best Seller</span>}
+            {product.featured && <span className="badge-tag">⭐ Popular</span>}
           </div>
 
           <span
@@ -81,6 +84,11 @@ export const ProductCard = ({ product }) => {
               ? `Only ${currentStock} left`
               : "In Stock"}
           </span>
+        </div>
+
+        {/* Prominent Bottle Quantity / Size Badge on Photo */}
+        <div className="photo-quantity-pill">
+          {displaySize}
         </div>
       </div>
 
@@ -99,42 +107,50 @@ export const ProductCard = ({ product }) => {
           <div className="product-regional-name">{product.regionalName}</div>
         )}
 
+        {/* Clear Quantity Highlight Tag */}
+        <div className="product-pack-size-highlight">
+          <span className="pack-label">Quantity / அளவு:</span>
+          <span className="pack-val">{displaySize}</span>
+        </div>
+
         <div className="product-oil-type">
           <span>🌿 100% Pure Edible Oil</span>
         </div>
 
         <p className="product-desc-excerpt">{sanitizeCustomerText(product.description)}</p>
 
-        {/* Pack Size Selector */}
-        <div className="pack-size-selector-wrap">
-          <div className="pack-size-label">Select Pack Size:</div>
-          <div className="pack-size-pills">
-            {variants.map((v) => {
-              const isSelected = selectedVariant.id === v.id;
-              return (
-                <button
-                  key={v.id}
-                  type="button"
-                  className={`size-pill-btn ${isSelected ? "active" : ""}`}
-                  onClick={() => {
-                    setSelectedVariant(v);
-                    setQuantity(1);
-                  }}
-                  title={`₹${v.price} / ${v.size}`}
-                >
-                  {v.size}
-                </button>
-              );
-            })}
+        {/* Pack Size Selector (when multiple variants exist) */}
+        {variants.length > 1 && (
+          <div className="pack-size-selector-wrap">
+            <div className="pack-size-label">Select Pack Size:</div>
+            <div className="pack-size-pills">
+              {variants.map((v) => {
+                const isSelected = selectedVariant.id === v.id;
+                return (
+                  <button
+                    key={v.id}
+                    type="button"
+                    className={`size-pill-btn ${isSelected ? "active" : ""}`}
+                    onClick={() => {
+                      setSelectedVariant(v);
+                      setQuantity(1);
+                    }}
+                    title={`₹${v.price} / ${v.size}`}
+                  >
+                    {v.size}
+                  </button>
+                );
+              })}
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Price & Quantity Stepper Row */}
         <div className="card-price-action-row" style={{ alignItems: "center", marginBottom: "0.5rem" }}>
           <div className="product-price-box">
             <span className="product-price-value">₹{formatINR(selectedVariant.price)}</span>
             <span className="product-price-unit">
-              per {selectedVariant.size} ({selectedVariant.unit || "Bottle"})
+              per {displaySize} ({selectedVariant.unit || "Bottle"})
             </span>
           </div>
 
