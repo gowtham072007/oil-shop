@@ -82,9 +82,18 @@ export const ShopProvider = ({ children }) => {
       const saved = localStorage.getItem("oil_shop_settings");
       if (saved) {
         const parsed = JSON.parse(saved);
+        const resolvedShopName = (!parsed.shopName || parsed.shopName === "Poomani Oils")
+          ? "Poomani Chekku Ennai"
+          : parsed.shopName;
+        const resolvedShopNameTamil = (!parsed.shopNameTamil || parsed.shopNameTamil === "பூமணி ஆயில்ஸ்")
+          ? "பூமணி செக்கு எண்ணெய்"
+          : parsed.shopNameTamil;
+
         return {
           ...DEFAULT_SHOP_SETTINGS,
           ...parsed,
+          shopName: resolvedShopName,
+          shopNameTamil: resolvedShopNameTamil,
           whatsappNumber: parsed.whatsappNumber || DEFAULT_SHOP_SETTINGS.whatsappNumber,
           phoneDisplay: parsed.phoneDisplay || DEFAULT_SHOP_SETTINGS.phoneDisplay,
         };
@@ -225,9 +234,18 @@ export const ShopProvider = ({ children }) => {
     try {
       const serverSettings = await fetchShopSettings();
       if (serverSettings && Object.keys(serverSettings).length > 0) {
+        const resolvedShopName = (!serverSettings.shopName || serverSettings.shopName === "Poomani Oils")
+          ? "Poomani Chekku Ennai"
+          : serverSettings.shopName;
+        const resolvedShopNameTamil = (!serverSettings.shopNameTamil || serverSettings.shopNameTamil === "பூமணி ஆயில்ஸ்")
+          ? "பூமணி செக்கு எண்ணெய்"
+          : serverSettings.shopNameTamil;
+
         setShopSettings((prev) => ({
           ...prev,
           ...serverSettings,
+          shopName: resolvedShopName,
+          shopNameTamil: resolvedShopNameTamil,
         }));
       }
     } catch (err) {

@@ -47,12 +47,10 @@ export const Header = () => {
               />
               <div className="brand-text">
                 <h1>
-                  <span className="brand-name-en">{shopSettings.shopName}</span>
-                  {shopSettings.shopNameTamil && (
-                    <span className="brand-name-ta">
-                      {shopSettings.shopNameTamil}
-                    </span>
-                  )}
+                  <span className="brand-name-en">{shopSettings.shopName || "Poomani Chekku Ennai"}</span>
+                  <span className="brand-name-ta">
+                    {shopSettings.shopNameTamil || "பூமணி செக்கு எண்ணெய்"}
+                  </span>
                 </h1>
                 <div className="tagline">
                   <span className="tagline-en">Pure Edible Cooking Oils</span>

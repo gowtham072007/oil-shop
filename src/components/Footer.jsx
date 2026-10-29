@@ -18,13 +18,11 @@ export const Footer = () => {
                   alt="Poomani Chekku Ennai Logo"
                   style={{ width: "36px", height: "36px", objectFit: "contain", borderRadius: "50%", flexShrink: 0 }}
                 />
-                {shopSettings.shopName}
+                {shopSettings.shopName || "Poomani Chekku Ennai"}
               </span>
-              {shopSettings.shopNameTamil && (
-                <span style={{ fontSize: "0.92rem", color: "#e5b94c", paddingLeft: "2.6rem", fontWeight: "600" }}>
-                  {shopSettings.shopNameTamil}
-                </span>
-              )}
+              <span style={{ fontSize: "0.92rem", color: "#e5b94c", paddingLeft: "2.6rem", fontWeight: "600" }}>
+                {shopSettings.shopNameTamil || "பூமணி செக்கு எண்ணெய்"}
+              </span>
             </h4>
             <p>
               Wholesome edible cooking oils crafted with pure quality and honesty.
