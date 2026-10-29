@@ -21,6 +21,7 @@ export const BillPreviewModal = () => {
     previewOrder,
     setPreviewOrder,
     confirmOrderRedirect,
+    clearCart,
     shopSettings,
     showNotification,
   } = useShop();
@@ -28,6 +29,7 @@ export const BillPreviewModal = () => {
   const [copied, setCopied] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [showRawText, setShowRawText] = useState(false);
+  const [isSent, setIsSent] = useState(false);
 
   if (!previewOrder) return null;
 
@@ -41,9 +43,18 @@ export const BillPreviewModal = () => {
   };
 
   const handleSendToWhatsApp = () => {
+    setIsSent(true);
     confirmOrderRedirect(previewOrder.orderNumber);
+    clearCart();
+    try {
+      localStorage.removeItem("oil_shop_cart");
+    } catch {
+      // ignore
+    }
+
     // Open official WhatsApp click-to-chat URL in new window
     window.open(previewOrder.waUrl, "_blank", "noopener,noreferrer");
+    showNotification("Order sent to WhatsApp! Your shopping cart has been cleared.", "success");
   };
 
   const handleDownloadBill = async () => {
@@ -354,14 +365,60 @@ export const BillPreviewModal = () => {
           <button
             id="proceed-to-whatsapp-btn"
             type="button"
-            className="btn-proceed-wa"
+            className={`btn-proceed-wa ${isSent ? "btn-proceed-wa-sent" : ""}`}
             onClick={handleSendToWhatsApp}
           >
-            <Send size={18} />
-            <span>Send Order to WhatsApp</span>
-            <ExternalLink size={15} style={{ opacity: 0.8 }} />
+            {isSent ? (
+              <>
+                <Check size={18} />
+                <span>Sent to WhatsApp (Cart Cleared)</span>
+              </>
+            ) : (
+              <>
+                <Send size={18} />
+                <span>Send Order to WhatsApp</span>
+                <ExternalLink size={15} style={{ opacity: 0.8 }} />
+              </>
+            )}
           </button>
         </div>
+
+        {isSent && (
+          <div
+            style={{
+              padding: "0.85rem 1.25rem",
+              background: "#ecfdf5",
+              borderTop: "1px solid #a7f3d0",
+              color: "#065f46",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              fontSize: "0.85rem",
+              fontWeight: "600",
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+              <Check size={17} color="#059669" />
+              <span>Order sent to WhatsApp! Your shopping cart is now empty.</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setPreviewOrder(null)}
+              style={{
+                background: "#059669",
+                color: "#ffffff",
+                border: "none",
+                borderRadius: "6px",
+                padding: "0.35rem 0.8rem",
+                fontSize: "0.78rem",
+                fontWeight: "700",
+                cursor: "pointer",
+              }}
+            >
+              Done
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

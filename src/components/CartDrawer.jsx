@@ -34,6 +34,7 @@ export const CartDrawer = () => {
     removeCoupon,
     couponError,
     initiateWhatsAppCheckout,
+    showNotification,
   } = useShop();
 
   // Coupon input state
@@ -113,14 +114,43 @@ export const CartDrawer = () => {
             <ShoppingBag size={20} />
             Your Shopping Cart ({cart.length} {cart.length === 1 ? "item" : "items"})
           </h3>
-          <button
-            type="button"
-            className="btn-close"
-            onClick={() => setIsCartOpen(false)}
-            aria-label="Close cart"
-          >
-            <X size={18} />
-          </button>
+          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+            {cart.length > 0 && (
+              <button
+                type="button"
+                className="btn-clear-cart-header"
+                onClick={() => {
+                  clearCart();
+                  showNotification("Shopping cart has been cleared", "info");
+                }}
+                title="Remove all items from shopping cart"
+                style={{
+                  background: "#fef2f2",
+                  border: "1px solid #fecaca",
+                  color: "#dc2626",
+                  padding: "0.28rem 0.6rem",
+                  borderRadius: "6px",
+                  fontSize: "0.74rem",
+                  fontWeight: "600",
+                  cursor: "pointer",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "0.25rem",
+                }}
+              >
+                <Trash2 size={12} />
+                Clear Cart
+              </button>
+            )}
+            <button
+              type="button"
+              className="btn-close"
+              onClick={() => setIsCartOpen(false)}
+              aria-label="Close cart"
+            >
+              <X size={18} />
+            </button>
+          </div>
         </div>
 
         {/* Body */}

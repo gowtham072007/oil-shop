@@ -1936,6 +1936,11 @@ input, textarea, select {
   transform: translateY(-1px);
 }
 
+.btn-proceed-wa-sent {
+  background: #059669 !important;
+  box-shadow: 0 4px 14px rgba(5, 150, 105, 0.35) !important;
+}
+
 /* ==========================================================================
    ADMIN DASHBOARD MODAL
    ========================================================================== */

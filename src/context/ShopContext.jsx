@@ -694,6 +694,11 @@ export const ShopProvider = ({ children }) => {
   const clearCart = () => {
     setCart([]);
     setAppliedCoupon(null);
+    try {
+      localStorage.removeItem("oil_shop_cart");
+    } catch {
+      // ignore
+    }
   };
 
   // Coupons
@@ -789,6 +794,8 @@ export const ShopProvider = ({ children }) => {
           : ord
       )
     );
+    // Auto-empty cart and reset promo coupons once customer forwards order to WhatsApp
+    clearCart();
   };
 
   return (
