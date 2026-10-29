@@ -57,7 +57,7 @@ export const ProductModal = () => {
           </div>
 
           <div className="quick-view-content">
-            <div className="product-brand">{product.brand || "Poomani Oils"}</div>
+            <div className="product-brand">{product.brand || "Poomani Chekku Ennai"}</div>
             <h2 style={{ fontSize: "1.5rem", marginBottom: "0.25rem", color: "#09331d" }}>
               {product.name}
             </h2>

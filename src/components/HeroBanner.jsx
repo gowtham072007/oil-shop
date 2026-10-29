@@ -91,7 +91,7 @@ export const HeroBanner = () => {
           <div className="hero-visual-card">
             <img
               src="/images/hero_banner.jpg"
-              alt="Poomani Oils - Pure Coconut Oil, Sesame Oil, and Groundnut Oil"
+              alt="Poomani Chekku Ennai - Pure Coconut Oil, Sesame Oil, and Groundnut Oil"
               loading="eager"
             />
           </div>

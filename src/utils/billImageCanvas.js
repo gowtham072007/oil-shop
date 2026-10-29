@@ -70,7 +70,7 @@ export async function generateBillImage(order, shopSettings = {}, format = 'png'
   ctx.textAlign = 'center';
   ctx.fillStyle = '#09331d';
   ctx.font = 'bold 24px Georgia, serif';
-  ctx.fillText('POOMANI OILS — பூமணி செக்கு எண்ணெய்', width / 2, headerStartY + 10);
+  ctx.fillText('POOMANI CHEKKU ENNAI — பூமணி செக்கு எண்ணெய்', width / 2, headerStartY + 10);
 
   ctx.fillStyle = '#8c6819';
   ctx.font = 'italic 600 15px Arial, sans-serif';
@@ -306,7 +306,7 @@ export async function generateBillImage(order, shopSettings = {}, format = 'png'
   ctx.textAlign = 'center';
   ctx.fillStyle = '#09331d';
   ctx.font = 'bold 12px Arial, sans-serif';
-  ctx.fillText('Thank you for choosing Poomani Oils! 100% Pure & Unrefined Edible Cooking Oils.', width / 2, footerY + 22);
+  ctx.fillText('Thank you for choosing Poomani Chekku Ennai! 100% Pure & Unrefined Edible Cooking Oils.', width / 2, footerY + 22);
 
   ctx.fillStyle = '#85958c';
   ctx.font = '11px Arial, sans-serif';
@@ -332,7 +332,7 @@ export async function generateBillImage(order, shopSettings = {}, format = 'png'
 export async function downloadBillImageFile(order, shopSettings = {}, format = 'png') {
   const result = await generateBillImage(order, shopSettings, format);
   const cleanOrder = String(order.orderNumber || 'order').replace(/[^a-zA-Z0-9_-]/g, '_');
-  const fileName = `Poomani_Oils_Bill_${cleanOrder}.${result.ext}`;
+  const fileName = `Poomani_Chekku_Ennai_Bill_${cleanOrder}.${result.ext}`;
 
   const link = document.createElement('a');
   link.download = fileName;

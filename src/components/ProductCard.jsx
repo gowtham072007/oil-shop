@@ -94,7 +94,7 @@ export const ProductCard = ({ product }) => {
 
       {/* Body Details */}
       <div className="product-card-body">
-        <div className="product-brand">{product.brand || shopSettings.shopName || "Poomani Oils"}</div>
+        <div className="product-brand">{product.brand || shopSettings.shopName || "Poomani Chekku Ennai"}</div>
 
         <h3
           className="product-title"

@@ -165,7 +165,7 @@ export const BillPreviewModal = () => {
       if (navigator.canShare && navigator.canShare({ files: [file] })) {
         await navigator.share({
           files: [file],
-          title: `Poomani Oils Bill ${previewOrder.orderNumber}`,
+          title: `Poomani Chekku Ennai Bill ${previewOrder.orderNumber}`,
           text: previewOrder.billText,
         });
         confirmOrderRedirect(previewOrder.orderNumber);
@@ -191,7 +191,7 @@ export const BillPreviewModal = () => {
   };
 
   const items = previewOrder.items || [];
-  const fileNameDisplay = downloadedFileName || `Poomani_Oils_Bill_${previewOrder.orderNumber}.png`;
+  const fileNameDisplay = downloadedFileName || `Poomani_Chekku_Ennai_Bill_${previewOrder.orderNumber}.png`;
 
   return (
     <div className="modal-backdrop" onClick={() => setPreviewOrder(null)}>
@@ -242,7 +242,7 @@ export const BillPreviewModal = () => {
               </div>
 
               <p style={{ margin: "0 0 0.75rem 0", fontSize: "0.86rem", color: "#1e3a29", lineHeight: 1.5 }}>
-                Your cart has been cleared and your order is logged. To complete your order with <strong>Poomani Oils</strong>, attach your bill image:
+                Your cart has been cleared and your order is logged. To complete your order with <strong>Poomani Chekku Ennai</strong>, attach your bill image:
               </p>
 
               <div
@@ -430,14 +430,14 @@ export const BillPreviewModal = () => {
               <div className="invoice-header">
                 <img
                   src="/images/logo.png"
-                  alt="Poomani Oils Logo"
+                  alt="Poomani Chekku Ennai Logo"
                   className="invoice-logo"
                   onError={(e) => {
                     e.currentTarget.style.display = "none";
                   }}
                 />
                 <div className="invoice-brand-title">
-                  POOMANI OILS — பூமணி செக்கு எண்ணெய்
+                  POOMANI CHEKKU ENNAI — பூமணி செக்கு எண்ணெய்
                 </div>
                 <div className="invoice-brand-subtitle">
                   Customer Order Bill / வாடிக்கையாளர் ஆர்டர் ரசீது
@@ -569,7 +569,7 @@ export const BillPreviewModal = () => {
               {/* Invoice Footer Seal */}
               <div className="invoice-footer">
                 <div className="footer-thankyou">
-                  Thank you for choosing Poomani Oils! 100% Pure & Unrefined Edible Cooking Oils.
+                  Thank you for choosing Poomani Chekku Ennai! 100% Pure & Unrefined Edible Cooking Oils.
                 </div>
                 <div className="footer-sub">
                   Official WhatsApp Order Confirmation • Gopalasamuthiram, Tamil Nadu
@@ -590,7 +590,7 @@ export const BillPreviewModal = () => {
                 <div>
                   <img
                     src={generatedImgUrl}
-                    alt={`Poomani Oils Bill ${previewOrder.orderNumber}`}
+                    alt={`Poomani Chekku Ennai Bill ${previewOrder.orderNumber}`}
                     style={{
                       maxWidth: "100%",
                       height: "auto",

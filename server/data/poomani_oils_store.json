@@ -5,7 +5,7 @@
       "name": "Coconut Oil – 200 ml",
       "regional_name": "தேங்காய் எண்ணெய் – 200 மி.லி",
       "regionalName": "தேங்காய் எண்ணெய் – 200 மி.லி",
-      "brand": "Poomani Oils",
+      "brand": "Poomani Chekku Ennai",
       "oil_type": "100% Pure Edible Oil",
       "oilType": "100% Pure Edible Oil",
       "category": "coconut",
@@ -34,7 +34,7 @@
       "name": "Coconut Oil – 500 ml",
       "regional_name": "தேங்காய் எண்ணெய் – 500 மி.லி",
       "regionalName": "தேங்காய் எண்ணெய் – 500 மி.லி",
-      "brand": "Poomani Oils",
+      "brand": "Poomani Chekku Ennai",
       "oil_type": "100% Pure Edible Oil",
       "oilType": "100% Pure Edible Oil",
       "category": "coconut",
@@ -63,7 +63,7 @@
       "name": "Coconut Oil – 1 Litre",
       "regional_name": "தேங்காய் எண்ணெய் – 1 லிட்டர்",
       "regionalName": "தேங்காய் எண்ணெய் – 1 லிட்டர்",
-      "brand": "Poomani Oils",
+      "brand": "Poomani Chekku Ennai",
       "oil_type": "100% Pure Edible Oil",
       "oilType": "100% Pure Edible Oil",
       "category": "coconut",
@@ -92,7 +92,7 @@
       "name": "Sesame Oil – 200 ml",
       "regional_name": "நல்லெண்ணெய் – 200 மி.லி",
       "regionalName": "நல்லெண்ணெய் – 200 மி.லி",
-      "brand": "Poomani Oils",
+      "brand": "Poomani Chekku Ennai",
       "oil_type": "100% Pure Edible Oil",
       "oilType": "100% Pure Edible Oil",
       "category": "sesame",
@@ -121,7 +121,7 @@
       "name": "Sesame Oil – 500 ml",
       "regional_name": "நல்லெண்ணெய் – 500 மி.லி",
       "regionalName": "நல்லெண்ணெய் – 500 மி.லி",
-      "brand": "Poomani Oils",
+      "brand": "Poomani Chekku Ennai",
       "oil_type": "100% Pure Edible Oil",
       "oilType": "100% Pure Edible Oil",
       "category": "sesame",
@@ -150,7 +150,7 @@
       "name": "Sesame Oil – 1 Litre",
       "regional_name": "நல்லெண்ணெய் – 1 லிட்டர்",
       "regionalName": "நல்லெண்ணெய் – 1 லிட்டர்",
-      "brand": "Poomani Oils",
+      "brand": "Poomani Chekku Ennai",
       "oil_type": "100% Pure Edible Oil",
       "oilType": "100% Pure Edible Oil",
       "category": "sesame",
@@ -179,7 +179,7 @@
       "name": "Groundnut Oil – 500 ml",
       "regional_name": "கடலை எண்ணெய் – 500 மி.லி",
       "regionalName": "கடலை எண்ணெய் – 500 மி.லி",
-      "brand": "Poomani Oils",
+      "brand": "Poomani Chekku Ennai",
       "oil_type": "100% Pure Edible Oil",
       "oilType": "100% Pure Edible Oil",
       "category": "groundnut",
@@ -208,7 +208,7 @@
       "name": "Groundnut Oil – 1 Litre",
       "regional_name": "கடலை எண்ணெய் – 1 லிட்டர்",
       "regionalName": "கடலை எண்ணெய் – 1 லிட்டர்",
-      "brand": "Poomani Oils",
+      "brand": "Poomani Chekku Ennai",
       "oil_type": "100% Pure Edible Oil",
       "oilType": "100% Pure Edible Oil",
       "category": "groundnut",
@@ -233,5 +233,8 @@
       "createdAt": "2026-10-29T06:07:00.000Z"
     }
   ],
-  "settings": {}
+  "settings": {
+    "shopName": "Poomani Chekku Ennai",
+    "shopNameTamil": "பூமணி செக்கு எண்ணெய்"
+  }
 }

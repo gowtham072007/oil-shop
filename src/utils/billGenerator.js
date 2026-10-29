@@ -143,7 +143,7 @@ export const calculateOrderTotals = (cartItems, shopSettings, appliedCoupon) => 
 export const generateWhatsAppBillText = (order) => {
   const lines = [];
 
-  lines.push("🧾 *POOMANI OILS — பூமணி செக்கு எண்ணெய்*");
+  lines.push("🧾 *POOMANI CHEKKU ENNAI — பூமணி செக்கு எண்ணெய்*");
   lines.push("*Customer Order Bill / வாடிக்கையாளர் ஆர்டர் ரசீது*");
   lines.push("━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
   lines.push(`*Bill No / Order ID:* ${order.orderNumber}`);
@@ -178,7 +178,7 @@ export const generateWhatsAppBillText = (order) => {
     lines.push(`*Notes:* ${order.customerNotes}`);
   }
   lines.push("━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-  lines.push("Hello Poomani Oils, I would like to confirm this order. Please check my order bill.");
+  lines.push("Hello Poomani Chekku Ennai, I would like to confirm this order. Please check my order bill.");
 
   return lines.join("\n");
 };

@@ -42,7 +42,7 @@ export const Header = () => {
             >
               <img
                 src="/images/logo.png"
-                alt="Poomani Oils Logo"
+                alt="Poomani Chekku Ennai Logo"
                 className="brand-logo-img"
               />
               <div className="brand-text">

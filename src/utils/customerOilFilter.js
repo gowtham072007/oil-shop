@@ -128,7 +128,7 @@ export function formatCustomerProduct(product) {
     oilType: "100% Pure Edible Oil",
     description: sanitizeCustomerText(product.description) || def.description,
     image: product.image || def.defaultImage,
-    brand: product.brand || "Poomani Oils",
+    brand: product.brand || "Poomani Chekku Ennai",
   };
 }
 

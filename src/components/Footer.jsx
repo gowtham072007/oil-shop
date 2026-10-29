@@ -15,7 +15,7 @@ export const Footer = () => {
               <span style={{ display: "flex", alignItems: "center", gap: "0.65rem" }}>
                 <img
                   src="/images/logo.png"
-                  alt="Poomani Oils Logo"
+                  alt="Poomani Chekku Ennai Logo"
                   style={{ width: "36px", height: "36px", objectFit: "contain", borderRadius: "50%", flexShrink: 0 }}
                 />
                 {shopSettings.shopName}
@@ -111,7 +111,7 @@ export const Footer = () => {
         {/* Footer Bottom */}
         <div className="footer-bottom">
           <div>
-            © {new Date().getFullYear()} {shopSettings.shopName} ({shopSettings.shopNameTamil || "பூமணி ஆயில்ஸ்"}). All rights reserved. Pure edible cooking oils.
+            © {new Date().getFullYear()} {shopSettings.shopName} ({shopSettings.shopNameTamil || "பூமணி செக்கு எண்ணெய்"}). All rights reserved. Pure edible cooking oils.
           </div>
           <div>
             100% Pure Edible Oils • Pure Quality • Direct WhatsApp Billing

@@ -59,7 +59,7 @@ export const AdminModal = () => {
   const [productForm, setProductForm] = useState({
     name: "",
     regionalName: "",
-    brand: "Poomani Oils",
+    brand: "Poomani Chekku Ennai",
     oilType: "Wood-Pressed Cold Extracted",
     image: "",
     imageFileName: "",
@@ -110,7 +110,7 @@ export const AdminModal = () => {
     setProductForm({
       name: "",
       regionalName: "",
-      brand: shopSettings.shopName || "Poomani Oils",
+      brand: shopSettings.shopName || "Poomani Chekku Ennai",
       oilType: "Wood-Pressed Cold Extracted",
       image: "", // Explicitly empty: no hardcoded photo or default substitution
       imageFileName: "",
