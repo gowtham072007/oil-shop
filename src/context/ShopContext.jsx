@@ -659,6 +659,7 @@ export const ShopProvider = ({ children }) => {
             id: cartItemId,
             productId: product.id,
             name: product.name,
+            regionalName: product.regionalName || "",
             brand: product.brand,
             image: product.image,
             oilType: product.oilType,

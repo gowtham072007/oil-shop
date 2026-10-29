@@ -424,7 +424,7 @@ export const CartDrawer = () => {
               onClick={validateAndProceed}
             >
               <Send size={18} />
-              Send Bill on WhatsApp
+              Send Order to WhatsApp
             </button>
 
             <div className="cart-footer-notice">

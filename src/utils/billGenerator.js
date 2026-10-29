@@ -39,20 +39,65 @@ export const cleanCustomerPhone = (phone) => {
 };
 
 /**
+ * Standardize English and Tamil names for the 3 permitted oils
+ */
+export const getStandardOilNames = (name = "", regionalName = "") => {
+  const combined = `${name} ${regionalName}`.toLowerCase();
+  if (combined.includes("coconut") || combined.includes("தேங்காய்")) {
+    return {
+      en: "Coconut Oil",
+      ta: "தேங்காய் எண்ணெய்",
+      combined: "Coconut Oil — தேங்காய் எண்ணெய்",
+    };
+  }
+  if (combined.includes("sesame") || combined.includes("gingelly") || combined.includes("நல்லெண்ணெய்")) {
+    return {
+      en: "Sesame Oil",
+      ta: "நல்லெண்ணெய்",
+      combined: "Sesame Oil — நல்லெண்ணெய்",
+    };
+  }
+  if (combined.includes("groundnut") || combined.includes("peanut") || combined.includes("கடலை")) {
+    return {
+      en: "Groundnut Oil",
+      ta: "கடலை எண்ணெய்",
+      combined: "Groundnut Oil — கடலை எண்ணெய்",
+    };
+  }
+
+  // Fallback to existing strings if already populated
+  const enName = name.replace(/\s*[–-]\s*\d+\s*(ml|litre|l)\b/gi, "").trim() || "Pure Edible Oil";
+  const taName = regionalName.replace(/\s*[–-]\s*\d+\s*(மி\.லி|லிட்டர்)\b/gi, "").trim() || "";
+  return {
+    en: enName,
+    ta: taName,
+    combined: taName ? `${enName} — ${taName}` : enName,
+  };
+};
+
+/**
  * Server/App authoritative bill calculation.
  * Never trusts client entered grand totals. Re-calculates strictly from item rate and qty.
  */
 export const calculateOrderTotals = (cartItems, shopSettings, appliedCoupon) => {
   let subtotal = 0;
-  const verifiedItems = cartItems.map((item) => {
+  const verifiedItems = cartItems.map((item, index) => {
     const unitPrice = Number(item.selectedVariant?.price || item.price || 0);
     const quantity = Math.max(1, parseInt(item.quantity, 10) || 1);
     const lineTotal = unitPrice * quantity;
     subtotal += lineTotal;
 
+    const stdNames = getStandardOilNames(item.name, item.regionalName);
+    const packSize = item.selectedVariant?.size || item.packSize || (item.name?.match(/\b(200\s*ml|500\s*ml|1\s*Litre|1\s*L)\b/i)?.[0]) || "1 Litre";
+
     return {
+      sNo: index + 1,
       name: item.name,
-      packSize: item.selectedVariant?.size || item.packSize || "1 Litre",
+      regionalName: item.regionalName || "",
+      oilNameEn: stdNames.en,
+      oilNameTa: stdNames.ta,
+      fullName: stdNames.combined,
+      packSize,
       quantity,
       rate: unitPrice,
       amount: lineTotal,
@@ -93,55 +138,47 @@ export const calculateOrderTotals = (cartItems, shopSettings, appliedCoupon) => 
 };
 
 /**
- * Generates the bill text adhering to the required format:
- *
- * OIL SHOP - CUSTOMER ORDER
- * Order No: [Unique order reference]
- * Date: [Date and time]
- * Customer Name: [Customer name]
- * Phone: [Customer phone]
- * Delivery Address: [Customer address]
- * ORDER DETAILS
- * [Product name]
- * Pack Size: [Size]
- * Quantity: [Quantity]
- * Rate: ₹[Unit price]
- * Amount: ₹[Line total]
- * ...
- * Subtotal: ₹[Subtotal]
- * Delivery: ₹[Delivery charge]
- * Discount: ₹[Discount]
- * GRAND TOTAL: ₹[Final total]
- * Payment Method: [Selected method]
- * Customer Notes: [Notes]
- * Thank you for shopping with us!
+ * Generates the professional bill text adhering to the user's requirements:
  */
 export const generateWhatsAppBillText = (order) => {
   const lines = [];
 
-  lines.push("OIL SHOP - CUSTOMER ORDER");
-  lines.push(`Order No: ${order.orderNumber}`);
-  lines.push(`Date: ${order.date}`);
-  lines.push(`Customer Name: ${order.customerName}`);
-  lines.push(`Phone: ${order.customerPhone}`);
-  lines.push(`Delivery Address: ${order.deliveryAddress}`);
-  lines.push("ORDER DETAILS");
+  lines.push("🧾 *POOMANI OILS — பூமணி செக்கு எண்ணெய்*");
+  lines.push("*Customer Order Bill / வாடிக்கையாளர் ஆர்டர் ரசீது*");
+  lines.push("━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+  lines.push(`*Bill No / Order ID:* ${order.orderNumber}`);
+  lines.push(`*Date & Time:* ${order.date}`);
+  lines.push(`*Customer Name:* ${order.customerName}`);
+  lines.push(`*Phone Number:* ${order.customerPhone}`);
+  if (order.deliveryAddress) {
+    lines.push(`*Delivery Address:* ${order.deliveryAddress}`);
+  }
+  lines.push("━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+  lines.push("*ORDERED PRODUCTS / ஆர்டர் பொருட்கள்:*");
 
-  order.items.forEach((item) => {
-    lines.push(item.name);
-    lines.push(`Pack Size: ${item.packSize}`);
-    lines.push(`Quantity: ${item.quantity}`);
-    lines.push(`Rate: ₹${item.rate}`);
-    lines.push(`Amount: ₹${item.amount}`);
+  order.items.forEach((item, idx) => {
+    const sNo = item.sNo || idx + 1;
+    const displayName = item.fullName || (item.regionalName ? `${item.name} — ${item.regionalName}` : item.name);
+    lines.push(`\n${sNo}. *${displayName}*`);
+    lines.push(`   • Quantity/Size: ${item.packSize}`);
+    lines.push(`   • Qty: ${item.quantity} bottle(s)`);
+    lines.push(`   • Unit Price: ₹${formatINR(item.rate)}`);
+    lines.push(`   • Amount: ₹${formatINR(item.amount)}`);
   });
 
-  lines.push(`Subtotal: ₹${order.subtotal}`);
-  lines.push(`Delivery: ₹${order.deliveryCharge}`);
-  lines.push(`Discount: ₹${order.discount}`);
-  lines.push(`GRAND TOTAL: ₹${order.grandTotal}`);
-  lines.push(`Payment Method: ${order.paymentMethod || "Cash on Delivery"}`);
-  lines.push(`Customer Notes: ${order.customerNotes?.trim() ? order.customerNotes.trim() : "None"}`);
-  lines.push("Thank you for shopping with us!");
+  lines.push("\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+  lines.push(`*Subtotal:* ₹${formatINR(order.subtotal)}`);
+  lines.push(`*Delivery Charge:* ${order.deliveryCharge === 0 ? "FREE" : `₹${formatINR(order.deliveryCharge)}`}`);
+  if (order.discount > 0) {
+    lines.push(`*Discount:* -₹${formatINR(order.discount)}`);
+  }
+  lines.push(`*GRAND TOTAL / மொத்தத் தொகை:* ₹${formatINR(order.grandTotal)}`);
+  lines.push(`*Payment Method:* ${order.paymentMethod || "Cash on Delivery"}`);
+  if (order.customerNotes && order.customerNotes !== "None") {
+    lines.push(`*Notes:* ${order.customerNotes}`);
+  }
+  lines.push("━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+  lines.push("Hello Poomani Oils, I would like to confirm this order. Please check my order bill.");
 
   return lines.join("\n");
 };
