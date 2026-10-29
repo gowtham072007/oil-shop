@@ -212,3 +212,4 @@ export function getCustomerCategories(products = []) {
     },
   ];
 }
+
