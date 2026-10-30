@@ -727,47 +727,38 @@ input, textarea, select {
 }
 
 /* ==========================================================================
-   TRUST PILLARS / BADGES (ANIMATED FEATURE CARDS)
+   TRUST PILLARS / BADGES (FEATURE BANNER IMAGE)
    ========================================================================== */
 .trust-bar {
-  background: #ffffff;
-  border-bottom: 1px solid var(--border-subtle);
-  padding: 1.6rem 0;
+  background: transparent;
+  padding: 1.5rem 0 1.75rem 0;
   position: relative;
   overflow: hidden;
 }
 
-.trust-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 1.25rem;
-}
-
-.trust-card {
-  display: flex;
-  align-items: flex-start;
-  gap: 0.95rem;
-  padding: 0.85rem 1rem;
-  border-radius: var(--radius-md);
-  background: transparent;
-  border: 1px solid transparent;
+.trust-banner-wrap {
+  position: relative;
+  width: 100%;
+  max-width: 1140px;
+  margin: 0 auto;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: 0 6px 24px rgba(9, 51, 29, 0.08), 0 2px 8px rgba(198, 146, 34, 0.14);
+  border: 1.5px solid rgba(198, 146, 34, 0.45);
+  background: #fbfaf5;
   opacity: 0;
   transform: translate3d(0, 20px, 0);
-  transition: transform 0.35s cubic-bezier(0.2, 0.8, 0.25, 1),
-              box-shadow 0.35s cubic-bezier(0.2, 0.8, 0.25, 1),
-              background 0.35s ease,
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 0.35s cubic-bezier(0.16, 1, 0.3, 1),
               border-color 0.35s ease;
   will-change: transform, opacity;
-  cursor: default;
 }
 
-/* On-scroll / on-load Staggered Entrance Animation */
-.trust-bar.is-visible .trust-card {
-  animation: trustCardEntrance 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-  animation-delay: var(--card-delay, 0s);
+.trust-bar.is-visible .trust-banner-wrap {
+  animation: trustBannerEntrance 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
-@keyframes trustCardEntrance {
+@keyframes trustBannerEntrance {
   0% {
     opacity: 0;
     transform: translate3d(0, 24px, 0);
@@ -778,92 +769,26 @@ input, textarea, select {
   }
 }
 
-/* Icon Container with subtle scale & pulse on load */
-.trust-icon-box {
-  width: 46px;
-  height: 46px;
-  border-radius: var(--radius-md);
-  background: linear-gradient(135deg, var(--gold-glow) 0%, #fffbf2 100%);
-  border: 1.5px solid rgba(198, 146, 34, 0.5);
-  color: var(--gold-deep);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  transition: transform 0.35s cubic-bezier(0.2, 0.8, 0.25, 1),
-              box-shadow 0.35s ease,
-              border-color 0.35s ease,
-              background 0.35s ease;
-  box-shadow: 0 2px 6px rgba(140, 104, 25, 0.08);
-}
-
-.trust-bar.is-visible .trust-icon-box {
-  animation: trustIconScale 0.7s cubic-bezier(0.16, 1, 0.3, 1) backwards;
-  animation-delay: calc(var(--card-delay, 0s) + 0.15s);
-}
-
-@keyframes trustIconScale {
-  0% {
-    transform: scale(0.65);
-    opacity: 0;
-  }
-  60% {
-    transform: scale(1.08);
-    opacity: 1;
-  }
-  100% {
-    transform: scale(1);
-    opacity: 1;
-  }
-}
-
-/* Interactive Hover States (Gentle Lift, Soft Shadow, and Golden Glow) */
-.trust-card:hover {
-  transform: translate3d(0, -4px, 0);
-  background: linear-gradient(180deg, #ffffff 0%, #fdfcf9 100%);
-  border-color: rgba(198, 146, 34, 0.25);
-  box-shadow: 0 10px 24px -4px rgba(9, 51, 29, 0.08),
-              0 4px 10px rgba(198, 146, 34, 0.08);
-}
-
-.trust-card:hover .trust-icon-box {
-  transform: scale(1.08);
+.trust-banner-wrap:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 32px rgba(9, 51, 29, 0.12), 0 4px 14px rgba(198, 146, 34, 0.22);
   border-color: var(--gold);
-  background: #ffffff;
-  color: var(--primary);
-  box-shadow: 0 0 14px rgba(198, 146, 34, 0.35),
-              0 3px 8px rgba(9, 51, 29, 0.12);
 }
 
-.trust-info h4 {
-  font-size: 0.95rem;
-  font-weight: 700;
-  margin-bottom: 3px;
-  color: var(--primary-deep);
-  transition: color 0.25s ease;
-}
-
-.trust-card:hover .trust-info h4 {
-  color: var(--primary);
-}
-
-.trust-info p {
-  font-size: 0.8rem;
-  color: var(--text-muted);
-  line-height: 1.4;
+.trust-banner-img {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1024 / 341;
+  object-fit: cover;
+  display: block;
 }
 
 /* Reduced Motion Support for Accessibility */
 @media (prefers-reduced-motion: reduce) {
-  .trust-card {
+  .trust-banner-wrap {
     opacity: 1 !important;
     transform: none !important;
     animation: none !important;
-    transition: none !important;
-  }
-  .trust-icon-box {
-    animation: none !important;
-    transform: none !important;
     transition: none !important;
   }
 }
@@ -2851,43 +2776,14 @@ input, textarea, select {
     text-overflow: ellipsis;
   }
 
-  /* Trust Section */
-  .trust-section {
-    padding: 1.5rem 0;
+  /* Trust Banner Section */
+  .trust-bar {
+    padding: 0.85rem 0 1.15rem 0;
   }
 
-  .trust-grid {
-    grid-template-columns: repeat(2, 1fr) !important;
-    gap: 0.65rem;
-  }
-
-  .trust-card {
-    padding: 0.65rem 0.5rem;
-    border-radius: 10px;
-    background: #ffffff;
-    border: 1px solid rgba(232, 224, 210, 0.7);
-    box-shadow: 0 2px 6px rgba(9, 51, 29, 0.04);
-  }
-
-  .trust-card:active {
-    transform: scale(0.98);
-    border-color: var(--gold);
-  }
-
-  .trust-icon-box {
-    width: 38px;
-    height: 38px;
-    flex-shrink: 0;
-  }
-
-  .trust-info h4 {
-    font-size: 0.82rem;
-    margin-bottom: 0.15rem;
-  }
-
-  .trust-info p {
-    font-size: 0.7rem;
-    line-height: 1.35;
+  .trust-banner-wrap {
+    border-radius: var(--radius-md);
+    box-shadow: 0 4px 14px rgba(9, 51, 29, 0.06), 0 1px 4px rgba(198, 146, 34, 0.12);
   }
 
   /* Catalog Section */
@@ -3191,6 +3087,14 @@ input, textarea, select {
   .badge-tag {
     font-size: 0.62rem;
     padding: 0.12rem 0.35rem;
+  }
+
+  .trust-bar {
+    padding: 0.65rem 0 0.85rem 0;
+  }
+
+  .trust-banner-wrap {
+    border-radius: 12px;
   }
 
   .badge-stock {
