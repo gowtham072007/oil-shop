@@ -104,6 +104,19 @@ export const AdminModal = () => {
     }
   }, [shopSettings, isAdminOpen]);
 
+  // Fetch full WhatsApp configuration when admin is authenticated and in settings tab
+  useEffect(() => {
+    if (isAdminAuthenticated && adminToken) {
+      fetchAdminWhatsAppConfig(adminToken)
+        .then((cfg) => {
+          if (cfg && cfg.success) {
+            setAdminWhatsAppConfig(cfg);
+          }
+        })
+        .catch((err) => console.warn("[AdminModal] Config fetch:", err.message));
+    }
+  }, [isAdminAuthenticated, adminToken, activeTab]);
+
   // View Bill Modal within Admin
   const [adminViewingBill, setAdminViewingBill] = useState(null);
 
@@ -332,19 +345,6 @@ export const AdminModal = () => {
       setSettingsError(err.message || "Failed to save settings. Please try again.");
     }
   };
-
-  // Fetch full WhatsApp configuration when admin is authenticated and in settings tab
-  useEffect(() => {
-    if (isAdminAuthenticated && adminToken) {
-      fetchAdminWhatsAppConfig(adminToken)
-        .then((cfg) => {
-          if (cfg && cfg.success) {
-            setAdminWhatsAppConfig(cfg);
-          }
-        })
-        .catch((err) => console.warn("[AdminModal] Config fetch:", err.message));
-    }
-  }, [isAdminAuthenticated, adminToken, activeTab]);
 
   const handleTestWhatsAppApi = async () => {
     setIsTestingApi(true);
