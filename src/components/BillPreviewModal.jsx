@@ -125,12 +125,11 @@ export const BillPreviewModal = () => {
         confirmOrderRedirect(previewOrder.orderNumber);
         clearCart();
         setIsSent(true);
-        setShareMethod(result.shareMethod);
-        if (result.shareMethod === "native") {
-          showNotification(`Bill photo shared successfully to WhatsApp! Order delivered to shop owner (+${cleanAdminPhone}).`, "success");
-        } else {
-          showNotification(`Bill photo downloaded (${result.fileName})! Opening WhatsApp chat with shop owner (+${cleanAdminPhone}).`, "success");
-        }
+        setShareMethod("direct");
+        showNotification(
+          `Opening WhatsApp chat with store owner (+${cleanAdminPhone}). Click Send in WhatsApp to confirm!`,
+          "success"
+        );
       }
     } catch (err) {
       console.error("[BillPreview] Order dispatch error:", err);

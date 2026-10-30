@@ -106,11 +106,10 @@ export const CartDrawer = () => {
         showNotification("Share cancelled. Tap 'Send Order on WhatsApp' when ready.", "info");
       } else {
         confirmOrderRedirect(order.orderNumber);
-        if (result.shareMethod === "native") {
-          showNotification(`Bill photo shared to WhatsApp! Order routed to store owner (+${cleanAdminPhone}).`, "success");
-        } else {
-          showNotification(`Bill photo downloaded (${result.fileName})! Opening WhatsApp chat with store owner (+${cleanAdminPhone}).`, "success");
-        }
+        showNotification(
+          `Opening WhatsApp chat with store owner (+${cleanAdminPhone}). Click Send in WhatsApp to confirm!`,
+          "success"
+        );
       }
     } catch (err) {
       console.error("[CartDrawer] Order dispatch error:", err);
