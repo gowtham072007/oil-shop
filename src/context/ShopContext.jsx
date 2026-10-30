@@ -817,6 +817,7 @@ export const ShopProvider = ({ children }) => {
     setOrders((prev) => [completeOrder, ...prev]);
     setPreviewOrder(completeOrder);
     setIsCartOpen(false);
+    return completeOrder;
   };
 
   const confirmOrderRedirect = (orderNumber) => {

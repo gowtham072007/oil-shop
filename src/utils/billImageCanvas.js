@@ -1,4 +1,5 @@
-import { formatINR } from './billGenerator.js';
+import { formatINR, cleanWhatsAppNumber } from './billGenerator.js';
+import { sendWhatsAppBillApi } from './api.js';
 
 /**
  * Helper to wrap text into multiple lines within a maximum pixel width
@@ -468,5 +469,100 @@ export async function downloadBillImageFile(order, shopSettings = {}, format = '
   return {
     ...result,
     fileName,
+  };
+}
+
+/**
+ * Unified WhatsApp Photo Bill Dispatcher
+ * Generates the bill image and opens WhatsApp addressed to the store owner's saved number
+ * with the bill image attached (native file share where supported or auto-download fallback).
+ *
+ * @param {Object} params
+ * @param {Object} params.order - The completed order record
+ * @param {Object} params.shopSettings - Store configuration with saved admin WhatsApp number
+ * @returns {Promise<{ success?: boolean, cancelled?: boolean, fileName: string, dataUrl: string, shareMethod: string, cleanAdmin: string }>}
+ */
+export async function dispatchOrderPhotoBillToWhatsApp({
+  order,
+  shopSettings = {},
+}) {
+  const cleanAdmin = cleanWhatsAppNumber(shopSettings?.whatsappNumber);
+  if (!cleanAdmin || cleanAdmin.length < 10) {
+    throw new Error("Shop WhatsApp recipient number is not configured by the store owner in Admin Settings.");
+  }
+
+  // 1. Generate high-resolution bill PNG image file from actual order
+  const imageResult = await generateBillImage(order, shopSettings, "png");
+  const cleanOrder = String(order.orderNumber || "order").replace(/[^a-zA-Z0-9_-]/g, "_");
+  const fileName = `Poomani_Chekku_Ennai_Bill_${cleanOrder}.png`;
+  const billFile = new File([imageResult.blob], fileName, { type: "image/png" });
+
+  // 2. Prepare order message
+  const shortMessage = `Please find my Poomani Chekku Ennai order bill attached.\n\n*Order ID:* ${order.orderNumber}\n*Customer:* ${order.customerName}\n*Phone:* ${order.customerPhone}\n*Grand Total:* ₹${formatINR(order.grandTotal)}`;
+
+  // 3. Check native Web Share API with image file support
+  const canShareFile = Boolean(
+    typeof navigator !== "undefined" &&
+    navigator.canShare &&
+    navigator.share &&
+    navigator.canShare({ files: [billFile] })
+  );
+
+  let shareMethod = "download";
+
+  if (canShareFile) {
+    try {
+      await navigator.share({
+        files: [billFile],
+        title: `Poomani Chekku Ennai Bill - ${order.orderNumber}`,
+        text: shortMessage,
+      });
+      shareMethod = "native";
+    } catch (err) {
+      if (err.name === "AbortError") {
+        return { cancelled: true, fileName, dataUrl: imageResult.dataUrl, cleanAdmin };
+      }
+      console.warn("[WhatsApp Dispatch] Native file share fallback:", err);
+      // Fall through to download and click-to-chat
+    }
+  }
+
+  // 4. Fallback for Desktop / non-share browsers (or fallback after error):
+  if (shareMethod === "download") {
+    // Download bill photo to user's device
+    const link = document.createElement("a");
+    link.download = fileName;
+    link.href = imageResult.dataUrl;
+    document.body.appendChild(link);
+    link.click();
+    setTimeout(() => {
+      if (document.body.contains(link)) document.body.removeChild(link);
+    }, 200);
+
+    // Open WhatsApp click-to-chat addressed directly to the ADMIN's saved number
+    const waText = `${shortMessage}\n\n(Bill photo downloaded: ${fileName} - please attach and send to confirm your order)`;
+    const waUrl = `https://api.whatsapp.com/send?phone=${cleanAdmin}&text=${encodeURIComponent(waText)}`;
+    window.open(waUrl, "_blank", "noopener,noreferrer");
+  }
+
+  // 5. Background dispatch to server (saves bill persistently & triggers Meta Cloud API if configured)
+  try {
+    await sendWhatsAppBillApi({
+      orderNumber: order.orderNumber,
+      customerPhone: order.customerPhone,
+      customerName: order.customerName,
+      billDataUrl: imageResult.dataUrl,
+      billText: order.billText || shortMessage,
+    });
+  } catch (cloudErr) {
+    console.warn("[WhatsApp Dispatch] Server send:", cloudErr.message);
+  }
+
+  return {
+    success: true,
+    shareMethod,
+    fileName,
+    dataUrl: imageResult.dataUrl,
+    cleanAdmin,
   };
 }

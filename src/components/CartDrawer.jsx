@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useShop } from "../context/ShopContext";
-import { formatINR } from "../utils/billGenerator";
+import { formatINR, cleanWhatsAppNumber } from "../utils/billGenerator";
+import { dispatchOrderPhotoBillToWhatsApp } from "../utils/billImageCanvas";
 import {
   X,
   Trash2,
@@ -15,6 +16,7 @@ import {
   Phone,
   FileText,
   CreditCard,
+  Loader2,
 } from "lucide-react";
 
 export const CartDrawer = () => {
@@ -28,8 +30,11 @@ export const CartDrawer = () => {
     shopSettings,
     cartSummary,
     initiateWhatsAppCheckout,
+    confirmOrderRedirect,
     showNotification,
   } = useShop();
+
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Customer form inputs
   const [customerDetails, setCustomerDetails] = useState({
@@ -46,8 +51,8 @@ export const CartDrawer = () => {
 
   if (!isCartOpen) return null;
 
-  // Validate form before WhatsApp bill generation
-  const validateAndProceed = (e) => {
+  // Validate form and directly initiate WhatsApp Photo Bill dispatch sequence
+  const validateAndProceed = async (e) => {
     e.preventDefault();
     const errors = {};
 
@@ -73,9 +78,45 @@ export const CartDrawer = () => {
     }
 
     setFormErrors(errors);
+    if (Object.keys(errors).length > 0) return;
 
-    if (Object.keys(errors).length === 0) {
-      initiateWhatsAppCheckout(customerDetails);
+    // Verify store owner WhatsApp recipient number is configured
+    const cleanAdminPhone = cleanWhatsAppNumber(shopSettings?.whatsappNumber);
+    if (!cleanAdminPhone || cleanAdminPhone.length < 10) {
+      showNotification(
+        "Shop WhatsApp recipient number is not configured by the store owner. Please configure it in the Admin Dashboard Settings.",
+        "error"
+      );
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      // 1. Create order record and open preview modal
+      const order = initiateWhatsAppCheckout(customerDetails);
+      if (!order) return;
+
+      // 2. Dynamically generate professional bill photo & open WhatsApp with admin's saved number
+      const result = await dispatchOrderPhotoBillToWhatsApp({
+        order,
+        shopSettings,
+      });
+
+      if (result.cancelled) {
+        showNotification("Share cancelled. Tap 'Send Order on WhatsApp' when ready.", "info");
+      } else {
+        confirmOrderRedirect(order.orderNumber);
+        if (result.shareMethod === "native") {
+          showNotification(`Bill photo shared to WhatsApp! Order routed to store owner (+${cleanAdminPhone}).`, "success");
+        } else {
+          showNotification(`Bill photo downloaded (${result.fileName})! Opening WhatsApp chat with store owner (+${cleanAdminPhone}).`, "success");
+        }
+      }
+    } catch (err) {
+      console.error("[CartDrawer] Order dispatch error:", err);
+      showNotification("Could not dispatch bill photo: " + err.message, "error");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -368,9 +409,19 @@ export const CartDrawer = () => {
               type="button"
               className="btn-order-whatsapp-main"
               onClick={validateAndProceed}
+              disabled={isSubmitting}
             >
-              <Send size={18} />
-              Send Order to WhatsApp (Photo Bill)
+              {isSubmitting ? (
+                <>
+                  <Loader2 size={18} className="animate-spin" />
+                  <span>Generating Bill Photo & Opening WhatsApp...</span>
+                </>
+              ) : (
+                <>
+                  <Send size={18} />
+                  <span>Send Order on WhatsApp</span>
+                </>
+              )}
             </button>
 
             <div className="cart-footer-notice">

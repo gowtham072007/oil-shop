@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useShop } from "../context/ShopContext";
 import { formatINR, cleanWhatsAppNumber } from "../utils/billGenerator";
-import { generateBillImage, downloadBillImageFile } from "../utils/billImageCanvas";
+import { generateBillImage, downloadBillImageFile, dispatchOrderPhotoBillToWhatsApp } from "../utils/billImageCanvas";
 import { uploadBillImageApi, sendWhatsAppBillApi } from "../utils/api";
 import {
   X,
@@ -102,7 +102,6 @@ export const BillPreviewModal = () => {
    * 6. Never shows false success on user cancellation (AbortError)
    */
   const handleSendToWhatsApp = async () => {
-    // 0. Ensure admin recipient phone is configured
     if (!isAdminPhoneValid) {
       showNotification(
         "Shop WhatsApp number is not configured by the store owner. Please configure it in the Admin Dashboard Settings.",
@@ -113,53 +112,25 @@ export const BillPreviewModal = () => {
 
     setIsGenerating(true);
     try {
-      // 1. Generate high-resolution bill image file
-      const result = await generateBillImage(previewOrder, shopSettings, "png");
-      const cleanOrder = String(previewOrder.orderNumber || "order").replace(/[^a-zA-Z0-9_-]/g, "_");
-      const fileName = `Poomani_Chekku_Ennai_Bill_${cleanOrder}.png`;
-      setDownloadedFileName(fileName);
-      setGeneratedImgUrl(result.dataUrl);
+      const result = await dispatchOrderPhotoBillToWhatsApp({
+        order: previewOrder,
+        shopSettings,
+      });
 
-      // Create File object for Web Share API
-      const billFile = new File([result.blob], fileName, { type: "image/png" });
-
-      // Clean short caption for sharing - order confirmation details
-      const shortMessage = `Please find my Poomani Chekku Ennai order bill attached.\n\n*Order ID:* ${previewOrder.orderNumber}\n*Customer:* ${previewOrder.customerName}\n*Phone:* ${previewOrder.customerPhone}\n*Grand Total:* ₹${formatINR(previewOrder.grandTotal)}`;
-
-      // 2. Check if device natively supports file sharing (Android mobile, iOS Safari, etc.)
-      const canShareFile = Boolean(
-        navigator.canShare &&
-        navigator.share &&
-        navigator.canShare({ files: [billFile] })
-      );
-
-      if (canShareFile) {
-        try {
-          await navigator.share({
-            files: [billFile],
-            title: `Poomani Chekku Ennai Bill - ${previewOrder.orderNumber}`,
-            text: shortMessage,
-          });
-
-          // ONLY on actual share completion (when user picks WhatsApp and completes sharing):
-          confirmOrderRedirect(previewOrder.orderNumber);
-          clearCart();
-          setIsSent(true);
-          setShareMethod("native");
-          showNotification(`Bill photo shared successfully to WhatsApp! Order delivered to shop owner (+${cleanAdminPhone}).`, "success");
-        } catch (shareErr) {
-          // If the customer dismissed or cancelled the native share sheet:
-          if (shareErr.name === "AbortError") {
-            // DO NOT show a false success message!
-            showNotification("Share cancelled. Tap again when ready to send bill photo.", "info");
-            return;
-          }
-          console.warn("[BillPreview] Native file share failed, falling back to download:", shareErr);
-          await executeFallbackDownloadAndWhatsApp(result, fileName, shortMessage, cleanAdminPhone);
-        }
+      if (result.cancelled) {
+        showNotification("Share cancelled. Tap again when ready to send bill photo.", "info");
       } else {
-        // 3. Fallback for Desktop & browsers without Web Share file support
-        await executeFallbackDownloadAndWhatsApp(result, fileName, shortMessage, cleanAdminPhone);
+        setDownloadedFileName(result.fileName);
+        setGeneratedImgUrl(result.dataUrl);
+        confirmOrderRedirect(previewOrder.orderNumber);
+        clearCart();
+        setIsSent(true);
+        setShareMethod(result.shareMethod);
+        if (result.shareMethod === "native") {
+          showNotification(`Bill photo shared successfully to WhatsApp! Order delivered to shop owner (+${cleanAdminPhone}).`, "success");
+        } else {
+          showNotification(`Bill photo downloaded (${result.fileName})! Opening WhatsApp chat with shop owner (+${cleanAdminPhone}).`, "success");
+        }
       }
     } catch (err) {
       console.error("[BillPreview] Order dispatch error:", err);
@@ -167,51 +138,6 @@ export const BillPreviewModal = () => {
     } finally {
       setIsGenerating(false);
     }
-  };
-
-  /**
-   * Fallback for Desktop / non-share browsers:
-   * Downloads the bill photo to customer's device and opens WhatsApp chat addressed STRICTLY to the admin's number.
-   * Never sends to customer's own phone number.
-   */
-  const executeFallbackDownloadAndWhatsApp = async (imageResult, fileName, shortMessage, adminRecipientPhone) => {
-    // 1. Download image automatically
-    const link = document.createElement("a");
-    link.download = fileName;
-    link.href = imageResult.dataUrl;
-    document.body.appendChild(link);
-    link.click();
-    setTimeout(() => {
-      if (document.body.contains(link)) document.body.removeChild(link);
-    }, 200);
-
-    // 2. Open WhatsApp click-to-chat with short message directed to SHOP ADMIN number
-    const targetAdminPhone = adminRecipientPhone || cleanAdminPhone;
-    const waText = `${shortMessage}\n\n(Bill photo downloaded: ${fileName} - please attach and send to confirm your order)`;
-    const waUrl = `https://api.whatsapp.com/send?phone=${targetAdminPhone}&text=${encodeURIComponent(waText)}`;
-
-    // 3. Optional background server dispatch if configured (routes to admin number on server)
-    try {
-      await sendWhatsAppBillApi({
-        orderNumber: previewOrder.orderNumber,
-        customerPhone: previewOrder.customerPhone,
-        customerName: previewOrder.customerName,
-        billDataUrl: imageResult.dataUrl,
-        billText: previewOrder.billText,
-      });
-    } catch (cloudErr) {
-      console.warn("[BillPreview] WhatsApp Cloud API background send:", cloudErr.message);
-    }
-
-    // 4. Open WhatsApp in new tab
-    window.open(waUrl, "_blank", "noopener,noreferrer");
-
-    // 5. Update state
-    confirmOrderRedirect(previewOrder.orderNumber);
-    clearCart();
-    setIsSent(true);
-    setShareMethod("download");
-    showNotification(`Bill photo downloaded (${fileName})! Opening WhatsApp chat with shop owner (+${targetAdminPhone}).`, "success");
   };
 
   /**
