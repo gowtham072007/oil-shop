@@ -204,15 +204,37 @@ export async function uploadBillImageApi(orderNumber, dataUrl) {
 }
 
 /**
- * Dispatches bill via Meta WhatsApp Cloud API (if enabled on server)
+ * Dispatches bill via Meta WhatsApp Cloud API directly to store owner's entered number
  */
 export async function sendWhatsAppBillApi(params) {
-  const res = await fetch(`${API_BASE}/api/orders/send-whatsapp-bill`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(params),
-  });
-  return await handleResponse(res);
+  try {
+    const res = await fetch(`${API_BASE}/api/orders/send-whatsapp-bill`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(params),
+    });
+    const data = await res.json().catch(() => null);
+    if (!res.ok) {
+      return {
+        success: false,
+        apiSent: false,
+        error: data?.error || `Server error (${res.status})`,
+        metaDetails: data?.metaDetails,
+        stage: data?.stage,
+        notConfigured: Boolean(data?.notConfigured),
+        recipient: data?.recipient,
+        publicUrl: data?.publicUrl,
+        relativeUrl: data?.relativeUrl,
+      };
+    }
+    return data || { success: false, apiSent: false, error: 'Empty server response' };
+  } catch (err) {
+    return {
+      success: false,
+      apiSent: false,
+      error: `Network error connecting to backend: ${err.message}`,
+    };
+  }
 }
 
 /**
@@ -228,6 +250,18 @@ export async function fetchWhatsAppStatusApi() {
 }
 
 /**
+ * Fetch full admin WhatsApp configuration including masked token (Admin)
+ */
+export async function fetchAdminWhatsAppConfig(adminToken) {
+  const res = await fetch(`${API_BASE}/api/admin/whatsapp-config`, {
+    headers: {
+      Authorization: `Bearer ${adminToken}`,
+    },
+  });
+  return await handleResponse(res);
+}
+
+/**
  * Test Meta WhatsApp Business Cloud API Connection (Admin)
  */
 export async function testWhatsAppCloudApi({ token, phoneNumberId }, adminToken) {
@@ -238,6 +272,21 @@ export async function testWhatsAppCloudApi({ token, phoneNumberId }, adminToken)
       Authorization: `Bearer ${adminToken}`,
     },
     body: JSON.stringify({ token, phoneNumberId }),
+  });
+  return await handleResponse(res);
+}
+
+/**
+ * Send test verification ping message to admin's WhatsApp number (Admin)
+ */
+export async function sendWhatsAppTestPingApi({ token, phoneNumberId, to }, adminToken) {
+  const res = await fetch(`${API_BASE}/api/whatsapp/send-test-ping`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${adminToken}`,
+    },
+    body: JSON.stringify({ token, phoneNumberId, to }),
   });
   return await handleResponse(res);
 }

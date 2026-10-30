@@ -42,6 +42,8 @@ import {
   getWhatsAppCloudConfig,
   sendWhatsAppCloudImage,
   verifyWhatsAppCloudCredentials,
+  sendWhatsAppTestPing,
+  formatMetaErrorMessage,
 } from './whatsappCloudApi.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -386,7 +388,7 @@ app.post('/api/orders/send-whatsapp-bill', async (req, res) => {
         error: 'Shop owner WhatsApp number is not configured in Admin Dashboard Settings.',
         billImageUrl: publicUrl,
       });
-      return res.status(400).json({
+      return res.status(200).json({
         success: false,
         apiSent: false,
         error: 'Shop owner WhatsApp number is not configured in Admin Dashboard Settings. Please enter a valid 10-digit mobile number with country code (+91).',
@@ -398,18 +400,19 @@ app.post('/api/orders/send-whatsapp-bill', async (req, res) => {
 
     const config = await getWhatsAppCloudConfig();
     if (!config.isConfigured || !config.isEnabled) {
+      const unconfiguredMsg = 'WhatsApp Business Cloud API credentials (Phone Number ID & Access Token) are not configured on this server. Please enter them in Admin Settings > Meta WhatsApp Business Settings.';
       await updateOrderWhatsAppStatus(orderNumber, {
         status: 'unconfigured',
         recipient: adminWhatsApp,
-        error: 'WhatsApp Business Cloud API is not configured on this server.',
+        error: unconfiguredMsg,
         billImageUrl: publicUrl,
       });
 
-      return res.json({
+      return res.status(200).json({
         success: false,
         apiSent: false,
         notConfigured: true,
-        error: 'WhatsApp Business Cloud API is not configured on this server. To send bill photos directly to the shop owner, please configure Meta WhatsApp Business API credentials (Phone Number ID and Access Token) in Admin Settings.',
+        error: unconfiguredMsg,
         recipient: adminWhatsApp,
         orderNumber,
         publicUrl,
@@ -446,7 +449,7 @@ app.post('/api/orders/send-whatsapp-bill', async (req, res) => {
         recipient: adminWhatsApp,
       });
 
-      return res.json({
+      return res.status(200).json({
         success: true,
         apiSent: true,
         messageId: result.messageId,
@@ -465,11 +468,12 @@ app.post('/api/orders/send-whatsapp-bill', async (req, res) => {
       billImageUrl: publicUrl,
     });
 
-    return res.status(400).json({
+    return res.status(200).json({
       success: false,
       apiSent: false,
       error: result.error || 'Failed to dispatch bill photo via WhatsApp Cloud API.',
       metaDetails: result.metaDetails,
+      stage: result.stage,
       recipient: adminWhatsApp,
       orderNumber,
       publicUrl,
@@ -525,6 +529,54 @@ app.post('/api/whatsapp/test-connection', requireAdminAuth, async (req, res) => 
   }
 });
 
+// Admin Route: Send a test ping to store owner's WhatsApp number to verify active authorization
+app.post('/api/whatsapp/send-test-ping', requireAdminAuth, async (req, res) => {
+  try {
+    const { token, phoneNumberId, to } = req.body;
+    const settings = await getShopSettings();
+    const testToken = token || settings.whatsappCloudApiToken || process.env.WHATSAPP_CLOUD_API_TOKEN;
+    const testPhoneId = phoneNumberId || settings.whatsappPhoneNumberId || process.env.WHATSAPP_PHONE_NUMBER_ID;
+    const testRecipient = to || settings.whatsappNumber;
+
+    if (!testToken || !testPhoneId) {
+      return res.status(400).json({
+        success: false,
+        error: 'Both Access Token and Phone Number ID are required to send a test message.',
+      });
+    }
+
+    if (!testRecipient) {
+      return res.status(400).json({
+        success: false,
+        error: 'Store owner WhatsApp recipient number is required.',
+      });
+    }
+
+    const result = await sendWhatsAppTestPing({
+      to: testRecipient,
+      token: testToken,
+      phoneNumberId: testPhoneId,
+    });
+
+    if (!result.success) {
+      return res.status(400).json({
+        success: false,
+        error: result.error,
+        metaDetails: result.metaDetails,
+      });
+    }
+
+    res.json({
+      success: true,
+      messageId: result.messageId,
+      recipient: result.recipient,
+      message: `Test ping message delivered to WhatsApp recipient +${result.recipient}!`,
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 // Check WhatsApp Cloud API configuration status (safe, no secret tokens leaked)
 app.get('/api/whatsapp/status', async (_req, res) => {
   try {
@@ -542,13 +594,42 @@ app.get('/api/whatsapp/status', async (_req, res) => {
   }
 });
 
+// Admin Route: Read full WhatsApp Cloud API config securely
+app.get('/api/admin/whatsapp-config', requireAdminAuth, async (req, res) => {
+  try {
+    const settings = await getShopSettings();
+    const token = process.env.WHATSAPP_CLOUD_API_TOKEN || settings.whatsappCloudApiToken || '';
+    const phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID || settings.whatsappPhoneNumberId || '';
+    const wabaId = process.env.WHATSAPP_WABA_ID || settings.whatsappWabaId || '';
+
+    res.json({
+      success: true,
+      isConfigured: Boolean(token && phoneNumberId),
+      phoneNumberId,
+      wabaId,
+      hasToken: Boolean(token),
+      tokenPreview: token ? `${token.slice(0, 8)}••••${token.slice(-6)}` : '',
+      isEnabled: Boolean(process.env.WHATSAPP_CLOUD_API_ENABLED === 'true' || settings.whatsappCloudApiEnabled),
+      adminPhone: settings.whatsappNumber || '',
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 // -------------------------------------------------------------
 // Shop Settings Routes
 // -------------------------------------------------------------
 app.get('/api/settings', async (req, res) => {
   try {
     const settings = await getShopSettings();
-    res.json({ success: true, settings });
+    // Return safe settings (do not leak raw token in public endpoint)
+    const safeSettings = {
+      ...settings,
+      hasWhatsAppCloudApiToken: Boolean(settings.whatsappCloudApiToken || process.env.WHATSAPP_CLOUD_API_TOKEN),
+      whatsappCloudApiConfigured: Boolean((settings.whatsappCloudApiToken || process.env.WHATSAPP_CLOUD_API_TOKEN) && (settings.whatsappPhoneNumberId || process.env.WHATSAPP_PHONE_NUMBER_ID)),
+    };
+    res.json({ success: true, settings: safeSettings });
   } catch (err) {
     console.error('[API] Error loading settings:', err);
     res.status(500).json({ success: false, error: 'Failed to load shop settings.' });
@@ -557,8 +638,16 @@ app.get('/api/settings', async (req, res) => {
 
 app.put('/api/settings', requireAdminAuth, async (req, res) => {
   try {
-    if (req.body.whatsappNumber) {
-      let digits = String(req.body.whatsappNumber).replace(/\D/g, '');
+    const existing = await getShopSettings();
+    const updatePayload = { ...req.body };
+
+    // If whatsappCloudApiToken is omitted or empty, preserve existing token
+    if (!updatePayload.whatsappCloudApiToken && existing.whatsappCloudApiToken) {
+      updatePayload.whatsappCloudApiToken = existing.whatsappCloudApiToken;
+    }
+
+    if (updatePayload.whatsappNumber) {
+      let digits = String(updatePayload.whatsappNumber).replace(/\D/g, '');
       if (digits.length === 10) {
         digits = `91${digits}`;
       }
@@ -568,9 +657,9 @@ app.put('/api/settings', requireAdminAuth, async (req, res) => {
           error: 'Shop WhatsApp number must be at least 10 digits including country code (e.g. 919876543210).',
         });
       }
-      req.body.whatsappNumber = digits;
+      updatePayload.whatsappNumber = digits;
     }
-    const updated = await saveShopSettings(req.body);
+    const updated = await saveShopSettings(updatePayload);
     broadcast('settings:updated', updated);
     res.json({ success: true, settings: updated });
   } catch (err) {

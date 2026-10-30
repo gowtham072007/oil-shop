@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useShop } from "../context/ShopContext";
 import { formatINR, parseCountryAndLocalPhone, cleanWhatsAppNumber } from "../utils/billGenerator";
-import { testWhatsAppCloudApi } from "../utils/api";
+import { testWhatsAppCloudApi, sendWhatsAppTestPingApi, fetchAdminWhatsAppConfig } from "../utils/api";
 import {
   X,
   Lock,
@@ -20,6 +20,7 @@ import {
   RefreshCw,
   Eye,
   AlertCircle,
+  Send,
 } from "lucide-react";
 
 export const AdminModal = () => {
@@ -56,6 +57,9 @@ export const AdminModal = () => {
   const [isSavingProduct, setIsSavingProduct] = useState(false);
   const [isTestingApi, setIsTestingApi] = useState(false);
   const [testApiResult, setTestApiResult] = useState(null);
+  const [isTestingPing, setIsTestingPing] = useState(false);
+  const [testPingResult, setTestPingResult] = useState(null);
+  const [adminWhatsAppConfig, setAdminWhatsAppConfig] = useState(null);
   const [activeTab, setActiveTab] = useState("products"); // 'products' | 'categories' | 'settings' | 'orders' | 'backup'
 
   // Product Form State (for Add / Edit)
@@ -329,6 +333,19 @@ export const AdminModal = () => {
     }
   };
 
+  // Fetch full WhatsApp configuration when admin is authenticated and in settings tab
+  useEffect(() => {
+    if (isAdminAuthenticated && adminToken) {
+      fetchAdminWhatsAppConfig(adminToken)
+        .then((cfg) => {
+          if (cfg && cfg.success) {
+            setAdminWhatsAppConfig(cfg);
+          }
+        })
+        .catch((err) => console.warn("[AdminModal] Config fetch:", err.message));
+    }
+  }, [isAdminAuthenticated, adminToken, activeTab]);
+
   const handleTestWhatsAppApi = async () => {
     setIsTestingApi(true);
     setTestApiResult(null);
@@ -359,6 +376,45 @@ export const AdminModal = () => {
       });
     } finally {
       setIsTestingApi(false);
+    }
+  };
+
+  const handleSendTestPing = async () => {
+    setIsTestingPing(true);
+    setTestPingResult(null);
+    try {
+      const resolvedCode = countryCode === "custom" ? customCountryCode.replace(/\D/g, "") : countryCode.replace(/\D/g, "");
+      const cleanLocal = localPhone.replace(/\D/g, "");
+      const targetTo = resolvedCode && cleanLocal ? `${resolvedCode}${cleanLocal}` : (settingsForm.whatsappNumber || shopSettings?.whatsappNumber);
+
+      const res = await sendWhatsAppTestPingApi(
+        {
+          token: settingsForm.whatsappCloudApiToken,
+          phoneNumberId: settingsForm.whatsappPhoneNumberId,
+          to: targetTo,
+        },
+        adminToken
+      );
+
+      if (res.success) {
+        setTestPingResult({
+          success: true,
+          message: `Delivered test verification ping to store owner WhatsApp (+${res.recipient})! Meta Message ID: ${res.messageId}`,
+        });
+      } else {
+        setTestPingResult({
+          success: false,
+          error: res.error || "Failed to deliver test WhatsApp ping.",
+          metaDetails: res.metaDetails,
+        });
+      }
+    } catch (err) {
+      setTestPingResult({
+        success: false,
+        error: err.message || "Failed to connect to Meta WhatsApp test ping endpoint.",
+      });
+    } finally {
+      setIsTestingPing(false);
     }
   };
 
@@ -1524,10 +1580,34 @@ export const AdminModal = () => {
                     </div>
 
                     <div className="form-group" style={{ marginTop: "0.5rem" }}>
-                      <label>Permanent System User Access Token</label>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.3rem", flexWrap: "wrap", gap: "0.5rem" }}>
+                        <label style={{ margin: 0 }}>Permanent System User Access Token</label>
+                        {adminWhatsAppConfig?.hasToken && (
+                          <span
+                            style={{
+                              display: "inline-flex",
+                              alignItems: "center",
+                              gap: "4px",
+                              background: "#f0fdf4",
+                              color: "#166534",
+                              border: "1px solid #86efac",
+                              borderRadius: "4px",
+                              padding: "2px 8px",
+                              fontSize: "0.72rem",
+                              fontWeight: "700",
+                            }}
+                          >
+                            <CheckCircle size={12} color="#16a34a" /> Token Saved in Server Database (Preview: {adminWhatsAppConfig.tokenMasked})
+                          </span>
+                        )}
+                      </div>
                       <input
                         type="password"
-                        placeholder="EAA..."
+                        placeholder={
+                          adminWhatsAppConfig?.hasToken
+                            ? "•••••••••••••••• (Leave blank to preserve existing saved token, or paste new token to update)"
+                            : "EAA..."
+                        }
                         value={settingsForm.whatsappCloudApiToken || ""}
                         onChange={(e) => setSettingsForm({ ...settingsForm, whatsappCloudApiToken: e.target.value })}
                       />
@@ -1536,7 +1616,7 @@ export const AdminModal = () => {
                       </small>
                     </div>
 
-                    {/* Test WhatsApp Cloud API Connection Button */}
+                    {/* Test WhatsApp Cloud API Connection Buttons */}
                     <div style={{ marginTop: "1rem", display: "flex", alignItems: "center", gap: "0.75rem", flexWrap: "wrap" }}>
                       <button
                         type="button"
@@ -1558,12 +1638,32 @@ export const AdminModal = () => {
                         }}
                       >
                         <RefreshCw size={14} className={isTestingApi ? "spin-icon" : ""} />
-                        <span>{isTestingApi ? "Verifying with Meta..." : "Test WhatsApp API Connection"}</span>
+                        <span>{isTestingApi ? "Verifying with Meta..." : "1. Test Meta Credentials"}</span>
                       </button>
 
-                      <span style={{ fontSize: "0.76rem", color: "#57655d" }}>
-                        Validates your Phone ID and Token against Meta Graph API in real-time.
-                      </span>
+                      <button
+                        type="button"
+                        onClick={handleSendTestPing}
+                        disabled={isTestingPing || !settingsForm.whatsappPhoneNumberId}
+                        style={{
+                          background: "#166534",
+                          color: "#ffffff",
+                          border: "1.5px solid #22c55e",
+                          padding: "0.5rem 1rem",
+                          borderRadius: "6px",
+                          fontSize: "0.82rem",
+                          fontWeight: "700",
+                          cursor: isTestingPing || !settingsForm.whatsappPhoneNumberId ? "not-allowed" : "pointer",
+                          opacity: isTestingPing || !settingsForm.whatsappPhoneNumberId ? 0.6 : 1,
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: "0.45rem",
+                          boxShadow: "0 2px 4px rgba(22, 101, 52, 0.2)",
+                        }}
+                      >
+                        <Send size={14} className={isTestingPing ? "spin-icon" : ""} />
+                        <span>{isTestingPing ? "Sending Test Ping..." : `2. Send Test Ping to Shop Owner (+${localPhone || "6385755368"})`}</span>
+                      </button>
                     </div>
 
                     {testApiResult && (
@@ -1594,6 +1694,72 @@ export const AdminModal = () => {
                         </div>
                       </div>
                     )}
+
+                    {testPingResult && (
+                      <div
+                        style={{
+                          marginTop: "0.85rem",
+                          padding: "0.75rem 1rem",
+                          borderRadius: "8px",
+                          fontSize: "0.84rem",
+                          background: testPingResult.success ? "#f0fdf4" : "#fef2f2",
+                          border: `1.5px solid ${testPingResult.success ? "#86efac" : "#fca5a5"}`,
+                          color: testPingResult.success ? "#166534" : "#991b1b",
+                          display: "flex",
+                          alignItems: "flex-start",
+                          gap: "0.5rem",
+                        }}
+                      >
+                        {testPingResult.success ? (
+                          <CheckCircle size={18} color="#16a34a" style={{ flexShrink: 0, marginTop: "2px" }} />
+                        ) : (
+                          <AlertCircle size={18} color="#dc2626" style={{ flexShrink: 0, marginTop: "2px" }} />
+                        )}
+                        <div>
+                          <strong>{testPingResult.success ? "Test WhatsApp Message Delivered:" : "Test WhatsApp Message Failed:"}</strong>
+                          <div style={{ marginTop: "2px", lineHeight: "1.4" }}>
+                            {testPingResult.message || testPingResult.error}
+                          </div>
+                          {testPingResult.metaDetails?.code && (
+                            <div style={{ marginTop: "4px", fontSize: "0.78rem", background: "#fee2e2", padding: "3px 6px", borderRadius: "4px" }}>
+                              Meta Error Code: <strong>{testPingResult.metaDetails.code}</strong> {testPingResult.metaDetails.error_subcode && `(Subcode: ${testPingResult.metaDetails.error_subcode})`}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Meta WhatsApp Cloud API Setup & Troubleshooting Guide */}
+                    <div
+                      style={{
+                        marginTop: "1rem",
+                        background: "#f8fafc",
+                        border: "1px solid #e2e8f0",
+                        borderRadius: "8px",
+                        padding: "0.85rem 1rem",
+                        fontSize: "0.78rem",
+                        color: "#334155",
+                        lineHeight: "1.5",
+                      }}
+                    >
+                      <strong style={{ color: "#0f172a", display: "block", marginBottom: "0.4rem" }}>
+                        📘 Meta Developer Console Setup Checklist:
+                      </strong>
+                      <ul style={{ margin: 0, paddingLeft: "1.2rem" }}>
+                        <li>
+                          <strong>Phone Number ID:</strong> Meta Developer Console &gt; WhatsApp &gt; API Setup &gt; "Phone number ID".
+                        </li>
+                        <li>
+                          <strong>Access Token:</strong> Generate a permanent token under Meta Business Manager &gt; Settings &gt; Users &gt; System Users with <code>whatsapp_business_messaging</code> permission.
+                        </li>
+                        <li>
+                          <strong>Error Code 131030 (Recipient not registered):</strong> If your Meta App is in Development mode, you must add the shop recipient number (+{localPhone || "6385755368"}) to the <em>"Manage phone number list"</em> under WhatsApp &gt; API Setup.
+                        </li>
+                        <li>
+                          <strong>Error Code 190 (Token expired):</strong> Temporary test tokens expire after 24 hours. Generate a permanent System User token to keep sending uninterrupted.
+                        </li>
+                      </ul>
+                    </div>
                   </div>
 
                   <button type="submit" className="btn-primary-glow" style={{ marginTop: "1rem" }}>
@@ -1680,23 +1846,40 @@ export const AdminModal = () => {
                                     <CheckCircle size={11} color="#16a34a" /> Cloud API Sent
                                   </span>
                                 ) : ord.whatsappStatus === "failed" ? (
-                                  <span
-                                    style={{
-                                      display: "inline-flex",
-                                      alignItems: "center",
-                                      gap: "3px",
-                                      background: "#fef2f2",
-                                      color: "#991b1b",
-                                      border: "1px solid #fca5a5",
-                                      borderRadius: "12px",
-                                      padding: "2px 8px",
-                                      fontSize: "0.72rem",
-                                      fontWeight: "700",
-                                    }}
-                                    title={ord.whatsappError || "Dispatch failed"}
-                                  >
-                                    <AlertCircle size={11} color="#dc2626" /> Failed
-                                  </span>
+                                  <div>
+                                    <span
+                                      style={{
+                                        display: "inline-flex",
+                                        alignItems: "center",
+                                        gap: "3px",
+                                        background: "#fef2f2",
+                                        color: "#991b1b",
+                                        border: "1px solid #fca5a5",
+                                        borderRadius: "12px",
+                                        padding: "2px 8px",
+                                        fontSize: "0.72rem",
+                                        fontWeight: "700",
+                                      }}
+                                      title={ord.whatsappError || "Dispatch failed"}
+                                    >
+                                      <AlertCircle size={11} color="#dc2626" /> Failed
+                                    </span>
+                                    {ord.whatsappError && (
+                                      <div
+                                        style={{
+                                          fontSize: "0.68rem",
+                                          color: "#b91c1c",
+                                          maxWidth: "180px",
+                                          marginTop: "3px",
+                                          lineHeight: "1.2",
+                                          whiteSpace: "normal",
+                                        }}
+                                      >
+                                        {ord.whatsappError.slice(0, 80)}
+                                        {ord.whatsappError.length > 80 ? "..." : ""}
+                                      </div>
+                                    )}
+                                  </div>
                                 ) : (
                                   <span
                                     style={{

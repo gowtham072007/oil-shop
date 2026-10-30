@@ -121,6 +121,8 @@ export const CartDrawer = () => {
           ...order,
           whatsappStatus: result.notConfigured ? "unconfigured" : "failed",
           whatsappError: result.error || "Meta WhatsApp Business API dispatch failed.",
+          whatsappMetaDetails: result.metaDetails,
+          whatsappStage: result.stage,
           whatsappRecipient: result.recipient || cleanAdminPhone,
           billDataUrl: result.dataUrl,
         });

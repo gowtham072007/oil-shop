@@ -32,6 +32,7 @@ export const BillPreviewModal = () => {
     clearCart,
     shopSettings,
     showNotification,
+    setIsAdminOpen,
   } = useShop();
 
   const [copied, setCopied] = useState(false);
@@ -57,6 +58,8 @@ export const BillPreviewModal = () => {
         status: previewOrder.whatsappStatus,
         messageId: previewOrder.whatsappMessageId,
         error: previewOrder.whatsappError,
+        metaDetails: previewOrder.whatsappMetaDetails,
+        stage: previewOrder.whatsappStage,
         recipient: previewOrder.whatsappRecipient || cleanWhatsAppNumber(shopSettings?.whatsappNumber),
       });
       if (previewOrder.whatsappStatus === "delivered") {
@@ -150,6 +153,8 @@ export const BillPreviewModal = () => {
         setApiStatus({
           status: result.notConfigured ? "unconfigured" : "failed",
           error: result.error || "Meta WhatsApp Business API dispatch failed.",
+          metaDetails: result.metaDetails,
+          stage: result.stage,
           recipient: result.recipient || cleanAdminPhone,
         });
         showNotification(
@@ -344,6 +349,49 @@ export const BillPreviewModal = () => {
               <p style={{ margin: "0 0 0.75rem 0", fontSize: "0.86rem", color: "#7f1d1d", lineHeight: 1.5 }}>
                 {apiStatus.error || "The bill photo could not be sent via WhatsApp Business Cloud API."}
               </p>
+
+              {/* Exact Meta Graph API error codes & diagnosis */}
+              {apiStatus.metaDetails && (
+                <div
+                  style={{
+                    background: "#fff1f2",
+                    border: "1px dashed #fda4af",
+                    borderRadius: "6px",
+                    padding: "0.55rem 0.85rem",
+                    marginBottom: "0.75rem",
+                    fontSize: "0.78rem",
+                    color: "#9f1239",
+                    lineHeight: 1.45,
+                  }}
+                >
+                  <div style={{ fontWeight: "700", marginBottom: "2px" }}>
+                    Meta WhatsApp Cloud API Diagnostics:
+                  </div>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem", alignItems: "center" }}>
+                    {apiStatus.metaDetails.code && (
+                      <span>
+                        Error Code: <strong>{apiStatus.metaDetails.code}</strong>
+                      </span>
+                    )}
+                    {apiStatus.metaDetails.error_subcode && (
+                      <span>
+                        Subcode: <strong>{apiStatus.metaDetails.error_subcode}</strong>
+                      </span>
+                    )}
+                    {apiStatus.metaDetails.type && (
+                      <span>
+                        Type: <code>{apiStatus.metaDetails.type}</code>
+                      </span>
+                    )}
+                  </div>
+                  {apiStatus.metaDetails.fbtrace_id && (
+                    <div style={{ fontSize: "0.72rem", color: "#be123c", marginTop: "3px" }}>
+                      Meta Trace ID: <code>{apiStatus.metaDetails.fbtrace_id}</code>
+                    </div>
+                  )}
+                </div>
+              )}
+
               <div
                 style={{
                   background: "#ffffff",
@@ -360,6 +408,52 @@ export const BillPreviewModal = () => {
                 <div style={{ marginTop: "4px", color: "#64748b" }}>
                   The store owner can configure permanent Meta WhatsApp Cloud API credentials (Phone Number ID & Access Token) in Admin Settings &gt; Meta WhatsApp Business Settings.
                 </div>
+              </div>
+
+              {/* Retry & Admin Action Buttons */}
+              <div style={{ display: "flex", gap: "0.6rem", marginTop: "0.85rem", flexWrap: "wrap" }}>
+                <button
+                  type="button"
+                  onClick={handleSendToWhatsApp}
+                  disabled={isGenerating || !isAdminPhoneValid}
+                  style={{
+                    background: "#dc2626",
+                    color: "#ffffff",
+                    border: "none",
+                    borderRadius: "6px",
+                    padding: "0.45rem 0.95rem",
+                    fontSize: "0.82rem",
+                    fontWeight: "700",
+                    cursor: isGenerating ? "not-allowed" : "pointer",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "0.4rem",
+                    boxShadow: "0 2px 4px rgba(220, 38, 38, 0.2)",
+                  }}
+                >
+                  {isGenerating ? <Loader2 size={14} className="animate-spin" /> : <RefreshCw size={14} />}
+                  <span>Retry Sending Bill Photo</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPreviewOrder(null);
+                    setIsAdminOpen(true);
+                  }}
+                  style={{
+                    background: "#f1f5f9",
+                    color: "#0f172a",
+                    border: "1px solid #cbd5e1",
+                    borderRadius: "6px",
+                    padding: "0.45rem 0.9rem",
+                    fontSize: "0.82rem",
+                    fontWeight: "600",
+                    cursor: "pointer",
+                  }}
+                >
+                  ⚙️ Open Admin Settings
+                </button>
               </div>
             </div>
           ) : (
@@ -730,6 +824,11 @@ export const BillPreviewModal = () => {
               <>
                 <Check size={18} />
                 <span>Bill Photo Delivered to Store Owner</span>
+              </>
+            ) : apiStatus && apiStatus.status === "failed" ? (
+              <>
+                <RefreshCw size={18} />
+                <span>Retry Sending on WhatsApp</span>
               </>
             ) : (
               <>

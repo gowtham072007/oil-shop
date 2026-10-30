@@ -583,6 +583,8 @@ export async function dispatchOrderPhotoBillToWhatsApp({
     apiSent: false,
     notConfigured: Boolean(apiResult?.notConfigured),
     error: apiResult?.error || "Meta WhatsApp Business API dispatch failed.",
+    metaDetails: apiResult?.metaDetails,
+    stage: apiResult?.stage,
     recipient: apiResult?.recipient || cleanAdmin,
     orderNumber: order.orderNumber,
     fileName,
