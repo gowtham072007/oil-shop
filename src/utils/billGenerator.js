@@ -159,50 +159,169 @@ export const calculateOrderTotals = (cartItems, shopSettings, appliedCoupon) => 
   };
 };
 
+export const PERMANENT_ADMIN_WHATSAPP = "916385755368";
+export const PERMANENT_ADMIN_WHATSAPP_DISPLAY = "+91 63857 55368";
+
+/**
+ * Converts a numeric amount into Indian Currency words (e.g. 1500 -> One Thousand Five Hundred Rupees Only)
+ */
+export const numberToIndianRupeesWords = (num) => {
+  const n = Math.round(Number(num) || 0);
+  if (n <= 0) return "Zero Rupees Only";
+
+  const units = [
+    "", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine",
+    "Ten", "Eleven", "Twelve", "Thirteen", "Fourteen", "Fifteen", "Sixteen",
+    "Seventeen", "Eighteen", "Nineteen",
+  ];
+  const tens = [
+    "", "", "Twenty", "Thirty", "Forty", "Fifty", "Sixty", "Seventy", "Eighty", "Ninety",
+  ];
+
+  const convertTwoDigits = (val) => {
+    if (val < 20) return units[val];
+    const t = tens[Math.floor(val / 10)];
+    const u = units[val % 10];
+    return u ? `${t} ${u}` : t;
+  };
+
+  const convertThreeDigits = (val) => {
+    let str = "";
+    const h = Math.floor(val / 100);
+    const rem = val % 100;
+    if (h > 0) {
+      str += `${units[h]} Hundred`;
+      if (rem > 0) str += " and ";
+    }
+    if (rem > 0) {
+      str += convertTwoDigits(rem);
+    }
+    return str;
+  };
+
+  const crore = Math.floor(n / 10000000);
+  let rem = n % 10000000;
+  const lakh = Math.floor(rem / 100000);
+  rem = rem % 100000;
+  const thousand = Math.floor(rem / 1000);
+  rem = rem % 1000;
+
+  const parts = [];
+  if (crore > 0) parts.push(`${convertThreeDigits(crore)} Crore`);
+  if (lakh > 0) parts.push(`${convertTwoDigits(lakh)} Lakh`);
+  if (thousand > 0) parts.push(`${convertTwoDigits(thousand)} Thousand`);
+  if (rem > 0) parts.push(convertThreeDigits(rem));
+
+  return `${parts.join(" ")} Rupees Only`;
+};
+
+/**
+ * Generates the official Tax Invoice text formatted specifically for WhatsApp messaging:
+ * Follows the Poomani Chekku Ennai Tax Invoice structure:
+ * 1. Invoice Header (*POOMANI CHEKKU ENNAI*, *TAX INVOICE*, Invoice Type, No, Date & Time)
+ * 2. Seller Details (Poomani Chekku Ennai, Address, Contact, GSTIN if applicable)
+ * 3. Buyer Details (Customer Name, Phone, Address, State)
+ * 4. Order Details – Invoice Table (| Sl. No. | Particulars | Quantity | Rate | Amount |)
+ * 5. Invoice Totals (Subtotal, Discount, Taxable Value, CGST, SGST, Total Tax, GRAND TOTAL, Amount in Words)
+ * 6. Footer (For Poomani Chekku Ennai, Thank you for your purchase!)
+ */
+export const generateWhatsAppTaxInvoiceText = (order, shopSettings = {}) => {
+  const lines = [];
+
+  // 1. Invoice Header
+  lines.push("*POOMANI CHEKKU ENNAI*");
+  lines.push("*பூமணி செக்கு எண்ணெய்*");
+  lines.push("");
+  lines.push("                     *TAX INVOICE*");
+  lines.push("");
+  lines.push("Invoice Type: Original");
+  lines.push(`Invoice No: ${order.orderNumber}`);
+  lines.push(`Date & Time: ${order.date || new Date().toLocaleString("en-IN")}`);
+  lines.push("");
+
+  // 2. Seller Details
+  lines.push("━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+  lines.push("*SELLER DETAILS*");
+  lines.push(shopSettings.shopName || "Poomani Chekku Ennai");
+  lines.push(`Address: ${shopSettings.address || "Gopalasamuthiram (கோபாலசமுத்திரம்), Tamil Nadu"}`);
+  lines.push(`Contact: ${shopSettings.phoneDisplay || PERMANENT_ADMIN_WHATSAPP_DISPLAY}`);
+  if (shopSettings.gstin && String(shopSettings.gstin).trim()) {
+    lines.push(`GSTIN: ${String(shopSettings.gstin).trim()}`);
+  }
+  lines.push("");
+
+  // 3. Buyer Details
+  lines.push("━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+  lines.push("*BUYER DETAILS*");
+  lines.push(`Customer Name: ${order.customerName || "Valued Customer"}`);
+  lines.push(`Phone: ${order.customerPhone || ""}`);
+  const customerAddress = order.customerAddress || order.address || order.deliveryAddress || "";
+  lines.push(`Address: ${customerAddress}`);
+  const customerState = order.customerState || order.state || "Tamil Nadu";
+  lines.push(`State: ${customerState}`);
+  lines.push("");
+
+  // 4. Order Details – Invoice Table
+  lines.push("━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+  lines.push("*ORDER DETAILS – INVOICE ITEMS*");
+  lines.push("| Sl. No. | Particulars | Quantity | Rate | Amount |");
+  lines.push("|---|---|---|---|---|");
+
+  (order.items || []).forEach((item, idx) => {
+    const sNo = item.sNo || idx + 1;
+    const std = getStandardOilNames(item.name, item.regionalName);
+    const size = item.packSize || item.selectedVariant?.size || "1 Litre";
+    const particulars = `${std.combined} – ${size}`;
+    const qty = item.quantity || 1;
+    const rate = Number(item.rate || item.price || 0);
+    const amount = Number(item.amount || rate * qty);
+
+    lines.push(`| ${sNo} | ${particulars} | ${qty} | ₹${formatINR(rate)} | ₹${formatINR(amount)} |`);
+  });
+  lines.push("");
+
+  // 5. Invoice Totals
+  lines.push("━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+  lines.push("*INVOICE TOTALS*");
+  lines.push(`Subtotal: ₹${formatINR(order.subtotal)}`);
+  if (order.discount && Number(order.discount) > 0) {
+    lines.push(`Discount: -₹${formatINR(order.discount)}`);
+  }
+
+  const taxableValue = Math.max(0, (Number(order.subtotal) || 0) - (Number(order.discount) || 0));
+  lines.push(`Taxable Value: ₹${formatINR(taxableValue)}`);
+
+  // Include GST only when applicable and configured by admin. Never invent GSTIN or tax rates.
+  const gstRate = Number(shopSettings.gstRate) || 0;
+  if (shopSettings.gstin && gstRate > 0) {
+    const halfRate = (gstRate / 2).toFixed(1);
+    const halfTax = Math.round((taxableValue * (gstRate / 2)) / 100);
+    const totalTax = halfTax * 2;
+    lines.push(`CGST (${halfRate}%): ₹${formatINR(halfTax)}`);
+    lines.push(`SGST (${halfRate}%): ₹${formatINR(halfTax)}`);
+    lines.push(`Total Tax: ₹${formatINR(totalTax)}`);
+  }
+
+  lines.push("");
+  lines.push(`*GRAND TOTAL: ₹${formatINR(order.grandTotal)}*`);
+  lines.push("");
+  lines.push(`Amount in Words: ${numberToIndianRupeesWords(order.grandTotal)}`);
+  lines.push("");
+
+  // 6. Footer
+  lines.push("━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+  lines.push("For Poomani Chekku Ennai");
+  lines.push("");
+  lines.push("Thank you for your purchase!");
+
+  return lines.join("\n");
+};
+
 /**
  * Generates the professional bill text adhering to the user's requirements:
  */
-export const generateWhatsAppBillText = (order) => {
-  const lines = [];
-
-  lines.push("🧾 *POOMANI CHEKKU ENNAI — பூமணி செக்கு எண்ணெய்*");
-  lines.push("*Customer Order Bill / வாடிக்கையாளர் ஆர்டர் ரசீது*");
-  lines.push("━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-  lines.push(`*Bill No / Order ID:* ${order.orderNumber}`);
-  lines.push(`*Date & Time:* ${order.date}`);
-  lines.push(`*Customer Name:* ${order.customerName}`);
-  lines.push(`*Phone Number:* ${order.customerPhone}`);
-  const customerAddress = order.customerAddress || order.address || order.deliveryAddress;
-  if (customerAddress) {
-    lines.push(`*Customer Address:* ${customerAddress}`);
-  }
-  lines.push("━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-  lines.push("*ORDERED PRODUCTS / ஆர்டர் பொருட்கள்:*");
-
-  order.items.forEach((item, idx) => {
-    const sNo = item.sNo || idx + 1;
-    const displayName = item.fullName || (item.regionalName ? `${item.name} — ${item.regionalName}` : item.name);
-    lines.push(`\n${sNo}. *${displayName}*`);
-    lines.push(`   • Quantity/Size: ${item.packSize}`);
-    lines.push(`   • Qty: ${item.quantity} bottle(s)`);
-    lines.push(`   • Unit Price: ₹${formatINR(item.rate)}`);
-    lines.push(`   • Amount: ₹${formatINR(item.amount)}`);
-  });
-
-  lines.push("\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-  lines.push(`*Subtotal:* ₹${formatINR(order.subtotal)}`);
-  if (order.discount > 0) {
-    lines.push(`*Discount:* -₹${formatINR(order.discount)}`);
-  }
-  lines.push(`*GRAND TOTAL / மொத்தத் தொகை:* ₹${formatINR(order.grandTotal)}`);
-  lines.push(`*Payment Method:* ${order.paymentMethod || "Cash"}`);
-  if (order.customerNotes && order.customerNotes !== "None") {
-    lines.push(`*Notes:* ${order.customerNotes}`);
-  }
-  lines.push("━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-  lines.push("Hello Poomani Chekku Ennai, I would like to confirm this order. Please check my order bill.");
-
-  return lines.join("\n");
+export const generateWhatsAppBillText = (order, shopSettings) => {
+  return generateWhatsAppTaxInvoiceText(order, shopSettings);
 };
 
 /**
@@ -210,7 +329,21 @@ export const generateWhatsAppBillText = (order) => {
  * https://wa.me/COUNTRYCODEPHONENUMBER?text=ENCODED_MESSAGE
  */
 export const buildWhatsAppUrl = (rawPhoneNumber, billText) => {
-  const cleanPhone = cleanWhatsAppNumber(rawPhoneNumber);
+  const cleanPhone = cleanWhatsAppNumber(rawPhoneNumber) || PERMANENT_ADMIN_WHATSAPP;
   const encodedMessage = encodeURIComponent(billText);
   return `https://wa.me/${cleanPhone}?text=${encodedMessage}`;
+};
+
+/**
+ * Opens WhatsApp click-to-chat with the prefilled Tax Invoice
+ */
+export const openWhatsAppOrder = (rawPhoneNumber, invoiceText) => {
+  const waUrl = buildWhatsAppUrl(rawPhoneNumber, invoiceText);
+  const isMobile = typeof navigator !== "undefined" && /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+  if (isMobile) {
+    window.location.href = waUrl;
+  } else {
+    window.open(waUrl, "_blank", "noopener,noreferrer");
+  }
+  return waUrl;
 };

@@ -47,6 +47,7 @@ export const CartDrawer = () => {
     phone: "",
     address: "",
     city: "Bengaluru",
+    state: "Tamil Nadu",
     pincode: "",
     paymentMethod: "Cash",
     notes: "",
@@ -56,8 +57,8 @@ export const CartDrawer = () => {
 
   if (!isCartOpen) return null;
 
-  // Validate form and directly initiate WhatsApp Photo Bill dispatch sequence
-  const validateAndProceed = async (e) => {
+  // Validate form and directly initiate WhatsApp Tax Invoice checkout sequence
+  const validateAndProceed = (e) => {
     e.preventDefault();
     const errors = {};
 
@@ -85,54 +86,10 @@ export const CartDrawer = () => {
     setFormErrors(errors);
     if (Object.keys(errors).length > 0) return;
 
-    // Permanent Store Owner WhatsApp recipient number (+91 6385755368)
-    const cleanAdminPhone = PERMANENT_ADMIN_WHATSAPP;
-
-    setIsSubmitting(true);
-    try {
-      // 1. Create order record and open preview modal
-      const order = initiateWhatsAppCheckout(customerDetails);
-      if (!order) return;
-
-      // 2. Dynamically generate professional bill photo & dispatch directly to store owner's WhatsApp
-      const result = await dispatchOrderPhotoBillToWhatsApp({
-        order,
-        shopSettings,
-      });
-
-      if (result.success && result.apiSent) {
-        setPreviewOrder({
-          ...order,
-          whatsappStatus: "delivered",
-          whatsappMessageId: result.messageId,
-          whatsappRecipient: result.recipient || cleanAdminPhone,
-          billDataUrl: result.dataUrl,
-        });
-        confirmOrderRedirect(order.orderNumber);
-        showNotification(
-          `Bill photo delivered directly to store owner (+${result.recipient || cleanAdminPhone}) via WhatsApp Business API!`,
-          "success"
-        );
-      } else {
-        setPreviewOrder({
-          ...order,
-          whatsappStatus: result.notConfigured ? "unconfigured" : "failed",
-          whatsappError: result.error || "Meta WhatsApp Business API dispatch failed.",
-          whatsappMetaDetails: result.metaDetails,
-          whatsappStage: result.stage,
-          whatsappRecipient: result.recipient || cleanAdminPhone,
-          billDataUrl: result.dataUrl,
-        });
-        showNotification(
-          result.error || "WhatsApp Business API dispatch failed.",
-          "error"
-        );
-      }
-    } catch (err) {
-      console.error("[CartDrawer] Order dispatch error:", err);
-      showNotification("Could not dispatch bill photo: " + err.message, "error");
-    } finally {
-      setIsSubmitting(false);
+    // Create order record and open Tax Invoice review modal
+    const order = initiateWhatsAppCheckout(customerDetails);
+    if (order) {
+      showNotification("Official Tax Invoice generated! Review and send on WhatsApp.", "success");
     }
   };
 
@@ -427,21 +384,12 @@ export const CartDrawer = () => {
               onClick={validateAndProceed}
               disabled={isSubmitting}
             >
-              {isSubmitting ? (
-                <>
-                  <Loader2 size={18} className="animate-spin" />
-                  <span>Generating Bill Photo & Sending to Store Owner...</span>
-                </>
-              ) : (
-                <>
-                  <Send size={18} />
-                  <span>Send Order on WhatsApp</span>
-                </>
-              )}
+              <Send size={18} />
+              <span>Review Tax Invoice & Send on WhatsApp</span>
             </button>
 
             <div className="cart-footer-notice">
-              📸 Automatically generates your official invoice photo bill and dispatches directly to the store owner's WhatsApp.
+              🧾 Formats your official Tax Invoice and opens WhatsApp addressed to the store owner (+91 63857 55368).
             </div>
           </div>
         )}

@@ -10,8 +10,10 @@ import {
   calculateOrderTotals,
   generateOrderNumber,
   generateWhatsAppBillText,
+  generateWhatsAppTaxInvoiceText,
   buildWhatsAppUrl,
   cleanWhatsAppNumber,
+  PERMANENT_ADMIN_WHATSAPP,
 } from "../utils/billGenerator";
 import {
   fetchAllProducts,
@@ -21,6 +23,7 @@ import {
   uploadProductPhoto,
   fetchShopSettings,
   saveShopSettingsApi,
+  createOrderApi,
   adminLogin as apiAdminLogin,
   verifyAdminToken,
   syncMigrationApi,
@@ -802,14 +805,21 @@ export const ShopProvider = ({ children }) => {
       timestamp: Date.now(),
     };
 
-    const billText = generateWhatsAppBillText(orderRecord);
-    const waUrl = buildWhatsAppUrl(shopSettings.whatsappNumber, billText);
+    const billText = generateWhatsAppTaxInvoiceText(orderRecord, shopSettings);
+    const waUrl = buildWhatsAppUrl(PERMANENT_ADMIN_WHATSAPP, billText);
 
     const completeOrder = {
       ...orderRecord,
       billText,
       waUrl,
+      whatsappRecipient: PERMANENT_ADMIN_WHATSAPP,
+      whatsappStatus: "WhatsApp Ready",
     };
+
+    // Save order in central database
+    createOrderApi(completeOrder).catch((err) =>
+      console.warn("[ShopContext] Background order save:", err.message)
+    );
 
     setOrders((prev) => [completeOrder, ...prev]);
     setPreviewOrder(completeOrder);

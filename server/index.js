@@ -313,6 +313,49 @@ app.post('/api/upload', requireAdminAuth, (req, res) => {
 // WhatsApp Bill Image & Cloud API Routes
 // -------------------------------------------------------------
 
+// Record a new customer order with tax invoice details in database
+app.post('/api/orders', async (req, res) => {
+  try {
+    const {
+      orderNumber,
+      customerName,
+      customerPhone,
+      customerAddress,
+      customerState,
+      items,
+      subtotal,
+      discount,
+      grandTotal,
+      paymentMethod,
+      customerNotes,
+      billText,
+    } = req.body;
+
+    const saved = await saveOrder({
+      orderNumber: orderNumber || `OS-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`,
+      customerName: customerName || 'Valued Customer',
+      customerPhone: customerPhone || '',
+      customerAddress: customerAddress || '',
+      customerState: customerState || 'Tamil Nadu',
+      items: Array.isArray(items) ? items : [],
+      subtotal: Number(subtotal) || 0,
+      discount: Number(discount) || 0,
+      grandTotal: Number(grandTotal) || 0,
+      paymentMethod: paymentMethod || 'Cash',
+      customerNotes: customerNotes || '',
+      billText: billText || '',
+      whatsappRecipient: PERMANENT_ADMIN_WHATSAPP, // +91 6385755368
+      whatsappStatus: 'WhatsApp Ready',
+    });
+
+    broadcast('order:created', saved);
+    res.status(201).json({ success: true, order: saved });
+  } catch (err) {
+    console.error('[API] Error saving customer order:', err);
+    res.status(500).json({ success: false, error: err.message || 'Failed to record order.' });
+  }
+});
+
 // Upload dynamically generated bill image from frontend canvas to persistent server storage
 app.post('/api/orders/upload-bill', async (req, res) => {
   try {

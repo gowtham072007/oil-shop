@@ -292,6 +292,23 @@ export async function sendWhatsAppTestPingApi({ token, phoneNumberId, to }, admi
 }
 
 /**
+ * Record customer order in central server database
+ */
+export async function createOrderApi(orderData) {
+  try {
+    const res = await fetch(`${API_BASE}/api/orders`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(orderData),
+    });
+    return await handleResponse(res);
+  } catch (err) {
+    console.warn('[API] Could not record order on server:', err.message);
+    return { success: false, error: err.message };
+  }
+}
+
+/**
  * Fetch all orders from central database (Admin)
  */
 export async function fetchOrdersApi(adminToken) {
