@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useShop } from "../context/ShopContext";
-import { formatINR } from "../utils/billGenerator";
+import { formatINR, cleanWhatsAppNumber } from "../utils/billGenerator";
 import { generateBillImage, downloadBillImageFile } from "../utils/billImageCanvas";
 import { uploadBillImageApi, sendWhatsAppBillApi } from "../utils/api";
 import {
@@ -21,6 +21,7 @@ import {
   HelpCircle,
   ArrowRight,
   RefreshCw,
+  Sparkles,
 } from "lucide-react";
 
 export const BillPreviewModal = () => {
@@ -35,8 +36,9 @@ export const BillPreviewModal = () => {
 
   const [copied, setCopied] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [activeTab, setActiveTab] = useState("invoice"); // 'invoice' | 'image' | 'text'
+  const [activeTab, setActiveTab] = useState("image"); // Default to 'image' for Photo Bill first
   const [isSent, setIsSent] = useState(false);
+  const [shareMethod, setShareMethod] = useState(""); // 'native' | 'download'
   const [generatedImgUrl, setGeneratedImgUrl] = useState(null);
   const [publicBillUrl, setPublicBillUrl] = useState("");
   const [downloadedFileName, setDownloadedFileName] = useState("");
@@ -46,6 +48,7 @@ export const BillPreviewModal = () => {
     if (!previewOrder) {
       setGeneratedImgUrl(null);
       setIsSent(false);
+      setShareMethod("");
       return;
     }
 
@@ -80,58 +83,119 @@ export const BillPreviewModal = () => {
     if (previewOrder.billText) {
       navigator.clipboard.writeText(previewOrder.billText);
       setCopied(true);
-      showNotification("Bill text copied to clipboard!");
+      showNotification("Order summary copied to clipboard!");
       setTimeout(() => setCopied(false), 2000);
     }
   };
 
   /**
-   * Primary action: Send Order to WhatsApp
-   * 1. Dynamically generates & auto-downloads the bill image file (PNG) to customer device
-   * 2. Clears shopping cart and applied coupon
-   * 3. Checks/dispatches via server-side Meta WhatsApp Cloud API if enabled
-   * 4. Opens WhatsApp with prefilled matching bill text
-   * 5. Displays guided 3-step attachment instructions inside the modal
+   * Primary action: Send Order on WhatsApp (Photo Bill)
+   * 1. Generates the bill using the actual cart and customer information
+   * 2. Converts the bill into a high-quality PNG image
+   * 3. Uses Web Share API with file sharing where supported (Android, iPhone)
+   * 4. Fallback: downloads the bill image file and opens WhatsApp chat
+   * 5. Never shows false success on user cancellation (AbortError)
    */
   const handleSendToWhatsApp = async () => {
     setIsGenerating(true);
     try {
-      // 1. Auto-download the exact generated bill image to the customer's phone / PC Downloads
-      const downloadRes = await downloadBillImageFile(previewOrder, shopSettings, "png");
-      setDownloadedFileName(downloadRes.fileName);
+      // 1. Generate high-resolution bill image file
+      const result = await generateBillImage(previewOrder, shopSettings, "png");
+      const cleanOrder = String(previewOrder.orderNumber || "order").replace(/[^a-zA-Z0-9_-]/g, "_");
+      const fileName = `Poomani_Chekku_Ennai_Bill_${cleanOrder}.png`;
+      setDownloadedFileName(fileName);
+      setGeneratedImgUrl(result.dataUrl);
 
-      // 2. Clear cart and active coupons immediately upon ordering
-      confirmOrderRedirect(previewOrder.orderNumber);
-      clearCart();
+      // Create File object for Web Share API
+      const billFile = new File([result.blob], fileName, { type: "image/png" });
 
-      // 3. Optional: Trigger server-side dispatch if WhatsApp Cloud API is configured
-      try {
-        await sendWhatsAppBillApi({
-          orderNumber: previewOrder.orderNumber,
-          customerPhone: previewOrder.customerPhone,
-          billDataUrl: downloadRes.dataUrl,
-          billText: previewOrder.billText,
-        });
-      } catch (cloudErr) {
-        console.warn("[BillPreview] WhatsApp Cloud API background send:", cloudErr.message);
+      // Clean short caption for sharing
+      const shortMessage = `Please find my Poomani Chekku Ennai order bill attached.\n\n*Order ID:* ${previewOrder.orderNumber}\n*Customer:* ${previewOrder.customerName}\n*Grand Total:* ₹${formatINR(previewOrder.grandTotal)}`;
+
+      // 2. Check if device natively supports file sharing (Android mobile, iOS Safari, etc.)
+      const canShareFile = Boolean(
+        navigator.canShare &&
+        navigator.share &&
+        navigator.canShare({ files: [billFile] })
+      );
+
+      if (canShareFile) {
+        try {
+          await navigator.share({
+            files: [billFile],
+            title: `Poomani Chekku Ennai Bill - ${previewOrder.orderNumber}`,
+            text: shortMessage,
+          });
+
+          // ONLY on actual share completion (when user picks WhatsApp and completes sharing):
+          confirmOrderRedirect(previewOrder.orderNumber);
+          clearCart();
+          setIsSent(true);
+          setShareMethod("native");
+          showNotification("Bill photo shared successfully to WhatsApp!", "success");
+        } catch (shareErr) {
+          // If the customer dismissed or cancelled the native share sheet:
+          if (shareErr.name === "AbortError") {
+            // DO NOT show a false success message!
+            showNotification("Share cancelled. Tap again when ready to send bill photo.", "info");
+            return;
+          }
+          console.warn("[BillPreview] Native file share failed, falling back to download:", shareErr);
+          await executeFallbackDownloadAndWhatsApp(result, fileName, shortMessage);
+        }
+      } else {
+        // 3. Fallback for Desktop & browsers without Web Share file support
+        await executeFallbackDownloadAndWhatsApp(result, fileName, shortMessage);
       }
-
-      // 4. Open WhatsApp click-to-chat URL in new window with pre-filled order details
-      window.open(previewOrder.waUrl, "_blank", "noopener,noreferrer");
-
-      // 5. Update UI state to show next-step attachment guidance
-      setIsSent(true);
-      showNotification("Bill image downloaded! Please attach it in WhatsApp chat.", "success");
     } catch (err) {
       console.error("[BillPreview] Order dispatch error:", err);
-      // Fallback: still open WhatsApp even if canvas failed
-      confirmOrderRedirect(previewOrder.orderNumber);
-      clearCart();
-      window.open(previewOrder.waUrl, "_blank", "noopener,noreferrer");
-      setIsSent(true);
+      showNotification("Could not prepare bill photo: " + err.message, "error");
     } finally {
       setIsGenerating(false);
     }
+  };
+
+  /**
+   * Fallback for Desktop / non-share browsers:
+   * Downloads the bill photo to customer's device and opens WhatsApp chat
+   */
+  const executeFallbackDownloadAndWhatsApp = async (imageResult, fileName, shortMessage) => {
+    // 1. Download image automatically
+    const link = document.createElement("a");
+    link.download = fileName;
+    link.href = imageResult.dataUrl;
+    document.body.appendChild(link);
+    link.click();
+    setTimeout(() => {
+      if (document.body.contains(link)) document.body.removeChild(link);
+    }, 200);
+
+    // 2. Open WhatsApp click-to-chat with short message
+    const shopPhone = cleanWhatsAppNumber(shopSettings.whatsappNumber || "916385755368");
+    const waText = `${shortMessage}\n\n(Bill photo downloaded: ${fileName} - please attach below)`;
+    const waUrl = `https://api.whatsapp.com/send?phone=${shopPhone}&text=${encodeURIComponent(waText)}`;
+
+    // 3. Optional background server dispatch if configured
+    try {
+      await sendWhatsAppBillApi({
+        orderNumber: previewOrder.orderNumber,
+        customerPhone: previewOrder.customerPhone,
+        billDataUrl: imageResult.dataUrl,
+        billText: previewOrder.billText,
+      });
+    } catch (cloudErr) {
+      console.warn("[BillPreview] WhatsApp Cloud API background send:", cloudErr.message);
+    }
+
+    // 4. Open WhatsApp in new tab
+    window.open(waUrl, "_blank", "noopener,noreferrer");
+
+    // 5. Update state
+    confirmOrderRedirect(previewOrder.orderNumber);
+    clearCart();
+    setIsSent(true);
+    setShareMethod("download");
+    showNotification(`Bill photo downloaded (${fileName})! Please attach it in WhatsApp chat.`, "success");
   };
 
   /**
@@ -142,7 +206,7 @@ export const BillPreviewModal = () => {
     try {
       const res = await downloadBillImageFile(previewOrder, shopSettings, format);
       setDownloadedFileName(res.fileName);
-      showNotification(`Bill image downloaded successfully (${res.fileName})!`, "success");
+      showNotification(`Bill photo downloaded successfully (${res.fileName})!`, "success");
     } catch (err) {
       console.error("[BillPreview] Download error:", err);
       showNotification("Failed to generate bill image: " + err.message, "error");
@@ -151,47 +215,9 @@ export const BillPreviewModal = () => {
     }
   };
 
-  /**
-   * Native Mobile Web Share API:
-   * On mobile devices (Android Chrome, iOS Safari), this allows sharing both the bill image file AND caption directly to WhatsApp!
-   */
-  const handleShareBill = async () => {
-    setIsGenerating(true);
-    try {
-      const { blob, fileName, dataUrl } = await downloadBillImageFile(previewOrder, shopSettings, "png");
-      setDownloadedFileName(fileName);
-      const file = new File([blob], fileName, { type: "image/png" });
-
-      if (navigator.canShare && navigator.canShare({ files: [file] })) {
-        await navigator.share({
-          files: [file],
-          title: `Poomani Chekku Ennai Bill ${previewOrder.orderNumber}`,
-          text: previewOrder.billText,
-        });
-        confirmOrderRedirect(previewOrder.orderNumber);
-        clearCart();
-        setIsSent(true);
-        showNotification("Bill image shared! Select WhatsApp to complete order.");
-      } else {
-        // Fallback: open WhatsApp and guide user
-        window.open(previewOrder.waUrl, "_blank", "noopener,noreferrer");
-        confirmOrderRedirect(previewOrder.orderNumber);
-        clearCart();
-        setIsSent(true);
-        showNotification(`Bill downloaded (${fileName})! Attach it in WhatsApp.`, "info");
-      }
-    } catch (err) {
-      if (err.name !== "AbortError") {
-        console.error("[BillPreview] Share error:", err);
-        showNotification("Could not share bill image: " + err.message, "error");
-      }
-    } finally {
-      setIsGenerating(false);
-    }
-  };
-
   const items = previewOrder.items || [];
   const fileNameDisplay = downloadedFileName || `Poomani_Chekku_Ennai_Bill_${previewOrder.orderNumber}.png`;
+  const shopPhoneFormatted = shopSettings.whatsappNumber ? `+${shopSettings.whatsappNumber}` : "+91 63857 55368";
 
   return (
     <div className="modal-backdrop" onClick={() => setPreviewOrder(null)}>
@@ -222,7 +248,7 @@ export const BillPreviewModal = () => {
 
         {/* Modal Body */}
         <div className="bill-modal-body">
-          {/* POST-SUBMISSION GUIDED STEP BANNER */}
+          {/* POST-SUBMISSION STATUS BANNER */}
           {isSent ? (
             <div
               style={{
@@ -234,68 +260,84 @@ export const BillPreviewModal = () => {
                 boxShadow: "0 2px 8px rgba(22, 163, 74, 0.08)",
               }}
             >
-              <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", marginBottom: "0.6rem" }}>
-                <CheckCircle size={24} color="#16a34a" />
-                <h4 style={{ margin: 0, color: "#166534", fontSize: "1.05rem" }}>
-                  WhatsApp Chat Opened & Bill Image Downloaded!
-                </h4>
-              </div>
+              {shareMethod === "native" ? (
+                <div>
+                  <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", marginBottom: "0.4rem" }}>
+                    <CheckCircle size={24} color="#16a34a" />
+                    <h4 style={{ margin: 0, color: "#166534", fontSize: "1.05rem" }}>
+                      Bill Photo Shared to WhatsApp!
+                    </h4>
+                  </div>
+                  <p style={{ margin: "0 0 0.75rem 0", fontSize: "0.86rem", color: "#1e3a29", lineHeight: 1.5 }}>
+                    Your order <strong>#{previewOrder.orderNumber}</strong> has been forwarded with your bill photo attached. Your shopping cart has been cleared.
+                  </p>
+                </div>
+              ) : (
+                <div>
+                  <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", marginBottom: "0.4rem" }}>
+                    <CheckCircle size={24} color="#16a34a" />
+                    <h4 style={{ margin: 0, color: "#166534", fontSize: "1.05rem" }}>
+                      Bill Photo Downloaded & WhatsApp Chat Opened!
+                    </h4>
+                  </div>
 
-              <p style={{ margin: "0 0 0.75rem 0", fontSize: "0.86rem", color: "#1e3a29", lineHeight: 1.5 }}>
-                Your cart has been cleared and your order is logged. To complete your order with <strong>Poomani Chekku Ennai</strong>, attach your bill image:
-              </p>
+                  <p style={{ margin: "0 0 0.75rem 0", fontSize: "0.86rem", color: "#1e3a29", lineHeight: 1.5 }}>
+                    Your cart has been cleared. To finalize your order with <strong>Poomani Chekku Ennai</strong> ({shopPhoneFormatted}):
+                  </p>
 
-              <div
-                style={{
-                  background: "#ffffff",
-                  border: "1px solid #bbf7d0",
-                  borderRadius: "8px",
-                  padding: "0.85rem",
-                  fontSize: "0.84rem",
-                  color: "#1e3a29",
-                }}
-              >
-                <div style={{ display: "flex", alignItems: "flex-start", gap: "0.5rem", marginBottom: "0.5rem" }}>
-                  <span style={{ background: "#22c55e", color: "#fff", borderRadius: "50%", width: "20px", height: "20px", display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: "0.75rem", fontWeight: "700", flexShrink: 0 }}>1</span>
-                  <span>
-                    <strong>Bill Image Saved:</strong> Look for <code>{fileNameDisplay}</code> in your device <strong>Downloads</strong> or <strong>Gallery</strong>.
-                  </span>
+                  <div
+                    style={{
+                      background: "#ffffff",
+                      border: "1px solid #bbf7d0",
+                      borderRadius: "8px",
+                      padding: "0.85rem",
+                      fontSize: "0.84rem",
+                      color: "#1e3a29",
+                    }}
+                  >
+                    <div style={{ display: "flex", alignItems: "flex-start", gap: "0.5rem", marginBottom: "0.5rem" }}>
+                      <span style={{ background: "#22c55e", color: "#fff", borderRadius: "50%", width: "20px", height: "20px", display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: "0.75rem", fontWeight: "700", flexShrink: 0 }}>1</span>
+                      <span>
+                        <strong>Bill Photo Saved:</strong> Look for <code>{fileNameDisplay}</code> in your device <strong>Downloads</strong> or <strong>Gallery</strong>.
+                      </span>
+                    </div>
+                    <div style={{ display: "flex", alignItems: "flex-start", gap: "0.5rem", marginBottom: "0.5rem" }}>
+                      <span style={{ background: "#22c55e", color: "#fff", borderRadius: "50%", width: "20px", height: "20px", display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: "0.75rem", fontWeight: "700", flexShrink: 0 }}>2</span>
+                      <span>
+                        <strong>In WhatsApp Chat:</strong> Click the <Paperclip size={14} style={{ display: "inline", verticalAlign: "middle" }} /> <strong>Attach (or ➕ Plus on mobile)</strong> button.
+                      </span>
+                    </div>
+                    <div style={{ display: "flex", alignItems: "flex-start", gap: "0.5rem" }}>
+                      <span style={{ background: "#22c55e", color: "#fff", borderRadius: "50%", width: "20px", height: "20px", display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: "0.75rem", fontWeight: "700", flexShrink: 0 }}>3</span>
+                      <span>
+                        Select the bill photo and click <strong>Send</strong> to confirm!
+                      </span>
+                    </div>
+                  </div>
                 </div>
-                <div style={{ display: "flex", alignItems: "flex-start", gap: "0.5rem", marginBottom: "0.5rem" }}>
-                  <span style={{ background: "#22c55e", color: "#fff", borderRadius: "50%", width: "20px", height: "20px", display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: "0.75rem", fontWeight: "700", flexShrink: 0 }}>2</span>
-                  <span>
-                    <strong>In WhatsApp:</strong> Your order text is already pre-filled in the message box.
-                  </span>
-                </div>
-                <div style={{ display: "flex", alignItems: "flex-start", gap: "0.5rem" }}>
-                  <span style={{ background: "#22c55e", color: "#fff", borderRadius: "50%", width: "20px", height: "20px", display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: "0.75rem", fontWeight: "700", flexShrink: 0 }}>3</span>
-                  <span>
-                    Tap the <Paperclip size={14} style={{ display: "inline", verticalAlign: "middle" }} /> <strong>Paperclip (or ➕ Plus on mobile)</strong>, select the bill image, and tap <strong>Send</strong>!
-                  </span>
-                </div>
-              </div>
+              )}
 
               <div style={{ display: "flex", gap: "0.5rem", marginTop: "0.85rem", flexWrap: "wrap" }}>
-                <a
-                  href={previewOrder.waUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
+                <button
+                  type="button"
+                  onClick={handleSendToWhatsApp}
                   className="btn-proceed-wa"
                   style={{
                     padding: "0.45rem 0.9rem",
                     fontSize: "0.82rem",
-                    textDecoration: "none",
                   }}
+                  disabled={isGenerating}
                 >
                   <Send size={15} />
-                  <span>Re-open WhatsApp Chat</span>
-                </a>
+                  <span>Re-open WhatsApp</span>
+                </button>
 
                 <button
                   type="button"
                   onClick={() => handleDownloadBill("png")}
                   className="btn-bill-action secondary"
                   style={{ padding: "0.45rem 0.9rem", fontSize: "0.82rem" }}
+                  disabled={isGenerating}
                 >
                   <Download size={14} />
                   <span>Re-download Bill (PNG)</span>
@@ -303,13 +345,13 @@ export const BillPreviewModal = () => {
               </div>
             </div>
           ) : (
-            /* PRE-SUBMISSION MANDATORY NOTICE */
+            /* PRE-SUBMISSION PHOTO BILL NOTICE */
             <div className="whatsapp-mandatory-alert">
-              <div style={{ display: "flex", gap: "0.5rem", alignItems: "flex-start" }}>
-                <AlertTriangle size={20} color="#b45309" style={{ flexShrink: 0, marginTop: "2px" }} />
+              <div style={{ display: "flex", gap: "0.6rem", alignItems: "flex-start" }}>
+                <Sparkles size={20} color="#b45309" style={{ flexShrink: 0, marginTop: "2px" }} />
                 <div>
-                  <strong>Ready to Order:</strong> Your verified invoice bill is prepared below.
-                  When you tap <strong>"Send Order to WhatsApp"</strong>, the official bill image is downloaded to your device and WhatsApp opens with your order summary so you can attach and send!
+                  <strong>Official Photo Bill Ready:</strong> Your verified invoice image has been generated below.
+                  When you tap <strong>"Send Bill Photo on WhatsApp"</strong>, your phone or browser opens the sharing screen with the bill photo attached so you can send it directly to Poomani Chekku Ennai!
                 </div>
               </div>
             </div>
@@ -330,28 +372,6 @@ export const BillPreviewModal = () => {
             <div style={{ display: "flex", gap: "0.35rem", background: "#ede8dd", padding: "3px", borderRadius: "8px" }}>
               <button
                 type="button"
-                onClick={() => setActiveTab("invoice")}
-                style={{
-                  background: activeTab === "invoice" ? "#ffffff" : "transparent",
-                  color: activeTab === "invoice" ? "#09331d" : "#57655d",
-                  border: "none",
-                  padding: "0.35rem 0.75rem",
-                  borderRadius: "6px",
-                  fontSize: "0.8rem",
-                  fontWeight: "700",
-                  cursor: "pointer",
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: "0.3rem",
-                  boxShadow: activeTab === "invoice" ? "0 1px 3px rgba(0,0,0,0.1)" : "none",
-                }}
-              >
-                <FileText size={14} />
-                <span>Invoice Table</span>
-              </button>
-
-              <button
-                type="button"
                 onClick={() => setActiveTab("image")}
                 style={{
                   background: activeTab === "image" ? "#ffffff" : "transparent",
@@ -364,12 +384,34 @@ export const BillPreviewModal = () => {
                   cursor: "pointer",
                   display: "inline-flex",
                   alignItems: "center",
-                  gap: "0.3rem",
+                  gap: "0.35rem",
                   boxShadow: activeTab === "image" ? "0 1px 3px rgba(0,0,0,0.1)" : "none",
                 }}
               >
                 <ImageIcon size={14} />
-                <span>Bill Image View</span>
+                <span>Bill Photo View (Official)</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setActiveTab("invoice")}
+                style={{
+                  background: activeTab === "invoice" ? "#ffffff" : "transparent",
+                  color: activeTab === "invoice" ? "#09331d" : "#57655d",
+                  border: "none",
+                  padding: "0.35rem 0.75rem",
+                  borderRadius: "6px",
+                  fontSize: "0.8rem",
+                  fontWeight: "700",
+                  cursor: "pointer",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "0.35rem",
+                  boxShadow: activeTab === "invoice" ? "0 1px 3px rgba(0,0,0,0.1)" : "none",
+                }}
+              >
+                <FileText size={14} />
+                <span>Invoice Table</span>
               </button>
 
               <button
@@ -386,12 +428,12 @@ export const BillPreviewModal = () => {
                   cursor: "pointer",
                   display: "inline-flex",
                   alignItems: "center",
-                  gap: "0.3rem",
+                  gap: "0.35rem",
                   boxShadow: activeTab === "text" ? "0 1px 3px rgba(0,0,0,0.1)" : "none",
                 }}
               >
                 <Receipt size={14} />
-                <span>WhatsApp Text</span>
+                <span>Order Summary</span>
               </button>
             </div>
 
@@ -423,7 +465,43 @@ export const BillPreviewModal = () => {
             </div>
           </div>
 
-          {/* TAB 1: STRUCTURED INVOICE TABLE */}
+          {/* TAB 1: LIVE GENERATED CANVAS BILL IMAGE (DEFAULT) */}
+          {activeTab === "image" && (
+            <div style={{ textAlign: "center", background: "#f8f5ee", padding: "1rem", borderRadius: "8px", border: "1px solid #e8e0d2" }}>
+              <div style={{ marginBottom: "0.75rem", fontSize: "0.85rem", color: "#57655d", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <span><strong>Official Photo Bill Image:</strong></span>
+                <span style={{ fontSize: "0.75rem", color: "#16a34a", fontWeight: "700" }}>✓ 2x HD Retina Quality</span>
+              </div>
+
+              {generatedImgUrl ? (
+                <div>
+                  <img
+                    src={generatedImgUrl}
+                    alt={`Poomani Chekku Ennai Bill ${previewOrder.orderNumber}`}
+                    style={{
+                      maxWidth: "100%",
+                      height: "auto",
+                      borderRadius: "6px",
+                      boxShadow: "0 6px 20px rgba(9, 51, 29, 0.12)",
+                      border: "1.5px solid #d4af37",
+                      display: "block",
+                      margin: "0 auto",
+                    }}
+                  />
+                  <div style={{ marginTop: "0.75rem", fontSize: "0.8rem", color: "#78716c" }}>
+                    Tip: On mobile or PC, you can long-press or right-click to copy or save this bill image.
+                  </div>
+                </div>
+              ) : (
+                <div style={{ padding: "3rem 1rem", color: "#09331d" }}>
+                  <Loader2 size={26} className="animate-spin" style={{ margin: "0 auto 0.6rem" }} />
+                  <p style={{ fontWeight: "600" }}>Generating your official photo bill image...</p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* TAB 2: STRUCTURED INVOICE TABLE */}
           {activeTab === "invoice" && (
             <div className="invoice-paper" id="invoice-printable-view">
               {/* Invoice Top Header */}
@@ -443,7 +521,7 @@ export const BillPreviewModal = () => {
                   Customer Order Bill / வாடிக்கையாளர் ஆர்டர் ரசீது
                 </div>
                 <div className="invoice-mill-details">
-                  {shopSettings.address || "Gopalasamuthiram (கோபாலசமுத்திரம்), Tamil Nadu"} • Phone: +91 63857 55368
+                  {shopSettings.address || "Gopalasamuthiram (கோபாலசமுத்திரம்), Tamil Nadu"} • Phone: {shopPhoneFormatted}
                   <br />
                   FSSAI Certified #{shopSettings.fssaiNumber || "12421008000421"}
                 </div>
@@ -490,7 +568,7 @@ export const BillPreviewModal = () => {
                   <thead>
                     <tr>
                       <th style={{ width: "50px", textAlign: "center" }}>S.No.</th>
-                      <th style={{ textAlign: "left" }}>Product Name</th>
+                      <th style={{ textAlign: "left" }}>Product Name / பொருள்</th>
                       <th style={{ width: "110px", textAlign: "center" }}>Quantity/Size</th>
                       <th style={{ width: "60px", textAlign: "center" }}>Qty</th>
                       <th style={{ width: "100px", textAlign: "right" }}>Unit Price</th>
@@ -543,7 +621,7 @@ export const BillPreviewModal = () => {
 
                   {previewOrder.discount > 0 && (
                     <div className="summary-line discount">
-                      <span>Discount Coupon:</span>
+                      <span>Discount:</span>
                       <strong>-₹{formatINR(previewOrder.discount)}</strong>
                     </div>
                   )}
@@ -567,47 +645,11 @@ export const BillPreviewModal = () => {
             </div>
           )}
 
-          {/* TAB 2: LIVE GENERATED CANVAS BILL IMAGE */}
-          {activeTab === "image" && (
-            <div style={{ textAlign: "center", background: "#f8f5ee", padding: "1rem", borderRadius: "8px", border: "1px solid #e8e0d2" }}>
-              <div style={{ marginBottom: "0.75rem", fontSize: "0.85rem", color: "#57655d", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <span><strong>Dynamically Generated High-Resolution Bill Image:</strong></span>
-                <span style={{ fontSize: "0.75rem", color: "#16a34a", fontWeight: "600" }}>✓ 2x Retina Sharp PNG</span>
-              </div>
-
-              {generatedImgUrl ? (
-                <div>
-                  <img
-                    src={generatedImgUrl}
-                    alt={`Poomani Chekku Ennai Bill ${previewOrder.orderNumber}`}
-                    style={{
-                      maxWidth: "100%",
-                      height: "auto",
-                      borderRadius: "6px",
-                      boxShadow: "0 4px 16px rgba(0,0,0,0.12)",
-                      border: "1px solid #ddd",
-                      display: "block",
-                      margin: "0 auto",
-                    }}
-                  />
-                  <div style={{ marginTop: "0.75rem", fontSize: "0.8rem", color: "#78716c" }}>
-                    Tip: You can right-click or long-press the image to save or copy it directly.
-                  </div>
-                </div>
-              ) : (
-                <div style={{ padding: "3rem 1rem" }}>
-                  <Loader2 size={24} className="animate-spin" style={{ margin: "0 auto 0.5rem" }} />
-                  <p>Rendering dynamic bill canvas...</p>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* TAB 3: WHATSAPP RAW TEXT */}
+          {/* TAB 3: ORDER SUMMARY */}
           {activeTab === "text" && (
             <div>
               <div style={{ marginBottom: "0.5rem", fontWeight: "700", fontSize: "0.85rem", color: "#09331d" }}>
-                WhatsApp Pre-filled Order Message:
+                Order Summary Reference:
               </div>
               <pre className="bill-receipt-paper" id="whatsapp-bill-preview-content">
                 {previewOrder.billText}
@@ -631,20 +673,7 @@ export const BillPreviewModal = () => {
             <span>Download Bill (PNG)</span>
           </button>
 
-          {/* 2. Web Share (Mobile Friendly with Image Attachment) */}
-          <button
-            id="share-bill-btn"
-            type="button"
-            className="btn-bill-action secondary"
-            onClick={handleShareBill}
-            disabled={isGenerating}
-            title="Share bill image on supported mobile devices"
-          >
-            <Share2 size={16} />
-            <span>Share with Bill Image</span>
-          </button>
-
-          {/* 3. Copy Text */}
+          {/* 2. Copy Text */}
           <button
             id="copy-bill-btn"
             type="button"
@@ -656,7 +685,7 @@ export const BillPreviewModal = () => {
             <span>{copied ? "Copied!" : "Copy Text"}</span>
           </button>
 
-          {/* 4. Primary CTA: Send Order to WhatsApp */}
+          {/* 3. Primary CTA: Send Bill Photo on WhatsApp */}
           <button
             id="proceed-to-whatsapp-btn"
             type="button"
@@ -667,18 +696,18 @@ export const BillPreviewModal = () => {
             {isGenerating ? (
               <>
                 <Loader2 size={18} className="animate-spin" />
-                <span>Preparing Order Bill...</span>
+                <span>Generating Bill Photo...</span>
               </>
             ) : isSent ? (
               <>
                 <Check size={18} />
-                <span>Order Dispatched (Cart Cleared)</span>
+                <span>Order Forwarded (Cart Cleared)</span>
               </>
             ) : (
               <>
                 <Send size={18} />
-                <span>Send Order to WhatsApp</span>
-                <ExternalLink size={15} style={{ opacity: 0.8 }} />
+                <span>Send Bill Photo on WhatsApp</span>
+                <Share2 size={15} style={{ opacity: 0.9 }} />
               </>
             )}
           </button>
@@ -701,7 +730,7 @@ export const BillPreviewModal = () => {
           >
             <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
               <Check size={17} color="#059669" />
-              <span>Cart emptied. Order bill is saved under your Orders Log.</span>
+              <span>Order recorded. Your bill photo is ready under Orders Log.</span>
             </div>
             <button
               type="button"

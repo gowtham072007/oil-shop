@@ -1,8 +1,53 @@
-import { formatINR } from './billGenerator';
+import { formatINR } from './billGenerator.js';
+
+/**
+ * Helper to wrap text into multiple lines within a maximum pixel width
+ */
+function wrapTextLines(ctx, text, maxWidth) {
+  if (!text) return [];
+  const words = String(text).trim().split(/\s+/);
+  const lines = [];
+  let currentLine = '';
+
+  for (let i = 0; i < words.length; i++) {
+    const word = words[i];
+    const testLine = currentLine ? `${currentLine} ${word}` : word;
+    const testWidth = ctx.measureText(testLine).width;
+    if (testWidth > maxWidth && currentLine) {
+      lines.push(currentLine);
+      currentLine = word;
+    } else {
+      currentLine = testLine;
+    }
+  }
+  if (currentLine) {
+    lines.push(currentLine);
+  }
+  return lines;
+}
+
+/**
+ * Helper to draw rounded rectangle with fill and stroke options
+ */
+function roundRect(ctx, x, y, width, height, radius, fill, stroke) {
+  ctx.beginPath();
+  ctx.moveTo(x + radius, y);
+  ctx.lineTo(x + width - radius, y);
+  ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+  ctx.lineTo(x + width, y + height - radius);
+  ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+  ctx.lineTo(x + radius, y + height);
+  ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
+  ctx.lineTo(x, y + radius);
+  ctx.quadraticCurveTo(x, y, x + radius, y);
+  ctx.closePath();
+  if (fill) ctx.fill();
+  if (stroke) ctx.stroke();
+}
 
 /**
  * Generate a high-resolution, professional invoice-style bill image (PNG / JPEG)
- * using HTML5 Canvas with sharp 2x retina scaling.
+ * using HTML5 Canvas with sharp 2x retina scaling and brand styling.
  *
  * @param {Object} order - Full order object with items, customer details, and totals
  * @param {Object} shopSettings - Shop configuration (name, phone, address, fssai, etc.)
@@ -10,19 +55,51 @@ import { formatINR } from './billGenerator';
  * @returns {Promise<{ dataUrl: string, blob: Blob, canvas: HTMLCanvasElement, mimeType: string, ext: string }>}
  */
 export async function generateBillImage(order, shopSettings = {}, format = 'png') {
-  const scale = 2; // Retina scale factor for ultra-sharp text and borders
+  // Ensure custom web fonts (Noto Sans Tamil, Cinzel, Plus Jakarta Sans) are ready
+  if (typeof document !== 'undefined' && document.fonts && document.fonts.ready) {
+    try {
+      await document.fonts.ready;
+    } catch {
+      // Continue gracefully
+    }
+  }
+
+  const scale = 2; // 2x Retina scale factor for ultra-sharp rendering
   const width = 800;
   const isJpeg = format.toLowerCase() === 'jpeg' || format.toLowerCase() === 'jpg';
   const mimeType = isJpeg ? 'image/jpeg' : 'image/png';
   const ext = isJpeg ? 'jpg' : 'png';
-  const fontStack = '"Nirmala UI", "Mukta Malar", "Tamil Sangam MN", -apple-system, BlinkMacSystemFont, Arial, sans-serif';
-  
-  // Calculate dynamic height based on number of items
-  const itemsCount = Math.max(1, order.items?.length || 1);
+
+  // Calculate dynamic address lines & height
+  const fullAddress = order.customerAddress || order.address || order.deliveryAddress || 'Direct Order';
+  const items = order.items || [];
+  const itemsCount = Math.max(1, items.length);
   const rowHeight = 52;
-  const tableHeight = 44 + (itemsCount * rowHeight);
-  const baseHeight = 560; // Header, metadata card, summary, footer
-  const height = baseHeight + tableHeight;
+
+  // Measure address lines with a temporary canvas to get exact height
+  let addrLines = [fullAddress];
+  if (typeof document !== 'undefined') {
+    const measureCanvas = document.createElement('canvas');
+    const mctx = measureCanvas.getContext('2d');
+    mctx.font = '12px "Plus Jakarta Sans", Arial, sans-serif';
+    addrLines = wrapTextLines(mctx, fullAddress, 290);
+  }
+  const extraAddrHeight = Math.max(0, (addrLines.length - 1) * 16);
+  const metaHeight = 114 + extraAddrHeight;
+
+  // Dynamic layout coordinates
+  const headerY = 56;
+  const divY = headerY + 86;
+  const metaY = divY + 14;
+  const tableTopY = metaY + metaHeight + 16;
+  const tableW = width - 80;
+  const tableBottomY = tableTopY + 36 + (itemsCount * rowHeight);
+  const summaryY = tableBottomY + 16;
+  const hasDiscount = order.discount && order.discount > 0;
+  const nextSummaryY = summaryY + (hasDiscount ? 60 : 38);
+  const grandTotalBottomY = nextSummaryY + 44;
+  const footerY = grandTotalBottomY + 26;
+  const height = footerY + 56;
 
   const canvas = document.createElement('canvas');
   canvas.width = width * scale;
@@ -31,137 +108,193 @@ export async function generateBillImage(order, shopSettings = {}, format = 'png'
   const ctx = canvas.getContext('2d');
   ctx.scale(scale, scale);
 
-  // Background - Clean pure white paper
+  // 1. Paper Background - Clean ivory-white paper
   ctx.fillStyle = '#ffffff';
   ctx.fillRect(0, 0, width, height);
 
-  // Outer border with subtle gold tint
-  ctx.strokeStyle = '#e8e0d2';
+  // Outer border with gold-champagne tint
+  ctx.strokeStyle = '#deb869';
   ctx.lineWidth = 2;
-  ctx.strokeRect(16, 16, width - 32, height - 32);
+  roundRect(ctx, 14, 14, width - 28, height - 28, 14, false, true);
 
-  // Top Accent Bar - Royal Gold & Deep Forest Green
+  // Inner subtle border
+  ctx.strokeStyle = 'rgba(212, 175, 55, 0.25)';
+  ctx.lineWidth = 1;
+  roundRect(ctx, 20, 20, width - 40, height - 40, 10, false, true);
+
+  // Top Accent Bar - Royal Deep Forest Green & Polished Gold
   ctx.fillStyle = '#09331d';
-  ctx.fillRect(16, 16, width - 32, 8);
+  ctx.fillRect(20, 20, width - 40, 10);
   ctx.fillStyle = '#d4af37';
-  ctx.fillRect(16, 24, width - 32, 3);
+  ctx.fillRect(20, 30, width - 40, 3);
 
-  // Load and draw Logo if available
-  let headerStartY = 55;
-  try {
-    const logoImg = new Image();
-    logoImg.crossOrigin = 'anonymous';
-    logoImg.src = '/images/logo.png';
-    await new Promise((resolve) => {
-      logoImg.onload = resolve;
-      logoImg.onerror = resolve; // Continue gracefully if logo fails
-      setTimeout(resolve, 350); // Don't hang if logo takes too long
-    });
-
-    if (logoImg.complete && logoImg.naturalWidth > 0) {
-      const logoSize = 64;
-      ctx.drawImage(logoImg, 42, headerStartY - 6, logoSize, logoSize);
+  // 2. Pre-load Logo Image
+  let logoImg = null;
+  if (typeof Image !== 'undefined') {
+    try {
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.src = '/images/logo.png';
+      if (img.decode) {
+        await img.decode();
+        logoImg = img;
+      } else {
+        await new Promise((resolve) => {
+          img.onload = () => { logoImg = img; resolve(); };
+          img.onerror = resolve;
+          setTimeout(resolve, 350);
+        });
+      }
+    } catch {
+      // Graceful fallback to text header
     }
-  } catch {
-    // Graceful fallback to text-only header
   }
 
-  // 1. Header Typography
+  // 3. Header Section
+  const hasLogo = logoImg && logoImg.complete && logoImg.naturalWidth > 0;
+
+  if (hasLogo) {
+    // Draw circular gold medallion for logo
+    const logoX = 52;
+    const logoY = headerY - 4;
+    const logoSize = 68;
+
+    ctx.save();
+    // Medallion background
+    ctx.fillStyle = '#faf6ed';
+    ctx.beginPath();
+    ctx.arc(logoX + logoSize / 2, logoY + logoSize / 2, logoSize / 2 + 3, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = '#d4af37';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+
+    // Clip circular logo
+    ctx.beginPath();
+    ctx.arc(logoX + logoSize / 2, logoY + logoSize / 2, logoSize / 2, 0, Math.PI * 2);
+    ctx.clip();
+    ctx.drawImage(logoImg, logoX, logoY, logoSize, logoSize);
+    ctx.restore();
+  }
+
+  // Brand Name Typography (English + Tamil)
+  const titleX = hasLogo ? (width / 2 + 25) : (width / 2);
   ctx.textAlign = 'center';
+
+  // English Brand Name
   ctx.fillStyle = '#09331d';
-  ctx.font = 'bold 24px "Noto Sans Tamil", Georgia, serif';
-  ctx.fillText('POOMANI CHEKKU ENNAI — பூமணி செக்கு எண்ணெய்', width / 2, headerStartY + 10);
+  ctx.font = 'bold 22px Cinzel, Georgia, serif';
+  ctx.fillText('POOMANI CHEKKU ENNAI', titleX, headerY + 12);
 
-  ctx.fillStyle = '#8c6819';
-  ctx.font = 'italic 600 15px "Noto Sans Tamil", Arial, sans-serif';
-  ctx.fillText('Customer Order Bill / வாடிக்கையாளர் ஆர்டர் ரசீது', width / 2, headerStartY + 32);
+  // Tamil Brand Name
+  ctx.fillStyle = '#8c6411';
+  ctx.font = 'bold 17px "Noto Sans Tamil", sans-serif';
+  ctx.fillText('பூமணி செக்கு எண்ணெய்', titleX, headerY + 34);
 
+  // Subtitle / Document Type
   ctx.fillStyle = '#57655d';
-  ctx.font = '12px Arial, sans-serif';
-  const addressText = `${shopSettings.address || 'Gopalasamuthiram, Tamil Nadu'} • Contact: +91 63857 55368 • FSSAI #${shopSettings.fssaiNumber || '12421008000421'}`;
-  ctx.fillText(addressText, width / 2, headerStartY + 52);
+  ctx.font = 'italic 600 13px "Noto Sans Tamil", "Plus Jakarta Sans", sans-serif';
+  ctx.fillText('Customer Order Bill / வாடிக்கையாளர் ஆர்டர் ரசீது', titleX, headerY + 54);
 
-  // Separator rule
-  ctx.strokeStyle = '#ecd8ab';
+  // Shop Address & FSSAI
+  ctx.fillStyle = '#6b7280';
+  ctx.font = '11px "Plus Jakarta Sans", Arial, sans-serif';
+  const shopPhone = shopSettings.whatsappNumber ? `+${shopSettings.whatsappNumber}` : '+91 63857 55368';
+  const millInfo = `${shopSettings.address || 'Gopalasamuthiram, Tamil Nadu'} • Phone: ${shopPhone} • FSSAI #${shopSettings.fssaiNumber || '12421008000421'}`;
+  ctx.fillText(millInfo, titleX, headerY + 72);
+
+  // Gold Separator Line with Centered Diamond
+  ctx.strokeStyle = '#e6cb89';
   ctx.lineWidth = 1;
   ctx.beginPath();
-  ctx.moveTo(40, headerStartY + 68);
-  ctx.lineTo(width - 40, headerStartY + 68);
+  ctx.moveTo(40, divY);
+  ctx.lineTo(width - 40, divY);
   ctx.stroke();
 
-  // 2. Order Metadata Card (Light beige rounded container)
-  const metaY = headerStartY + 80;
-  const metaHeight = 110;
-  ctx.fillStyle = '#faf7f0';
-  ctx.strokeStyle = '#ecd8ab';
-  ctx.lineWidth = 1;
-  roundRect(ctx, 40, metaY, width - 80, metaHeight, 8, true, true);
+  // Decorative center diamond
+  ctx.fillStyle = '#c69222';
+  ctx.beginPath();
+  ctx.moveTo(width / 2, divY - 4);
+  ctx.lineTo(width / 2 + 4, divY);
+  ctx.lineTo(width / 2, divY + 4);
+  ctx.lineTo(width / 2 - 4, divY);
+  ctx.closePath();
+  ctx.fill();
 
-  // Metadata Columns
-  ctx.textAlign = 'left';
+  // 4. Order & Customer Metadata Card
+  ctx.fillStyle = '#faf7f0';
+  ctx.strokeStyle = '#e8d9ba';
+  ctx.lineWidth = 1.2;
+  roundRect(ctx, 40, metaY, width - 80, metaHeight, 10, true, true);
+
+  // Left Column (Order Details)
   const col1X = 60;
   const col2X = 420;
 
-  // Left Column
+  // Order Number
+  ctx.textAlign = 'left';
   ctx.fillStyle = '#57655d';
-  ctx.font = 'bold 12px Arial, sans-serif';
+  ctx.font = 'bold 11px "Plus Jakarta Sans", Arial, sans-serif';
   ctx.fillText('BILL / ORDER ID:', col1X, metaY + 26);
   ctx.fillStyle = '#09331d';
-  ctx.font = 'bold 14px Arial, sans-serif';
+  ctx.font = 'bold 15px "Plus Jakarta Sans", Arial, sans-serif';
   ctx.fillText(order.orderNumber || 'OS-2026', col1X + 115, metaY + 26);
 
+  // Date & Time
   ctx.fillStyle = '#57655d';
-  ctx.font = '12px Arial, sans-serif';
+  ctx.font = '12px "Plus Jakarta Sans", Arial, sans-serif';
   ctx.fillText('Date & Time:', col1X, metaY + 52);
   ctx.fillStyle = '#1f2923';
-  ctx.font = 'bold 12px Arial, sans-serif';
+  ctx.font = '600 12px "Plus Jakarta Sans", Arial, sans-serif';
   ctx.fillText(order.date || new Date().toLocaleString('en-IN'), col1X + 115, metaY + 52);
 
+  // Payment Method
   ctx.fillStyle = '#57655d';
-  ctx.font = '12px Arial, sans-serif';
+  ctx.font = '12px "Plus Jakarta Sans", Arial, sans-serif';
   ctx.fillText('Payment Method:', col1X, metaY + 78);
   ctx.fillStyle = '#1f2923';
-  ctx.font = 'bold 12px Arial, sans-serif';
-  ctx.fillText(order.paymentMethod || 'Cash', col1X + 115, metaY + 78);
+  ctx.font = '600 12px "Noto Sans Tamil", "Plus Jakarta Sans", Arial, sans-serif';
+  ctx.fillText(order.paymentMethod || 'Cash / நேரில் பணம்', col1X + 115, metaY + 78);
 
-  // Right Column (Customer Details)
+  // Right Column (Customer Information)
   ctx.fillStyle = '#57655d';
-  ctx.font = '12px Arial, sans-serif';
+  ctx.font = '12px "Plus Jakarta Sans", Arial, sans-serif';
   ctx.fillText('Customer:', col2X, metaY + 26);
   ctx.fillStyle = '#09331d';
-  ctx.font = 'bold 13px Arial, sans-serif';
-  ctx.fillText(order.customerName || 'Customer', col2X + 85, metaY + 26);
+  ctx.font = 'bold 14px "Plus Jakarta Sans", Arial, sans-serif';
+  ctx.fillText(order.customerName || 'Customer', col2X + 80, metaY + 26);
 
+  // Customer Phone
   ctx.fillStyle = '#57655d';
-  ctx.font = '12px Arial, sans-serif';
+  ctx.font = '12px "Plus Jakarta Sans", Arial, sans-serif';
   ctx.fillText('Phone:', col2X, metaY + 52);
   ctx.fillStyle = '#1f2923';
-  ctx.font = 'bold 13px Arial, sans-serif';
-  ctx.fillText(order.customerPhone || '—', col2X + 85, metaY + 52);
+  ctx.font = 'bold 13px "Plus Jakarta Sans", Arial, sans-serif';
+  ctx.fillText(order.customerPhone ? `+91 ${order.customerPhone.replace(/\D/g, '').slice(-10)}` : '—', col2X + 80, metaY + 52);
 
+  // Customer Address (Full Multi-line rendering)
   ctx.fillStyle = '#57655d';
-  ctx.font = '12px Arial, sans-serif';
+  ctx.font = '12px "Plus Jakarta Sans", Arial, sans-serif';
   ctx.fillText('Address:', col2X, metaY + 78);
+
   ctx.fillStyle = '#1f2923';
-  ctx.font = '12px Arial, sans-serif';
-  const cleanAddr = (order.customerAddress || order.address || order.deliveryAddress || 'Direct Order').slice(0, 42);
-  ctx.fillText(cleanAddr, col2X + 85, metaY + 78);
+  ctx.font = '12px "Plus Jakarta Sans", Arial, sans-serif';
+  addrLines.forEach((line, lIdx) => {
+    ctx.fillText(line, col2X + 80, metaY + 78 + (lIdx * 17));
+  });
 
-  // 3. Itemized Products Table
-  const tableTopY = metaY + metaHeight + 20;
+  // 5. Itemized Products Table
   const tableX = 40;
-  const tableW = width - 80;
 
-  // Column X coordinates and widths
-  // Total: 720px
-  // S.No: 45 | Product Name: 275 | Size: 95 | Qty: 60 | Unit Price: 115 | Amount: 130
+  // Column layout
+  // Total: 720px -> S.No: 45 | Product Name: 275 | Size: 95 | Qty: 60 | Unit Price: 115 | Amount: 130
   const cols = [
     { label: 'S.No.', x: tableX, w: 45, align: 'center' },
-    { label: 'Product Name', x: tableX + 45, w: 275, align: 'left' },
-    { label: 'Quantity/Size', x: tableX + 320, w: 95, align: 'center' },
+    { label: 'Product Name / பொருள்', x: tableX + 45, w: 275, align: 'left' },
+    { label: 'Pack Size', x: tableX + 320, w: 95, align: 'center' },
     { label: 'Qty', x: tableX + 415, w: 60, align: 'center' },
     { label: 'Unit Price', x: tableX + 475, w: 115, align: 'right' },
-    { label: 'Amount', x: tableX + 590, w: 130, align: 'right' },
+    { label: 'Item Total', x: tableX + 590, w: 130, align: 'right' },
   ];
 
   // Table Header Row
@@ -169,7 +302,7 @@ export async function generateBillImage(order, shopSettings = {}, format = 'png'
   roundRect(ctx, tableX, tableTopY, tableW, 36, 6, true, false);
 
   ctx.fillStyle = '#ffffff';
-  ctx.font = 'bold 12px Arial, sans-serif';
+  ctx.font = 'bold 12px "Noto Sans Tamil", "Plus Jakarta Sans", Arial, sans-serif';
   cols.forEach((col) => {
     ctx.textAlign = col.align;
     const textX = col.align === 'center' ? col.x + col.w / 2 : col.align === 'right' ? col.x + col.w - 12 : col.x + 12;
@@ -180,7 +313,7 @@ export async function generateBillImage(order, shopSettings = {}, format = 'png'
   let currentY = tableTopY + 36;
   ctx.lineWidth = 1;
 
-  (order.items || []).forEach((item, index) => {
+  items.forEach((item, index) => {
     const isEven = index % 2 === 0;
     ctx.fillStyle = isEven ? '#ffffff' : '#fcfbfa';
     ctx.fillRect(tableX, currentY, tableW, rowHeight);
@@ -195,77 +328,74 @@ export async function generateBillImage(order, shopSettings = {}, format = 'png'
     // S.No.
     ctx.textAlign = 'center';
     ctx.fillStyle = '#57655d';
-    ctx.font = 'bold 12px Arial, sans-serif';
-    ctx.fillText(String(index + 1), cols[0].x + cols[0].w / 2, currentY + 30);
+    ctx.font = 'bold 12px "Plus Jakarta Sans", Arial, sans-serif';
+    ctx.fillText(String(index + 1), cols[0].x + cols[0].w / 2, currentY + 31);
 
     // Product Name (English + Tamil)
     ctx.textAlign = 'left';
     ctx.fillStyle = '#09331d';
-    ctx.font = 'bold 13px Arial, sans-serif';
+    ctx.font = 'bold 13px "Plus Jakarta Sans", Arial, sans-serif';
     const enName = item.oilNameEn || item.name || 'Pure Edible Oil';
     const taName = item.oilNameTa || item.regionalName || '';
-    ctx.fillText(enName, cols[1].x + 12, currentY + 22);
+    ctx.fillText(enName, cols[1].x + 12, currentY + 21);
 
     if (taName) {
-      ctx.fillStyle = '#8c6819';
-      ctx.font = '12px "Noto Sans Tamil", Arial, sans-serif';
+      ctx.fillStyle = '#8c6411';
+      ctx.font = '600 12px "Noto Sans Tamil", Arial, sans-serif';
       ctx.fillText(taName, cols[1].x + 12, currentY + 40);
     }
 
-    // Quantity / Size
+    // Pack Size (200 ml, 500 ml, 1 lit)
     ctx.textAlign = 'center';
     ctx.fillStyle = '#1f2923';
-    ctx.font = 'bold 12px Arial, sans-serif';
-    ctx.fillText(item.packSize || '1 Litre', cols[2].x + cols[2].w / 2, currentY + 30);
+    ctx.font = 'bold 12px "Plus Jakarta Sans", Arial, sans-serif';
+    ctx.fillText(item.packSize || '1 Litre', cols[2].x + cols[2].w / 2, currentY + 31);
 
-    // Qty (Bottles)
+    // Qty
     ctx.fillStyle = '#09331d';
-    ctx.font = 'bold 13px Arial, sans-serif';
-    ctx.fillText(String(item.quantity), cols[3].x + cols[3].w / 2, currentY + 30);
+    ctx.font = 'bold 14px "Plus Jakarta Sans", Arial, sans-serif';
+    ctx.fillText(String(item.quantity), cols[3].x + cols[3].w / 2, currentY + 31);
 
     // Unit Price
     ctx.textAlign = 'right';
     ctx.fillStyle = '#57655d';
-    ctx.font = '13px Arial, sans-serif';
-    ctx.fillText(`₹${formatINR(item.rate)}`, cols[4].x + cols[4].w - 12, currentY + 30);
+    ctx.font = '13px "Plus Jakarta Sans", Arial, sans-serif';
+    ctx.fillText(`₹${formatINR(item.rate)}`, cols[4].x + cols[4].w - 12, currentY + 31);
 
-    // Line Amount
+    // Item Total
     ctx.fillStyle = '#09331d';
-    ctx.font = 'bold 13px Arial, sans-serif';
-    ctx.fillText(`₹${formatINR(item.amount)}`, cols[5].x + cols[5].w - 12, currentY + 30);
+    ctx.font = 'bold 14px "Plus Jakarta Sans", Arial, sans-serif';
+    ctx.fillText(`₹${formatINR(item.amount)}`, cols[5].x + cols[5].w - 12, currentY + 31);
 
     currentY += rowHeight;
   });
 
-  // Table outer vertical lines
+  // Table outer vertical border
   ctx.strokeStyle = '#e8e0d2';
   ctx.strokeRect(tableX, tableTopY + 36, tableW, itemsCount * rowHeight);
 
-  // 4. Totals Summary Box (Right aligned)
-  const summaryY = currentY + 20;
-  const summaryW = 280;
+  // 6. Summary Section (Right-aligned)
+  const summaryW = 310;
   const summaryX = width - 40 - summaryW;
 
   // Subtotal
   ctx.textAlign = 'left';
-  ctx.font = '13px Arial, sans-serif';
+  ctx.font = '13px "Plus Jakarta Sans", Arial, sans-serif';
   ctx.fillStyle = '#57655d';
-  ctx.fillText('Subtotal:', summaryX, summaryY + 16);
+  ctx.fillText('Items Subtotal:', summaryX, summaryY + 16);
   ctx.textAlign = 'right';
   ctx.fillStyle = '#1f2923';
-  ctx.font = 'bold 13px Arial, sans-serif';
+  ctx.font = 'bold 14px "Plus Jakarta Sans", Arial, sans-serif';
   ctx.fillText(`₹${formatINR(order.subtotal)}`, summaryX + summaryW, summaryY + 16);
 
-  let nextSummaryY = summaryY + 40;
-  if (order.discount > 0) {
+  if (hasDiscount) {
     ctx.textAlign = 'left';
-    ctx.font = '13px Arial, sans-serif';
+    ctx.font = '13px "Plus Jakarta Sans", Arial, sans-serif';
     ctx.fillStyle = '#16a34a';
-    ctx.fillText('Discount Coupon:', summaryX, nextSummaryY);
+    ctx.fillText('Discount:', summaryX, summaryY + 38);
     ctx.textAlign = 'right';
-    ctx.font = 'bold 13px Arial, sans-serif';
-    ctx.fillText(`-₹${formatINR(order.discount)}`, summaryX + summaryW, nextSummaryY);
-    nextSummaryY += 24;
+    ctx.font = 'bold 13px "Plus Jakarta Sans", Arial, sans-serif';
+    ctx.fillText(`-₹${formatINR(order.discount)}`, summaryX + summaryW, summaryY + 38);
   }
 
   // Grand Total Highlighted Card
@@ -276,17 +406,16 @@ export async function generateBillImage(order, shopSettings = {}, format = 'png'
 
   ctx.textAlign = 'left';
   ctx.fillStyle = '#09331d';
-  ctx.font = 'bold 13px Arial, sans-serif';
+  ctx.font = 'bold 12px "Noto Sans Tamil", "Plus Jakarta Sans", Arial, sans-serif';
   ctx.fillText('GRAND TOTAL / மொத்தத் தொகை:', summaryX, nextSummaryY + 22);
 
   ctx.textAlign = 'right';
   ctx.fillStyle = '#09331d';
-  ctx.font = 'bold 18px Georgia, serif';
-  ctx.fillText(`₹${formatINR(order.grandTotal)}`, summaryX + summaryW - 4, nextSummaryY + 22);
+  ctx.font = 'bold 19px Cinzel, Georgia, serif';
+  ctx.fillText(`₹${formatINR(order.grandTotal)}`, summaryX + summaryW - 4, nextSummaryY + 23);
 
-  // 5. Footer Quality Seal & Thanks Notice
-  const footerY = height - 65;
-  ctx.strokeStyle = '#e8e0d2';
+  // 7. Footer Quality Seal & Thanks Notice
+  ctx.strokeStyle = '#e6cb89';
   ctx.lineWidth = 1;
   ctx.beginPath();
   ctx.moveTo(40, footerY);
@@ -295,12 +424,12 @@ export async function generateBillImage(order, shopSettings = {}, format = 'png'
 
   ctx.textAlign = 'center';
   ctx.fillStyle = '#09331d';
-  ctx.font = 'bold 12px Arial, sans-serif';
-  ctx.fillText('Thank you for choosing Poomani Chekku Ennai! 100% Pure & Unrefined Edible Cooking Oils.', width / 2, footerY + 22);
+  ctx.font = 'bold 12px "Plus Jakarta Sans", Arial, sans-serif';
+  ctx.fillText('Thank you for choosing Poomani Chekku Ennai! 100% Pure & Unrefined Edible Cooking Oils.', width / 2, footerY + 24);
 
   ctx.fillStyle = '#85958c';
-  ctx.font = '11px Arial, sans-serif';
-  ctx.fillText('Official WhatsApp Order Confirmation • Gopalasamuthiram, Tamil Nadu', width / 2, footerY + 40);
+  ctx.font = '11px "Plus Jakarta Sans", Arial, sans-serif';
+  ctx.fillText('Official WhatsApp Order Confirmation • Gopalasamuthiram, Tamil Nadu', width / 2, footerY + 42);
 
   // Export as PNG or JPEG
   return new Promise((resolve) => {
@@ -340,23 +469,3 @@ export async function downloadBillImageFile(order, shopSettings = {}, format = '
     fileName,
   };
 }
-
-/**
- * Helper to draw rounded rectangle
- */
-function roundRect(ctx, x, y, width, height, radius, fill, stroke) {
-  ctx.beginPath();
-  ctx.moveTo(x + radius, y);
-  ctx.lineTo(x + width - radius, y);
-  ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
-  ctx.lineTo(x + width, y + height - radius);
-  ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
-  ctx.lineTo(x + radius, y + height);
-  ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
-  ctx.lineTo(x, y + radius);
-  ctx.quadraticCurveTo(x, y, x + radius, y);
-  ctx.closePath();
-  if (fill) ctx.fill();
-  if (stroke) ctx.stroke();
-}
-

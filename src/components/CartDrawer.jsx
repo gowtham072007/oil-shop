@@ -370,11 +370,11 @@ export const CartDrawer = () => {
               onClick={validateAndProceed}
             >
               <Send size={18} />
-              Send Order to WhatsApp
+              Send Order to WhatsApp (Photo Bill)
             </button>
 
             <div className="cart-footer-notice">
-              ⚠️ Note: Calculations are verified. Your bill will be prepared for WhatsApp review before sending.
+              📸 Automatically generates your verified bill photo for WhatsApp sharing.
             </div>
           </div>
         )}
