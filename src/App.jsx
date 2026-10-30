@@ -99,7 +99,6 @@ const ShopMain = () => {
         <div className="container">
           {/* Section Header */}
           <div className="section-head">
-            <div className="section-subtitle">100% Pure • Unrefined • Natural Goodness</div>
             <h2 className="section-title">Our Three Pure Edible Oils</h2>
             <p className="section-desc">
               Coconut Oil (தேங்காய் எண்ணெய்), Sesame Oil (நல்லெண்ணெய்), and Groundnut Oil (கடலை எண்ணெய்).

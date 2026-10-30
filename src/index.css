@@ -731,7 +731,7 @@ input, textarea, select {
    ========================================================================== */
 .trust-bar {
   background: transparent;
-  padding: 1.5rem 0 1.75rem 0;
+  padding: 0.35rem 0 0.85rem 0;
   position: relative;
   overflow: hidden;
 }
@@ -743,7 +743,7 @@ input, textarea, select {
   margin: 0 auto;
   border-radius: var(--radius-lg);
   overflow: hidden;
-  box-shadow: 0 6px 24px rgba(9, 51, 29, 0.08), 0 2px 8px rgba(198, 146, 34, 0.14);
+  box-shadow: 0 4px 18px rgba(9, 51, 29, 0.07), 0 1px 4px rgba(198, 146, 34, 0.12);
   border: 1.5px solid rgba(198, 146, 34, 0.45);
   background: #fbfaf5;
   opacity: 0;
@@ -771,15 +771,14 @@ input, textarea, select {
 
 .trust-banner-wrap:hover {
   transform: translateY(-2px);
-  box-shadow: 0 10px 32px rgba(9, 51, 29, 0.12), 0 4px 14px rgba(198, 146, 34, 0.22);
+  box-shadow: 0 8px 24px rgba(9, 51, 29, 0.1), 0 3px 10px rgba(198, 146, 34, 0.18);
   border-color: var(--gold);
 }
 
 .trust-banner-img {
   width: 100%;
   height: auto;
-  aspect-ratio: 1024 / 341;
-  object-fit: cover;
+  object-fit: contain;
   display: block;
 }
 
@@ -797,13 +796,13 @@ input, textarea, select {
    CATEGORY TABS & CONTROLS
    ========================================================================== */
 .catalog-section {
-  padding: 3rem 0 4rem;
+  padding: 1.25rem 0 3.5rem;
 }
 
 .section-head {
   text-align: center;
   max-width: 650px;
-  margin: 0 auto 2.25rem;
+  margin: 0 auto 1.5rem;
 }
 
 .section-subtitle {
@@ -2778,7 +2777,7 @@ input, textarea, select {
 
   /* Trust Banner Section */
   .trust-bar {
-    padding: 0.85rem 0 1.15rem 0;
+    padding: 0.25rem 0 0.65rem 0;
   }
 
   .trust-banner-wrap {
@@ -3090,7 +3089,7 @@ input, textarea, select {
   }
 
   .trust-bar {
-    padding: 0.65rem 0 0.85rem 0;
+    padding: 0.15rem 0 0.5rem 0;
   }
 
   .trust-banner-wrap {
