@@ -36,21 +36,12 @@ export const TrustSection = () => {
     >
       <div className="container">
         <div className="trust-banner-wrap">
-          <picture>
-            <source
-              type="image/png"
-              srcSet="/images/trust_features_banner_4k.png"
-            />
-            <img
-              src="/images/trust_features_banner.jpg"
-              srcSet="/images/trust_features_banner.jpg 1x, /images/trust_features_banner_4k.png 2x"
-              alt="Poomani Chekku Ennai Features: 100% Pure & Natural • Unrefined & Unadulterated • Rich in Nutrients • Instant WhatsApp Billing"
-              className="trust-banner-img"
-              loading="lazy"
-              width="3840"
-              height="740"
-            />
-          </picture>
+          <img
+            src="/images/trust_features_banner.jpg"
+            alt="Poomani Chekku Ennai Features: 100% Pure & Natural • Unrefined & Unadulterated • Rich in Nutrients • Instant WhatsApp Billing"
+            className="trust-banner-img"
+            loading="lazy"
+          />
         </div>
       </div>
     </section>
