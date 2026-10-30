@@ -895,11 +895,10 @@ input, textarea, select {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: linear-gradient(135deg, #ffffff 0%, #fbf8f1 55%, #faf4e6 100%);
+  background: linear-gradient(180deg, #ffffff 0%, #fffdf9 40%, #fcf8f0 100%);
   border: 1.5px solid rgba(198, 146, 34, 0.45);
-  border-left: 6px solid var(--primary-deep);
-  border-radius: var(--radius-lg);
-  padding: 0.9rem 1.4rem 0.9rem 0.9rem;
+  border-radius: 20px;
+  padding: 0.75rem 1.4rem 0.75rem 0.95rem;
   margin-bottom: 1.85rem;
   box-shadow: 0 4px 18px rgba(9, 51, 29, 0.05), 0 1px 4px rgba(198, 146, 34, 0.08);
   transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1),
@@ -913,11 +912,10 @@ input, textarea, select {
 }
 
 .category-hero-card:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 10px 28px rgba(9, 51, 29, 0.1), 0 3px 12px rgba(198, 146, 34, 0.16);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(9, 51, 29, 0.09), 0 2px 8px rgba(198, 146, 34, 0.16);
   border-color: var(--gold);
-  border-left-color: var(--primary);
-  background: linear-gradient(135deg, #ffffff 0%, #fdfcf9 50%, #faf3e0 100%);
+  background: linear-gradient(180deg, #ffffff 0%, #fffcfa 50%, #faf3e2 100%);
 }
 
 .category-hero-card:active {
@@ -927,37 +925,84 @@ input, textarea, select {
 .cat-card-left {
   display: flex;
   align-items: center;
-  gap: 1.25rem;
   flex: 1;
   min-width: 0;
 }
 
-/* Product Ingredient Photograph on Left */
+/* 1. Product Ingredient Photograph on Left */
 .cat-card-img-wrap {
-  width: 175px;
-  height: 115px;
-  border-radius: 14px;
+  width: 145px;
+  height: 86px;
+  border-radius: 12px;
   overflow: hidden;
   flex-shrink: 0;
   border: 1.5px solid rgba(198, 146, 34, 0.4);
-  box-shadow: 0 4px 14px rgba(9, 51, 29, 0.12);
-  background: #f4ede1;
-  position: relative;
+  box-shadow: 0 2px 8px rgba(9, 51, 29, 0.06);
+  background: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .cat-card-img {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
   display: block;
   transition: transform 0.35s cubic-bezier(0.2, 0.8, 0.25, 1);
 }
 
 .category-hero-card:hover .cat-card-img {
-  transform: scale(1.08);
+  transform: scale(1.05);
 }
 
-/* Category Text Information */
+/* 2. Vertical golden divider line with centered dot */
+.cat-card-divider {
+  width: 1px;
+  height: 44px;
+  margin: 0 1.15rem;
+  background: linear-gradient(180deg, transparent 0%, rgba(198, 146, 34, 0.45) 20%, rgba(198, 146, 34, 0.75) 50%, rgba(198, 146, 34, 0.45) 80%, transparent 100%);
+  position: relative;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cat-card-divider-dot {
+  width: 5px;
+  height: 5px;
+  background: #c69222;
+  border-radius: 50%;
+  position: absolute;
+  box-shadow: 0 0 4px rgba(198, 146, 34, 0.55);
+}
+
+/* 3. Small matching decorative circular icon badge */
+.cat-card-icon-pill {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #fffbf0 0%, #faedd0 100%);
+  border: 1.5px solid rgba(198, 146, 34, 0.5);
+  color: #8c6411;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-right: 1.15rem;
+  box-shadow: 0 2px 6px rgba(198, 146, 34, 0.16);
+  transition: transform 0.25s ease, background 0.25s ease, border-color 0.25s ease, color 0.25s ease;
+}
+
+.category-hero-card:hover .cat-card-icon-pill {
+  transform: scale(1.08);
+  border-color: var(--gold);
+  color: #09331d;
+  background: radial-gradient(circle, #ffffff 0%, #fdf2d8 100%);
+}
+
+/* 4. Category Typography */
 .cat-card-info {
   display: flex;
   flex-direction: column;
@@ -965,92 +1010,76 @@ input, textarea, select {
   min-width: 0;
 }
 
-.cat-card-title-row {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-  flex-wrap: wrap;
-}
-
-.cat-card-icon-pill {
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  background: #eaf5ee;
-  border: 1px solid rgba(18, 78, 44, 0.22);
-  color: var(--primary);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  transition: transform 0.25s ease, background 0.25s ease, color 0.25s ease, border-color 0.25s ease;
-}
-
-.category-hero-card:hover .cat-card-icon-pill {
-  background: var(--gold-glow);
-  border-color: var(--gold);
-  color: var(--gold-deep);
-  transform: scale(1.08);
-}
-
 .cat-card-title-en {
   font-family: var(--font-serif);
   font-size: 1.45rem;
   font-weight: 800;
-  color: var(--primary-deep);
-  letter-spacing: 0.035em;
+  color: #09331d;
+  letter-spacing: 0.04em;
   margin: 0;
-  line-height: 1.2;
+  line-height: 1.15;
   text-transform: uppercase;
   transition: color 0.25s ease;
 }
 
 .category-hero-card:hover .cat-card-title-en {
-  color: var(--primary);
+  color: #0c4323;
 }
 
 .cat-card-title-ta {
   font-family: var(--font-tamil);
-  font-size: 1.12rem;
-  font-weight: 700;
-  color: var(--gold-deep);
-  line-height: 1.3;
-  margin-top: 3px;
+  font-size: 1.08rem;
+  font-weight: 600;
+  color: #8c6411;
+  line-height: 1.25;
+  margin-top: 4px;
   letter-spacing: 0.01em;
 }
 
-/* Green Rounded Badge on the right showing actual dynamic count */
+/* 5. Dark Green, gold-bordered product count badge on the right */
 .cat-card-right {
   flex-shrink: 0;
-  margin-left: 1rem;
+  margin-left: 1.25rem;
 }
 
 .cat-card-badge {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  background: linear-gradient(135deg, var(--primary-deep), var(--primary));
+  gap: 6px;
+  background: #08321a;
   color: #ffffff;
-  padding: 0.45rem 1.15rem;
+  padding: 0.48rem 1.15rem;
   border-radius: var(--radius-full);
-  font-size: 0.85rem;
-  font-weight: 700;
-  letter-spacing: 0.03em;
-  border: 1px solid rgba(229, 185, 76, 0.35);
-  box-shadow: 0 3px 10px rgba(9, 51, 29, 0.16);
+  font-size: 0.86rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  border: 1px solid rgba(212, 175, 55, 0.65);
+  box-shadow: 0 3px 8px rgba(9, 51, 29, 0.18);
   white-space: nowrap;
-  transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+  transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease, background 0.25s ease;
 }
 
 .category-hero-card:hover .cat-card-badge {
   transform: scale(1.04);
-  box-shadow: 0 4px 14px rgba(9, 51, 29, 0.25);
-  border-color: var(--gold-light);
+  box-shadow: 0 4px 12px rgba(9, 51, 29, 0.25);
+  border-color: #e5b94c;
+  background: #0c4323;
+}
+
+.cat-card-badge-chevron {
+  color: #e5b94c;
+  display: inline-block;
+  transition: transform 0.2s ease;
+}
+
+.category-hero-card:hover .cat-card-badge-chevron {
+  transform: translateX(2px);
 }
 
 .cat-card-badge .badge-count-num {
-  font-size: 0.95rem;
-  color: #f7eecf;
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: #ffffff;
 }
 
 /* Backward compatibility for previous classes */
@@ -2478,8 +2507,17 @@ input, textarea, select {
    ========================================================================== */
 @media (max-width: 992px) {
   .cat-card-img-wrap {
-    width: 120px;
-    height: 84px;
+    width: 125px;
+    height: 76px;
+  }
+  .cat-card-divider {
+    height: 38px;
+    margin: 0 0.95rem;
+  }
+  .cat-card-icon-pill {
+    width: 38px;
+    height: 38px;
+    margin-right: 0.95rem;
   }
   .cat-card-title-en {
     font-size: 1.25rem;
@@ -2797,51 +2835,63 @@ input, textarea, select {
   .category-hero-card {
     padding: 0.65rem 0.85rem 0.65rem 0.65rem;
     border-radius: 14px;
-    border-left-width: 4px;
     margin-bottom: 1.25rem;
   }
 
-  .cat-card-left {
-    gap: 0.85rem;
-  }
-
   .cat-card-img-wrap {
-    width: 112px;
-    height: 78px;
+    width: 105px;
+    height: 68px;
     border-radius: 10px;
   }
 
-  .cat-card-title-row {
-    gap: 0.4rem;
+  .cat-card-divider {
+    height: 34px;
+    margin: 0 0.65rem;
+  }
+
+  .cat-card-divider-dot {
+    width: 4px;
+    height: 4px;
   }
 
   .cat-card-icon-pill {
-    width: 22px;
-    height: 22px;
+    width: 32px;
+    height: 32px;
+    margin-right: 0.65rem;
   }
 
   .cat-card-icon-pill svg {
-    width: 13px;
-    height: 13px;
+    width: 15px;
+    height: 15px;
   }
 
   .cat-card-title-en {
     font-size: 1.05rem;
-    letter-spacing: 0.02em;
+    letter-spacing: 0.025em;
   }
 
   .cat-card-title-ta {
     font-size: 0.84rem;
-    margin-top: 1px;
+    margin-top: 2px;
+  }
+
+  .cat-card-right {
+    margin-left: 0.65rem;
   }
 
   .cat-card-badge {
-    padding: 0.32rem 0.75rem;
+    padding: 0.35rem 0.75rem;
     font-size: 0.74rem;
+    gap: 4px;
   }
 
   .cat-card-badge .badge-count-num {
     font-size: 0.82rem;
+  }
+
+  .cat-card-badge-chevron {
+    width: 12px;
+    height: 12px;
   }
 
   .section-head {
@@ -3233,31 +3283,60 @@ input, textarea, select {
   }
 
   .category-hero-card {
-    padding: 0.5rem 0.65rem 0.5rem 0.5rem;
+    padding: 0.45rem 0.55rem 0.45rem 0.45rem;
     border-radius: 12px;
   }
 
-  .cat-card-left {
-    gap: 0.55rem;
+  .cat-card-img-wrap {
+    width: 72px;
+    height: 50px;
+    border-radius: 6px;
   }
 
-  .cat-card-img-wrap {
-    width: 86px;
-    height: 62px;
-    border-radius: 8px;
+  .cat-card-divider {
+    height: 28px;
+    margin: 0 0.35rem;
+  }
+
+  .cat-card-divider-dot {
+    width: 3px;
+    height: 3px;
+  }
+
+  .cat-card-icon-pill {
+    width: 26px;
+    height: 26px;
+    margin-right: 0.35rem;
+  }
+
+  .cat-card-icon-pill svg {
+    width: 12px;
+    height: 12px;
   }
 
   .cat-card-title-en {
-    font-size: 0.88rem;
+    font-size: 0.82rem;
+    letter-spacing: 0.01em;
   }
 
   .cat-card-title-ta {
-    font-size: 0.74rem;
+    font-size: 0.7rem;
+    margin-top: 1px;
+  }
+
+  .cat-card-right {
+    margin-left: 0.4rem;
   }
 
   .cat-card-badge {
-    padding: 0.25rem 0.55rem;
-    font-size: 0.66rem;
+    padding: 0.22rem 0.5rem;
+    font-size: 0.65rem;
+    gap: 3px;
+  }
+
+  .cat-card-badge-chevron {
+    width: 10px;
+    height: 10px;
   }
 
   .brand-logo-img {

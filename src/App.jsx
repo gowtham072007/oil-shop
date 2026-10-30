@@ -18,9 +18,10 @@ import {
   Search,
   CheckCircle2,
   AlertCircle,
-  Palmtree,
-  Sparkles,
+  Leaf,
+  Droplet,
   Nut,
+  ChevronRight,
 } from "lucide-react";
 
 const OIL_CATEGORY_SECTIONS = [
@@ -29,23 +30,23 @@ const OIL_CATEGORY_SECTIONS = [
     name: "COCONUT OIL",
     regionalName: "தேங்காய் எண்ணெய்",
     image: "/images/cat_ingredient_coconut.jpg",
-    alt: "Pure Coconut Oil - Fresh Whole Coconut & Cut Halves with Leaves and Oil Bowl",
-    icon: Palmtree,
+    alt: "Pure Coconut Oil - Fresh Whole Coconut & Slices with Leaves",
+    icon: Leaf,
   },
   {
     id: "sesame",
     name: "SESAME OIL",
     regionalName: "நல்லெண்ணெய்",
     image: "/images/cat_ingredient_sesame.jpg",
-    alt: "Pure Sesame Oil - Black Sesame Seeds Bowl & Golden Sesame Oil with Leaves",
-    icon: Sparkles,
+    alt: "Pure Sesame Oil - Black Sesame Seeds Bowl with Leaves",
+    icon: Droplet,
   },
   {
     id: "groundnut",
     name: "GROUNDNUT OIL",
     regionalName: "கடலை எண்ணெய்",
     image: "/images/cat_ingredient_groundnut.jpg",
-    alt: "Pure Groundnut Oil - Roasted Peanuts & Pods with Leaves and Oil Bowl",
+    alt: "Pure Groundnut Oil - Roasted Peanuts & Pods with Leaves",
     icon: Nut,
   },
 ];
@@ -255,7 +256,7 @@ const ShopMain = () => {
                       }}
                     >
                       <div className="cat-card-left">
-                        {/* Product ingredient photograph on the left */}
+                        {/* 1. Large Ingredient photograph on the left */}
                         <div className="cat-card-img-wrap">
                           <img
                             src={cat.image}
@@ -265,23 +266,29 @@ const ShopMain = () => {
                           />
                         </div>
 
-                        {/* Category Name & Tamil Regional Name */}
+                        {/* 2. Vertical golden divider line with centered dot */}
+                        <div className="cat-card-divider" aria-hidden="true">
+                          <span className="cat-card-divider-dot"></span>
+                        </div>
+
+                        {/* 3. Small matching decorative circular icon badge */}
+                        <div className="cat-card-icon-pill" aria-hidden="true">
+                          <IconComp size={18} strokeWidth={2.2} />
+                        </div>
+
+                        {/* 4. English & Tamil Category Typography */}
                         <div className="cat-card-info">
-                          <div className="cat-card-title-row">
-                            <span className="cat-card-icon-pill" aria-hidden="true">
-                              <IconComp size={16} />
-                            </span>
-                            <h2 className="cat-card-title-en">{cat.name}</h2>
-                          </div>
+                          <h2 className="cat-card-title-en">{cat.name}</h2>
                           <div className="cat-card-title-ta">{cat.regionalName}</div>
                         </div>
                       </div>
 
-                      {/* Green rounded badge on the right showing actual dynamic product count */}
+                      {/* 5. Dark green, gold-bordered product count badge on the right */}
                       <div className="cat-card-right">
                         <span className="cat-card-badge">
                           <span className="badge-count-num">{catProducts.length}</span>{" "}
                           {catProducts.length === 1 ? "Product" : "Products"}
+                          <ChevronRight size={14} strokeWidth={2.6} className="cat-card-badge-chevron" />
                         </span>
                       </div>
                     </div>
