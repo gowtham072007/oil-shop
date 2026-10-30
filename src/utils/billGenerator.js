@@ -39,6 +39,36 @@ export const cleanCustomerPhone = (phone) => {
 };
 
 /**
+ * Parse phone number into country code prefix (e.g. "+91") and local phone digits
+ */
+export const parseCountryAndLocalPhone = (rawPhone) => {
+  if (!rawPhone) return { countryCode: "+91", localNumber: "" };
+  const digits = String(rawPhone).replace(/\D/g, "");
+  if (digits.startsWith("91") && digits.length >= 12) {
+    return { countryCode: "+91", localNumber: digits.slice(2) };
+  }
+  if (digits.startsWith("1") && digits.length === 11) {
+    return { countryCode: "+1", localNumber: digits.slice(1) };
+  }
+  if (digits.startsWith("44") && digits.length >= 11) {
+    return { countryCode: "+44", localNumber: digits.slice(2) };
+  }
+  if (digits.startsWith("971") && digits.length >= 11) {
+    return { countryCode: "+971", localNumber: digits.slice(3) };
+  }
+  if (digits.startsWith("65") && digits.length >= 10) {
+    return { countryCode: "+65", localNumber: digits.slice(2) };
+  }
+  if (digits.startsWith("60") && digits.length >= 11) {
+    return { countryCode: "+60", localNumber: digits.slice(2) };
+  }
+  if (digits.length === 10) {
+    return { countryCode: "+91", localNumber: digits };
+  }
+  return { countryCode: "+91", localNumber: digits };
+};
+
+/**
  * Standardize English and Tamil names for the 3 permitted oils
  */
 export const getStandardOilNames = (name = "", regionalName = "") => {

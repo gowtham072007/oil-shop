@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useShop } from "../context/ShopContext";
+import { cleanWhatsAppNumber } from "../utils/billGenerator";
 import { Home, Droplets, ShoppingCart, MessageCircle } from "lucide-react";
 
 export const MobileBottomNav = () => {
@@ -44,9 +45,12 @@ export const MobileBottomNav = () => {
     setIsCartOpen(true);
   };
 
-  const waUrl = `https://wa.me/${shopSettings.whatsappNumber}?text=Hello%20${encodeURIComponent(
-    shopSettings.shopName
-  )}%2C%20I%20would%20like%20to%20inquire%20about%20ordering%20pure%20cooking%20oils.`;
+  const cleanAdminPhone = cleanWhatsAppNumber(shopSettings?.whatsappNumber);
+  const waUrl = cleanAdminPhone
+    ? `https://wa.me/${cleanAdminPhone}?text=Hello%20${encodeURIComponent(
+        shopSettings?.shopName || "Poomani Chekku Ennai"
+      )}%2C%20I%20would%20like%20to%20inquire%20about%20ordering%20pure%20cooking%20oils.`
+    : "#";
 
   return (
     <nav className="mobile-bottom-nav" aria-label="Mobile Navigation">

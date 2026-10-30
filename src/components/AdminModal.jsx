@@ -1,6 +1,6 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { useShop } from "../context/ShopContext";
-import { formatINR } from "../utils/billGenerator";
+import { formatINR, parseCountryAndLocalPhone, cleanWhatsAppNumber } from "../utils/billGenerator";
 import {
   X,
   Lock,
@@ -80,6 +80,21 @@ export const AdminModal = () => {
 
   // Shop Settings Form State
   const [settingsForm, setSettingsForm] = useState({ ...shopSettings });
+  const [settingsError, setSettingsError] = useState("");
+  const [settingsSuccess, setSettingsSuccess] = useState("");
+  const [countryCode, setCountryCode] = useState("+91");
+  const [customCountryCode, setCustomCountryCode] = useState("");
+  const [localPhone, setLocalPhone] = useState("");
+
+  // Sync settings when shopSettings changes or modal opens
+  useEffect(() => {
+    if (shopSettings) {
+      setSettingsForm((prev) => ({ ...prev, ...shopSettings }));
+      const parsed = parseCountryAndLocalPhone(shopSettings.whatsappNumber);
+      setCountryCode(parsed.countryCode || "+91");
+      setLocalPhone(parsed.localNumber || "");
+    }
+  }, [shopSettings, isAdminOpen]);
 
   // View Bill Modal within Admin
   const [adminViewingBill, setAdminViewingBill] = useState(null);
@@ -276,10 +291,38 @@ export const AdminModal = () => {
     setProductForm({ ...productForm, variants: updated });
   };
 
-  // Save Settings
-  const saveSettings = (e) => {
+  // Save Settings with WhatsApp number validation and permanent DB persistence
+  const saveSettings = async (e) => {
     e.preventDefault();
-    updateShopSettings(settingsForm);
+    setSettingsError("");
+    setSettingsSuccess("");
+
+    const cleanLocal = String(localPhone).replace(/\D/g, "");
+    const resolvedCode = (countryCode === "custom" ? customCountryCode : countryCode).replace(/\D/g, "") || "91";
+    const fullNumber = `${resolvedCode}${cleanLocal}`;
+
+    if (!cleanLocal || cleanLocal.length < 10) {
+      setSettingsError("Please enter a valid 10-digit mobile number for WhatsApp. Customer order bills will be sent to this number.");
+      return;
+    }
+
+    if (!resolvedCode) {
+      setSettingsError("Please select or enter a valid country code (e.g. +91).");
+      return;
+    }
+
+    try {
+      const updatedSettings = {
+        ...settingsForm,
+        whatsappNumber: fullNumber,
+        phoneDisplay: settingsForm.phoneDisplay || `+${resolvedCode} ${cleanLocal.slice(0, 5)} ${cleanLocal.slice(5)}`,
+      };
+      await updateShopSettings(updatedSettings);
+      setSettingsSuccess("Shop & WhatsApp settings saved permanently to the database!");
+      setTimeout(() => setSettingsSuccess(""), 4000);
+    } catch (err) {
+      setSettingsError(err.message || "Failed to save settings. Please try again.");
+    }
   };
 
   return (
@@ -1075,9 +1118,214 @@ export const AdminModal = () => {
               {/* TAB 3: SHOP & WHATSAPP SETTINGS */}
               {activeTab === "settings" && (
                 <form onSubmit={saveSettings}>
-                  <h4 style={{ fontSize: "1.1rem", marginBottom: "1.25rem", color: "#09331d" }}>
-                    Shop Information & WhatsApp Integration Settings
-                  </h4>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.25rem", flexWrap: "wrap", gap: "0.5rem" }}>
+                    <h4 style={{ fontSize: "1.1rem", margin: 0, color: "#09331d" }}>
+                      Shop Information & WhatsApp Integration Settings
+                    </h4>
+                    <span style={{ fontSize: "0.78rem", color: "#57655d" }}>
+                      Central Database Persistence: Active
+                    </span>
+                  </div>
+
+                  {settingsError && (
+                    <div
+                      style={{
+                        background: "#fef2f2",
+                        border: "1.5px solid #f87171",
+                        borderRadius: "8px",
+                        padding: "0.85rem 1rem",
+                        marginBottom: "1.25rem",
+                        color: "#991b1b",
+                        fontSize: "0.86rem",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "0.6rem",
+                      }}
+                    >
+                      <AlertCircle size={20} color="#dc2626" style={{ flexShrink: 0 }} />
+                      <span>{settingsError}</span>
+                    </div>
+                  )}
+
+                  {settingsSuccess && (
+                    <div
+                      style={{
+                        background: "#f0fdf4",
+                        border: "1.5px solid #86efac",
+                        borderRadius: "8px",
+                        padding: "0.85rem 1rem",
+                        marginBottom: "1.25rem",
+                        color: "#166534",
+                        fontSize: "0.86rem",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "0.6rem",
+                      }}
+                    >
+                      <CheckCircle size={20} color="#16a34a" style={{ flexShrink: 0 }} />
+                      <span>{settingsSuccess}</span>
+                    </div>
+                  )}
+
+                  {/* Dedicated Admin WhatsApp Recipient Section */}
+                  <div
+                    style={{
+                      background: "#fbfaf5",
+                      border: "1.5px solid #c69222",
+                      borderRadius: "10px",
+                      padding: "1.25rem",
+                      marginBottom: "1.5rem",
+                      boxShadow: "0 2px 10px rgba(198, 146, 34, 0.08)",
+                    }}
+                  >
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        marginBottom: "0.6rem",
+                        flexWrap: "wrap",
+                        gap: "0.5rem",
+                      }}
+                    >
+                      <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                        <span style={{ fontSize: "1.3rem" }}>📱</span>
+                        <strong style={{ fontSize: "1rem", color: "#09331d" }}>
+                          Shop WhatsApp Recipient Number (For Customer Orders & Photo Bills) *
+                        </strong>
+                      </div>
+                      <span
+                        style={{
+                          fontSize: "0.74rem",
+                          fontWeight: "700",
+                          padding: "0.2rem 0.65rem",
+                          borderRadius: "9999px",
+                          background: String(localPhone).replace(/\D/g, "").length >= 10 ? "#16a34a" : "#dc2626",
+                          color: "#ffffff",
+                        }}
+                      >
+                        {String(localPhone).replace(/\D/g, "").length >= 10 ? "✓ Configured & Active" : "⚠️ Needs Valid Number"}
+                      </span>
+                    </div>
+
+                    <p style={{ fontSize: "0.82rem", color: "#57655d", margin: "0 0 1rem 0", lineHeight: 1.5 }}>
+                      When a customer clicks <strong>"Send Order on WhatsApp"</strong>, the website generates an official high-resolution <strong>bill photo</strong> and directs the WhatsApp chat straight to this number. Default country code is <strong>+91 (India)</strong>.
+                    </p>
+
+                    <div className="form-grid-2">
+                      <div className="form-group">
+                        <label>Country Code (Default: +91 India) *</label>
+                        <select
+                          value={countryCode}
+                          onChange={(e) => {
+                            setCountryCode(e.target.value);
+                            setSettingsError("");
+                          }}
+                          style={{
+                            width: "100%",
+                            padding: "0.65rem",
+                            borderRadius: "6px",
+                            border: "1.5px solid #d1d5db",
+                            background: "#ffffff",
+                            fontSize: "0.9rem",
+                            fontWeight: "500",
+                          }}
+                        >
+                          <option value="+91">+91 — India (Default)</option>
+                          <option value="+1">+1 — USA / Canada</option>
+                          <option value="+44">+44 — United Kingdom</option>
+                          <option value="+971">+971 — United Arab Emirates</option>
+                          <option value="+65">+65 — Singapore</option>
+                          <option value="+60">+60 — Malaysia</option>
+                          <option value="+966">+966 — Saudi Arabia</option>
+                          <option value="+94">+94 — Sri Lanka</option>
+                          <option value="+61">+61 — Australia</option>
+                          <option value="custom">Custom Country Code...</option>
+                        </select>
+                        {countryCode === "custom" && (
+                          <input
+                            type="text"
+                            placeholder="e.g. +974"
+                            value={customCountryCode}
+                            onChange={(e) => setCustomCountryCode(e.target.value)}
+                            style={{ marginTop: "0.5rem" }}
+                          />
+                        )}
+                      </div>
+
+                      <div className="form-group">
+                        <label>Shop WhatsApp Mobile Number (10 Digits) *</label>
+                        <input
+                          type="tel"
+                          placeholder="e.g. 6385755368"
+                          maxLength={12}
+                          value={localPhone}
+                          onChange={(e) => {
+                            const digits = e.target.value.replace(/\D/g, "");
+                            setLocalPhone(digits);
+                            setSettingsError("");
+                          }}
+                          style={{
+                            fontSize: "0.95rem",
+                            fontWeight: "600",
+                            letterSpacing: "0.5px",
+                            borderColor:
+                              String(localPhone).replace(/\D/g, "").length >= 10
+                                ? "#16a34a"
+                                : String(localPhone).replace(/\D/g, "").length > 0
+                                ? "#f59e0b"
+                                : "#d1d5db",
+                          }}
+                        />
+                        <small
+                          style={{
+                            fontSize: "0.74rem",
+                            color:
+                              String(localPhone).replace(/\D/g, "").length >= 10 ? "#16a34a" : "#64748b",
+                          }}
+                        >
+                          {String(localPhone).replace(/\D/g, "").length >= 10
+                            ? `✓ Valid mobile number (${String(localPhone).replace(/\D/g, "").length} digits)`
+                            : String(localPhone).replace(/\D/g, "").length > 0
+                            ? `Entered ${String(localPhone).replace(/\D/g, "").length} of 10 required digits`
+                            : "Enter the store owner's 10-digit mobile number"}
+                        </small>
+                      </div>
+                    </div>
+
+                    {/* Live WhatsApp Destination Preview */}
+                    <div
+                      style={{
+                        marginTop: "0.85rem",
+                        padding: "0.75rem 1rem",
+                        background: "#ffffff",
+                        borderRadius: "8px",
+                        border: "1.5px dashed #c69222",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        flexWrap: "wrap",
+                        gap: "0.75rem",
+                      }}
+                    >
+                      <div>
+                        <div style={{ fontSize: "0.76rem", color: "#64748b", textTransform: "uppercase", letterSpacing: "0.5px", fontWeight: "700" }}>
+                          Confirmed WhatsApp Order Recipient
+                        </div>
+                        <div style={{ fontSize: "1rem", fontWeight: "700", color: "#09331d" }}>
+                          +{(countryCode === "custom" ? customCountryCode : countryCode).replace(/\D/g, "") || "91"}{" "}
+                          {String(localPhone).replace(/\D/g, "") || "__________"}
+                        </div>
+                      </div>
+
+                      <div style={{ fontSize: "0.78rem", color: "#57655d", textAlign: "right" }}>
+                        <div>wa.me link destination:</div>
+                        <code style={{ background: "#f1f5f9", padding: "2px 6px", borderRadius: "4px", color: "#09331d" }}>
+                          wa.me/{((countryCode === "custom" ? customCountryCode : countryCode).replace(/\D/g, "") || "91") + String(localPhone).replace(/\D/g, "")}
+                        </code>
+                      </div>
+                    </div>
+                  </div>
 
                   <div className="form-grid-2">
                     <div className="form-group">
@@ -1123,45 +1371,16 @@ export const AdminModal = () => {
 
                   <div className="form-grid-2">
                     <div className="form-group">
-                      <label>WhatsApp Business Number (with country code, no + or spaces) *</label>
+                      <label>Phone Number Display Label (For Header / Footer)</label>
                       <input
                         type="text"
-                        value={settingsForm.whatsappNumber}
-                        onChange={(e) => setSettingsForm({ ...settingsForm, whatsappNumber: e.target.value })}
-                        placeholder="e.g. 919876543210"
-                      />
-                      <small style={{ fontSize: "0.74rem", color: "#57655d" }}>
-                        Format: Country Code + 10 Digits. Official wa.me URL will use this number.
-                      </small>
-                    </div>
-
-                    <div className="form-group">
-                      <label>Phone Number Display</label>
-                      <input
-                        type="text"
-                        value={settingsForm.phoneDisplay}
+                        value={settingsForm.phoneDisplay || ""}
                         onChange={(e) => setSettingsForm({ ...settingsForm, phoneDisplay: e.target.value })}
+                        placeholder="e.g. +91 63857 55368"
                       />
-                    </div>
-                  </div>
-
-                  <div className="form-group">
-                    <label>Shop Address (Physical Mill / Store)</label>
-                    <textarea
-                      rows={2}
-                      value={settingsForm.address}
-                      onChange={(e) => setSettingsForm({ ...settingsForm, address: e.target.value })}
-                    />
-                  </div>
-
-                  <div className="form-grid-2">
-                    <div className="form-group">
-                      <label>FSSAI License Number</label>
-                      <input
-                        type="text"
-                        value={settingsForm.fssaiNumber}
-                        onChange={(e) => setSettingsForm({ ...settingsForm, fssaiNumber: e.target.value })}
-                      />
+                      <small style={{ fontSize: "0.72rem", color: "#57655d" }}>
+                        Formatted phone text shown in website header and footer.
+                      </small>
                     </div>
 
                     <div className="form-group">
@@ -1171,6 +1390,26 @@ export const AdminModal = () => {
                         maxLength={6}
                         value={settingsForm.adminPin}
                         onChange={(e) => setSettingsForm({ ...settingsForm, adminPin: e.target.value })}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="form-grid-2">
+                    <div className="form-group">
+                      <label>Shop Address (Physical Mill / Store)</label>
+                      <textarea
+                        rows={2}
+                        value={settingsForm.address}
+                        onChange={(e) => setSettingsForm({ ...settingsForm, address: e.target.value })}
+                      />
+                    </div>
+
+                    <div className="form-group">
+                      <label>FSSAI License Number</label>
+                      <input
+                        type="text"
+                        value={settingsForm.fssaiNumber}
+                        onChange={(e) => setSettingsForm({ ...settingsForm, fssaiNumber: e.target.value })}
                       />
                     </div>
                   </div>

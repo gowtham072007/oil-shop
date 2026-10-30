@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useShop } from "../context/ShopContext";
-import { formatINR } from "../utils/billGenerator";
+import { formatINR, cleanWhatsAppNumber } from "../utils/billGenerator";
 import { Plus, Minus, ShoppingBag, Check, MessageCircle } from "lucide-react";
 
 export const ProductCard = ({ product }) => {
@@ -54,7 +54,10 @@ export const ProductCard = ({ product }) => {
     `• Price: ₹${formatINR(lineTotal)}\n\n` +
     `Please confirm availability and order details.`
   );
-  const productWaUrl = `https://wa.me/${shopSettings.whatsappNumber}?text=${productWaText}`;
+  const cleanAdminPhone = cleanWhatsAppNumber(shopSettings?.whatsappNumber);
+  const productWaUrl = cleanAdminPhone
+    ? `https://wa.me/${cleanAdminPhone}?text=${productWaText}`
+    : "#";
 
   return (
     <div className="product-card" id={`product-${product.id}`}>

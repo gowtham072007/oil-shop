@@ -349,8 +349,21 @@ app.post('/api/orders/send-whatsapp-bill', async (req, res) => {
       });
     }
 
+    // Route to configured shop admin WhatsApp recipient number
+    const settings = await getShopSettings();
+    const adminWhatsApp = sanitizeWhatsAppPhone(settings.whatsappNumber);
+    if (!adminWhatsApp) {
+      return res.json({
+        success: true,
+        apiSent: false,
+        relativeUrl,
+        publicUrl,
+        reason: 'Shop admin WhatsApp number is not configured in settings.',
+      });
+    }
+
     const result = await sendWhatsAppCloudImage({
-      to: customerPhone,
+      to: adminWhatsApp, // Route customer order bill photo strictly to shop owner, not customer
       imageUrl: publicUrl,
       caption: billText,
       orderNumber,
@@ -400,6 +413,19 @@ app.get('/api/settings', async (req, res) => {
 
 app.put('/api/settings', requireAdminAuth, async (req, res) => {
   try {
+    if (req.body.whatsappNumber) {
+      let digits = String(req.body.whatsappNumber).replace(/\D/g, '');
+      if (digits.length === 10) {
+        digits = `91${digits}`;
+      }
+      if (digits.length < 10) {
+        return res.status(400).json({
+          success: false,
+          error: 'Shop WhatsApp number must be at least 10 digits including country code (e.g. 919876543210).',
+        });
+      }
+      req.body.whatsappNumber = digits;
+    }
     const updated = await saveShopSettings(req.body);
     broadcast('settings:updated', updated);
     res.json({ success: true, settings: updated });

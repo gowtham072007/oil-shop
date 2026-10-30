@@ -199,8 +199,9 @@ export async function generateBillImage(order, shopSettings = {}, format = 'png'
   // Shop Address & FSSAI
   ctx.fillStyle = '#6b7280';
   ctx.font = '11px "Plus Jakarta Sans", Arial, sans-serif';
-  const shopPhone = shopSettings.whatsappNumber ? `+${shopSettings.whatsappNumber}` : '+91 63857 55368';
-  const millInfo = `${shopSettings.address || 'Gopalasamuthiram, Tamil Nadu'} • Phone: ${shopPhone} • FSSAI #${shopSettings.fssaiNumber || '12421008000421'}`;
+  const shopPhone = shopSettings?.phoneDisplay || (shopSettings?.whatsappNumber ? `+${shopSettings.whatsappNumber}` : '');
+  const phonePart = shopPhone ? ` • Phone: ${shopPhone}` : '';
+  const millInfo = `${shopSettings?.address || 'Gopalasamuthiram, Tamil Nadu'}${phonePart} • FSSAI #${shopSettings?.fssaiNumber || '12421008000421'}`;
   ctx.fillText(millInfo, titleX, headerY + 72);
 
   // Gold Separator Line with Centered Diamond

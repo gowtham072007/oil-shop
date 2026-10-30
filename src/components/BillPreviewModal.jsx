@@ -88,15 +88,29 @@ export const BillPreviewModal = () => {
     }
   };
 
+  const cleanAdminPhone = cleanWhatsAppNumber(shopSettings?.whatsappNumber);
+  const isAdminPhoneValid = Boolean(cleanAdminPhone && cleanAdminPhone.length >= 10);
+  const shopPhoneFormatted = cleanAdminPhone ? `+${cleanAdminPhone}` : "";
+
   /**
    * Primary action: Send Order on WhatsApp (Photo Bill)
-   * 1. Generates the bill using the actual cart and customer information
-   * 2. Converts the bill into a high-quality PNG image
-   * 3. Uses Web Share API with file sharing where supported (Android, iPhone)
-   * 4. Fallback: downloads the bill image file and opens WhatsApp chat
-   * 5. Never shows false success on user cancellation (AbortError)
+   * 1. Validates that shop admin WhatsApp recipient is configured
+   * 2. Generates the bill using the actual cart and customer information
+   * 3. Converts the bill into a high-quality PNG image
+   * 4. Uses Web Share API with file sharing where supported (Android, iPhone)
+   * 5. Fallback: downloads the bill image file and opens WhatsApp chat addressed to ADMIN number
+   * 6. Never shows false success on user cancellation (AbortError)
    */
   const handleSendToWhatsApp = async () => {
+    // 0. Ensure admin recipient phone is configured
+    if (!isAdminPhoneValid) {
+      showNotification(
+        "Shop WhatsApp number is not configured by the store owner. Please configure it in the Admin Dashboard Settings.",
+        "error"
+      );
+      return;
+    }
+
     setIsGenerating(true);
     try {
       // 1. Generate high-resolution bill image file
@@ -109,8 +123,8 @@ export const BillPreviewModal = () => {
       // Create File object for Web Share API
       const billFile = new File([result.blob], fileName, { type: "image/png" });
 
-      // Clean short caption for sharing
-      const shortMessage = `Please find my Poomani Chekku Ennai order bill attached.\n\n*Order ID:* ${previewOrder.orderNumber}\n*Customer:* ${previewOrder.customerName}\n*Grand Total:* ₹${formatINR(previewOrder.grandTotal)}`;
+      // Clean short caption for sharing - order confirmation details
+      const shortMessage = `Please find my Poomani Chekku Ennai order bill attached.\n\n*Order ID:* ${previewOrder.orderNumber}\n*Customer:* ${previewOrder.customerName}\n*Phone:* ${previewOrder.customerPhone}\n*Grand Total:* ₹${formatINR(previewOrder.grandTotal)}`;
 
       // 2. Check if device natively supports file sharing (Android mobile, iOS Safari, etc.)
       const canShareFile = Boolean(
@@ -132,7 +146,7 @@ export const BillPreviewModal = () => {
           clearCart();
           setIsSent(true);
           setShareMethod("native");
-          showNotification("Bill photo shared successfully to WhatsApp!", "success");
+          showNotification(`Bill photo shared successfully to WhatsApp! Order delivered to shop owner (+${cleanAdminPhone}).`, "success");
         } catch (shareErr) {
           // If the customer dismissed or cancelled the native share sheet:
           if (shareErr.name === "AbortError") {
@@ -141,11 +155,11 @@ export const BillPreviewModal = () => {
             return;
           }
           console.warn("[BillPreview] Native file share failed, falling back to download:", shareErr);
-          await executeFallbackDownloadAndWhatsApp(result, fileName, shortMessage);
+          await executeFallbackDownloadAndWhatsApp(result, fileName, shortMessage, cleanAdminPhone);
         }
       } else {
         // 3. Fallback for Desktop & browsers without Web Share file support
-        await executeFallbackDownloadAndWhatsApp(result, fileName, shortMessage);
+        await executeFallbackDownloadAndWhatsApp(result, fileName, shortMessage, cleanAdminPhone);
       }
     } catch (err) {
       console.error("[BillPreview] Order dispatch error:", err);
@@ -157,9 +171,10 @@ export const BillPreviewModal = () => {
 
   /**
    * Fallback for Desktop / non-share browsers:
-   * Downloads the bill photo to customer's device and opens WhatsApp chat
+   * Downloads the bill photo to customer's device and opens WhatsApp chat addressed STRICTLY to the admin's number.
+   * Never sends to customer's own phone number.
    */
-  const executeFallbackDownloadAndWhatsApp = async (imageResult, fileName, shortMessage) => {
+  const executeFallbackDownloadAndWhatsApp = async (imageResult, fileName, shortMessage, adminRecipientPhone) => {
     // 1. Download image automatically
     const link = document.createElement("a");
     link.download = fileName;
@@ -170,16 +185,17 @@ export const BillPreviewModal = () => {
       if (document.body.contains(link)) document.body.removeChild(link);
     }, 200);
 
-    // 2. Open WhatsApp click-to-chat with short message
-    const shopPhone = cleanWhatsAppNumber(shopSettings.whatsappNumber || "916385755368");
-    const waText = `${shortMessage}\n\n(Bill photo downloaded: ${fileName} - please attach below)`;
-    const waUrl = `https://api.whatsapp.com/send?phone=${shopPhone}&text=${encodeURIComponent(waText)}`;
+    // 2. Open WhatsApp click-to-chat with short message directed to SHOP ADMIN number
+    const targetAdminPhone = adminRecipientPhone || cleanAdminPhone;
+    const waText = `${shortMessage}\n\n(Bill photo downloaded: ${fileName} - please attach and send to confirm your order)`;
+    const waUrl = `https://api.whatsapp.com/send?phone=${targetAdminPhone}&text=${encodeURIComponent(waText)}`;
 
-    // 3. Optional background server dispatch if configured
+    // 3. Optional background server dispatch if configured (routes to admin number on server)
     try {
       await sendWhatsAppBillApi({
         orderNumber: previewOrder.orderNumber,
         customerPhone: previewOrder.customerPhone,
+        customerName: previewOrder.customerName,
         billDataUrl: imageResult.dataUrl,
         billText: previewOrder.billText,
       });
@@ -195,7 +211,7 @@ export const BillPreviewModal = () => {
     clearCart();
     setIsSent(true);
     setShareMethod("download");
-    showNotification(`Bill photo downloaded (${fileName})! Please attach it in WhatsApp chat.`, "success");
+    showNotification(`Bill photo downloaded (${fileName})! Opening WhatsApp chat with shop owner (+${targetAdminPhone}).`, "success");
   };
 
   /**
@@ -217,7 +233,6 @@ export const BillPreviewModal = () => {
 
   const items = previewOrder.items || [];
   const fileNameDisplay = downloadedFileName || `Poomani_Chekku_Ennai_Bill_${previewOrder.orderNumber}.png`;
-  const shopPhoneFormatted = shopSettings.whatsappNumber ? `+${shopSettings.whatsappNumber}` : "+91 63857 55368";
 
   return (
     <div className="modal-backdrop" onClick={() => setPreviewOrder(null)}>
@@ -248,6 +263,64 @@ export const BillPreviewModal = () => {
 
         {/* Modal Body */}
         <div className="bill-modal-body">
+          {/* WARNING BANNER IF ADMIN WHATSAPP IS NOT CONFIGURED */}
+          {!isAdminPhoneValid && (
+            <div
+              className="admin-phone-missing-alert"
+              style={{
+                background: "#fffbeb",
+                border: "1.5px solid #f59e0b",
+                borderRadius: "10px",
+                padding: "0.85rem 1.1rem",
+                marginBottom: "1.25rem",
+                display: "flex",
+                alignItems: "flex-start",
+                gap: "0.75rem",
+                boxShadow: "0 2px 8px rgba(245, 158, 11, 0.12)",
+              }}
+            >
+              <AlertTriangle size={22} color="#b45309" style={{ flexShrink: 0, marginTop: "2px" }} />
+              <div>
+                <strong style={{ color: "#92400e", fontSize: "0.95rem", display: "block", marginBottom: "0.25rem" }}>
+                  Shop WhatsApp Recipient Number Not Configured
+                </strong>
+                <p style={{ margin: 0, fontSize: "0.83rem", color: "#78350f", lineHeight: 1.45 }}>
+                  The store owner has not configured a valid WhatsApp recipient number in the Admin Dashboard Settings. Customer order bills cannot be dispatched via WhatsApp until the store owner enters a valid mobile number with country code.
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* RECIPIENT BANNER: CLEARLY CONFIRMS ORDER IS SENT TO SHOP OWNER, NOT CUSTOMER */}
+          {isAdminPhoneValid && (
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                background: "#f0fdf4",
+                border: "1px solid #bbf7d0",
+                borderRadius: "8px",
+                padding: "0.6rem 0.95rem",
+                marginBottom: "1rem",
+                fontSize: "0.82rem",
+                color: "#166534",
+                flexWrap: "wrap",
+                gap: "0.5rem",
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: "0.45rem" }}>
+                <Send size={14} color="#16a34a" />
+                <span>
+                  <strong>WhatsApp Order Recipient:</strong> Store Owner (+{cleanAdminPhone})
+                </span>
+              </div>
+              <div style={{ color: "#15803d", fontSize: "0.78rem" }}>
+                Customer: <strong>{previewOrder.customerName}</strong> ({previewOrder.customerPhone})
+              </div>
+            </div>
+          )}
+
           {/* POST-SUBMISSION STATUS BANNER */}
           {isSent ? (
             <div
@@ -269,7 +342,7 @@ export const BillPreviewModal = () => {
                     </h4>
                   </div>
                   <p style={{ margin: "0 0 0.75rem 0", fontSize: "0.86rem", color: "#1e3a29", lineHeight: 1.5 }}>
-                    Your order <strong>#{previewOrder.orderNumber}</strong> has been forwarded with your bill photo attached. Your shopping cart has been cleared.
+                    Your order <strong>#{previewOrder.orderNumber}</strong> has been forwarded with your bill photo attached directly to the store owner (+{cleanAdminPhone}). Your shopping cart has been cleared.
                   </p>
                 </div>
               ) : (
@@ -282,7 +355,7 @@ export const BillPreviewModal = () => {
                   </div>
 
                   <p style={{ margin: "0 0 0.75rem 0", fontSize: "0.86rem", color: "#1e3a29", lineHeight: 1.5 }}>
-                    Your cart has been cleared. To finalize your order with <strong>Poomani Chekku Ennai</strong> ({shopPhoneFormatted}):
+                    Your cart has been cleared. To finalize your order with <strong>Poomani Chekku Ennai</strong> (+{cleanAdminPhone}):
                   </p>
 
                   <div
@@ -304,13 +377,13 @@ export const BillPreviewModal = () => {
                     <div style={{ display: "flex", alignItems: "flex-start", gap: "0.5rem", marginBottom: "0.5rem" }}>
                       <span style={{ background: "#22c55e", color: "#fff", borderRadius: "50%", width: "20px", height: "20px", display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: "0.75rem", fontWeight: "700", flexShrink: 0 }}>2</span>
                       <span>
-                        <strong>In WhatsApp Chat:</strong> Click the <Paperclip size={14} style={{ display: "inline", verticalAlign: "middle" }} /> <strong>Attach (or ➕ Plus on mobile)</strong> button.
+                        <strong>In WhatsApp Chat:</strong> Click the <Paperclip size={14} style={{ display: "inline", verticalAlign: "middle" }} /> <strong>Attach (or ➕ Plus on mobile)</strong> button in the chat with +{cleanAdminPhone}.
                       </span>
                     </div>
                     <div style={{ display: "flex", alignItems: "flex-start", gap: "0.5rem" }}>
                       <span style={{ background: "#22c55e", color: "#fff", borderRadius: "50%", width: "20px", height: "20px", display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: "0.75rem", fontWeight: "700", flexShrink: 0 }}>3</span>
                       <span>
-                        Select the bill photo and click <strong>Send</strong> to confirm!
+                        Select the bill photo and click <strong>Send</strong> to confirm your order!
                       </span>
                     </div>
                   </div>
@@ -318,19 +391,25 @@ export const BillPreviewModal = () => {
               )}
 
               <div style={{ display: "flex", gap: "0.5rem", marginTop: "0.85rem", flexWrap: "wrap" }}>
-                <button
-                  type="button"
-                  onClick={handleSendToWhatsApp}
+                <a
+                  href={`https://api.whatsapp.com/send?phone=${cleanAdminPhone}&text=${encodeURIComponent(
+                    `Please find my Poomani Chekku Ennai order bill attached.\n\n*Order ID:* ${previewOrder.orderNumber}\n*Customer:* ${previewOrder.customerName}\n*Grand Total:* ₹${formatINR(previewOrder.grandTotal)}`
+                  )}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="btn-proceed-wa"
                   style={{
                     padding: "0.45rem 0.9rem",
                     fontSize: "0.82rem",
+                    textDecoration: "none",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "0.4rem",
                   }}
-                  disabled={isGenerating}
                 >
                   <Send size={15} />
-                  <span>Re-open WhatsApp</span>
-                </button>
+                  <span>Open WhatsApp Chat (+{cleanAdminPhone})</span>
+                </a>
 
                 <button
                   type="button"
@@ -691,12 +770,22 @@ export const BillPreviewModal = () => {
             type="button"
             className={`btn-proceed-wa ${isSent ? "btn-proceed-wa-sent" : ""}`}
             onClick={handleSendToWhatsApp}
-            disabled={isGenerating}
+            disabled={isGenerating || !isAdminPhoneValid}
+            title={
+              !isAdminPhoneValid
+                ? "Store WhatsApp number is not configured by the admin in Settings"
+                : "Send customer order bill photo on WhatsApp to store owner"
+            }
           >
             {isGenerating ? (
               <>
                 <Loader2 size={18} className="animate-spin" />
                 <span>Generating Bill Photo...</span>
+              </>
+            ) : !isAdminPhoneValid ? (
+              <>
+                <AlertTriangle size={18} color="#ffffff" />
+                <span>Admin WhatsApp Number Required</span>
               </>
             ) : isSent ? (
               <>

@@ -1,5 +1,6 @@
 import React from "react";
 import { useShop } from "../context/ShopContext";
+import { cleanWhatsAppNumber } from "../utils/billGenerator";
 import { MapPin, Phone, Clock, ShieldCheck } from "lucide-react";
 
 export const Footer = () => {
@@ -97,13 +98,13 @@ export const Footer = () => {
               Need bulk quantity for marriages, functions, or temples? Chat directly with the oil master on WhatsApp!
             </p>
             <a
-              href={`https://wa.me/${shopSettings.whatsappNumber}?text=Hello%2C%20I%20would%20like%20to%20inquire%20about%20pure%20edible%20cooking%20oils.`}
+              href={`https://wa.me/${cleanWhatsAppNumber(shopSettings?.whatsappNumber)}?text=Hello%2C%20I%20would%20like%20to%20inquire%20about%20pure%20edible%20cooking%20oils.`}
               target="_blank"
               rel="noopener noreferrer"
               className="btn-whatsapp-pill"
               style={{ display: "inline-flex", marginTop: "0.5rem" }}
             >
-              💬 WhatsApp: {shopSettings.whatsappNumber}
+              💬 WhatsApp: {shopSettings?.phoneDisplay || (shopSettings?.whatsappNumber ? `+${shopSettings.whatsappNumber}` : "")}
             </a>
           </div>
         </div>

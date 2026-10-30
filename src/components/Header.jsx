@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useShop } from "../context/ShopContext";
+import { cleanWhatsAppNumber } from "../utils/billGenerator";
 import {
   Search,
   ShoppingCart,
@@ -112,8 +113,8 @@ export const Header = () => {
 
               {/* WhatsApp Quick Link (Desktop/Tablet) */}
               <a
-                href={`https://wa.me/${shopSettings.whatsappNumber}?text=Hello%20${encodeURIComponent(
-                  shopSettings.shopName
+                href={`https://wa.me/${cleanWhatsAppNumber(shopSettings?.whatsappNumber)}?text=Hello%20${encodeURIComponent(
+                  shopSettings?.shopName || "Poomani Chekku Ennai"
                 )}%2C%20I%20have%20an%20inquiry%20about%20your%20pure%20edible%20cooking%20oils.`}
                 target="_blank"
                 rel="noopener noreferrer"

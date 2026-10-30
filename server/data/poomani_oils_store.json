@@ -235,6 +235,13 @@
   ],
   "settings": {
     "shopName": "Poomani Chekku Ennai",
-    "shopNameTamil": "பூமணி செக்கு எண்ணெய்"
+    "shopNameTamil": "பூமணி செக்கு எண்ணெய்",
+    "tagline": "Traditional Cold Wood-Pressed Pure Edible Oils",
+    "taglineTamil": "பாரம்பரிய மரச்செக்கு தூய சமையல் எண்ணெய்",
+    "whatsappNumber": "916385755368",
+    "phoneDisplay": "+91 63857 55368",
+    "address": "Gopalasamuthiram (கோபாலசமுத்திரம்), Tamil Nadu",
+    "fssaiNumber": "12421008000421",
+    "adminPin": "1234"
   }
 }

@@ -625,9 +625,13 @@ export const ShopProvider = ({ children }) => {
   };
 
   const updateShopSettings = async (newSettings) => {
+    const cleanedNumber = cleanWhatsAppNumber(newSettings.whatsappNumber || shopSettings.whatsappNumber);
+    if (!cleanedNumber || cleanedNumber.length < 10) {
+      throw new Error("Invalid WhatsApp number. Please provide a valid number with country code (e.g. +91 98765 43210).");
+    }
     const cleaned = {
       ...newSettings,
-      whatsappNumber: cleanWhatsAppNumber(newSettings.whatsappNumber || shopSettings.whatsappNumber),
+      whatsappNumber: cleanedNumber,
     };
     if (adminToken) {
       try {
@@ -751,6 +755,15 @@ export const ShopProvider = ({ children }) => {
 
   // WhatsApp Order Flow
   const initiateWhatsAppCheckout = (customerDetails) => {
+    const cleanAdminPhone = cleanWhatsAppNumber(shopSettings?.whatsappNumber);
+    if (!cleanAdminPhone || cleanAdminPhone.length < 10) {
+      showNotification(
+        "Shop WhatsApp recipient number is not configured by the store owner. Please configure it in the Admin Dashboard Settings.",
+        "error"
+      );
+      return;
+    }
+
     const now = new Date();
     const formattedDate = `${now.toLocaleDateString("en-IN", {
       day: "2-digit",
