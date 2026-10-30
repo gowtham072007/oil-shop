@@ -47,6 +47,11 @@ export const BillPreviewModal = () => {
   useEffect(() => {
     if (!previewOrder) {
       setGeneratedImgUrl(null);
+      setIsSent(false);
+      setApiStatus(null);
+      return;
+    }
+
     if (previewOrder.whatsappStatus) {
       setApiStatus({
         status: previewOrder.whatsappStatus,
@@ -60,8 +65,6 @@ export const BillPreviewModal = () => {
     } else {
       setIsSent(false);
       setApiStatus(null);
-    }
-      return;
     }
 
     let isMounted = true;
