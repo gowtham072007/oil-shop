@@ -22,12 +22,20 @@ export const Header = () => {
 
   return (
     <>
-      {/* Top Announcement Bar */}
-      <div className="top-announcement">
-        <span className="badge">100% Pure & Natural</span>
-        <span className="announcement-text">
-          Pure Edible Chekku Ennai • FSSAI #{shopSettings.fssaiNumber || "12421008000421"} • 100% Unrefined & Pure • Instant WhatsApp Ordering
-        </span>
+      {/* Top Announcement Bar: Continuous Horizontal Running Text */}
+      <div
+        className="top-announcement"
+        role="region"
+        aria-label="Shop Announcement"
+      >
+        <div className="top-announcement-ticker">
+          <div className="top-announcement-item">
+            <span className="badge">100% PURE & NATURAL</span>
+            <span className="announcement-text">
+              Pure Edible Chekku Ennai • FSSAI #{shopSettings.fssaiNumber || "12421008000421"} • 100% Unrefined & Pure • Instant WhatsApp Ordering
+            </span>
+          </div>
+        </div>
       </div>
 
       {/* Main Sticky Header */}
