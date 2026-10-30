@@ -28,21 +28,18 @@ const OIL_CATEGORY_SECTIONS = [
     id: "coconut",
     name: "Coconut Oil",
     regionalName: "தேங்காய் எண்ணெய்",
-    description: "100% Pure edible coconut oil with authentic natural aroma, perfect for wholesome cooking, traditional recipes, and wellness.",
     icon: Palmtree,
   },
   {
     id: "sesame",
     name: "Sesame Oil",
     regionalName: "நல்லெண்ணெய்",
-    description: "Premium pure edible sesame (gingelly) oil offering authentic rich taste and golden aroma for traditional cooking and seasoning.",
     icon: Sparkles,
   },
   {
     id: "groundnut",
     name: "Groundnut Oil",
     regionalName: "கடலை எண்ணெய்",
-    description: "Pure edible groundnut (peanut) oil with a high smoke point, ideal for everyday deep frying, sauteing, and flavorful family meals.",
     icon: Nut,
   },
 ];
@@ -246,7 +243,6 @@ const ShopMain = () => {
                             {cat.name}{" "}
                             <span className="category-tamil-title">/ {cat.regionalName}</span>
                           </h3>
-                          <p className="category-section-desc">{cat.description}</p>
                         </div>
                       </div>
                       <span className="category-count-badge">

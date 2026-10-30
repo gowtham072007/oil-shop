@@ -915,17 +915,6 @@ export const AdminModal = () => {
                         )}
                       </div>
 
-                      {/* Product Description */}
-                      <div className="form-group">
-                        <label>Product Description</label>
-                        <textarea
-                          rows={3}
-                          value={productForm.description}
-                          onChange={(e) => setProductForm({ ...productForm, description: e.target.value })}
-                          placeholder="Describe the seeds, extraction technique, culinary uses, or purity notes..."
-                        />
-                      </div>
-
                       {/* Pack Sizes & Pricing Configuration */}
                       <div style={{ marginTop: "1.25rem", marginBottom: "1.25rem" }}>
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.5rem" }}>
@@ -1062,9 +1051,6 @@ export const AdminModal = () => {
                               ({c.regionalName})
                             </span>
                           )}
-                          <div style={{ fontSize: "0.78rem", color: "#57655d" }}>
-                            {c.description || "Category for traditional oils"}
-                          </div>
                         </div>
 
                         {c.id !== "all" && (

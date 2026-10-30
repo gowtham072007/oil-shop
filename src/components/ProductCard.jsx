@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import { useShop } from "../context/ShopContext";
 import { formatINR } from "../utils/billGenerator";
-import { sanitizeCustomerText } from "../utils/customerOilFilter";
 import { Plus, Minus, ShoppingBag, Check, MessageCircle } from "lucide-react";
 
 export const ProductCard = ({ product }) => {
@@ -113,11 +112,9 @@ export const ProductCard = ({ product }) => {
           <span className="pack-val">{displaySize}</span>
         </div>
 
-        <div className="product-oil-type">
+        <div className="product-oil-type" style={{ marginBottom: "0.85rem" }}>
           <span>🌿 100% Pure Edible Oil</span>
         </div>
-
-        <p className="product-desc-excerpt">{sanitizeCustomerText(product.description)}</p>
 
         {/* Pack Size Selector (when multiple variants exist) */}
         {variants.length > 1 && (

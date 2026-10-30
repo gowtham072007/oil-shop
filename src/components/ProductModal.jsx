@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import { useShop } from "../context/ShopContext";
 import { formatINR } from "../utils/billGenerator";
-import { sanitizeCustomerText } from "../utils/customerOilFilter";
 import { X, CheckCircle, ShoppingBag, ShieldCheck, Plus, Minus } from "lucide-react";
 
 export const ProductModal = () => {
@@ -67,13 +66,9 @@ export const ProductModal = () => {
               </div>
             )}
 
-            <div className="product-oil-type" style={{ marginBottom: "1rem" }}>
+            <div className="product-oil-type" style={{ marginBottom: "1.25rem" }}>
               <span>🌿 100% Pure Edible Oil</span>
             </div>
-
-            <p style={{ fontSize: "0.92rem", color: "#57655d", marginBottom: "1.25rem", lineHeight: "1.55" }}>
-              {sanitizeCustomerText(product.description)}
-            </p>
 
             {/* Benefits */}
             {product.benefits && product.benefits.length > 0 && (
