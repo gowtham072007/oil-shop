@@ -9,8 +9,8 @@ export const DEFAULT_SHOP_SETTINGS = {
   address: "Gopalasamuthiram (கோபாலசமுத்திரம்), Tamil Nadu",
   fssaiNumber: "12421008000421",
   workingHours: "Mon - Sat: 8:00 AM - 9:00 PM | Sun: 8:00 AM - 2:00 PM",
-  deliveryCharge: 50,
-  freeDeliveryThreshold: 999,
+  deliveryCharge: 0,
+  freeDeliveryThreshold: 0,
   adminPin: "1234",
   currency: "₹",
 };

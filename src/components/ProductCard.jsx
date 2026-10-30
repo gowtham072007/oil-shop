@@ -53,7 +53,7 @@ export const ProductCard = ({ product }) => {
     `• Pack Size: ${selectedVariant.size}\n` +
     `• Quantity: ${quantity}\n` +
     `• Price: ₹${formatINR(lineTotal)}\n\n` +
-    `Please confirm availability and delivery details.`
+    `Please confirm availability and order details.`
   );
   const productWaUrl = `https://wa.me/${shopSettings.whatsappNumber}?text=${productWaText}`;
 

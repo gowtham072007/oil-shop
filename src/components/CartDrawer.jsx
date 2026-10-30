@@ -8,7 +8,6 @@ import {
   Minus,
   ShoppingBag,
   Tag,
-  Truck,
   Check,
   Send,
   AlertCircle,
@@ -47,7 +46,7 @@ export const CartDrawer = () => {
     address: "",
     city: "Bengaluru",
     pincode: "",
-    paymentMethod: "Cash on Delivery",
+    paymentMethod: "Cash",
     notes: "",
   });
 
@@ -72,7 +71,7 @@ export const CartDrawer = () => {
     }
 
     if (!customerDetails.address.trim()) {
-      errors.address = "Complete delivery address is required";
+      errors.address = "Complete address is required";
     }
 
     if (!customerDetails.pincode.trim()) {
@@ -94,9 +93,6 @@ export const CartDrawer = () => {
     const success = applyCoupon(couponCodeInput);
     if (success) setCouponCodeInput("");
   };
-
-  const freeDeliveryThreshold = Number(shopSettings.freeDeliveryThreshold) || 999;
-  const progressPercent = Math.min(100, Math.round((cartSummary.subtotal / freeDeliveryThreshold) * 100));
 
   return (
     <>
@@ -172,25 +168,6 @@ export const CartDrawer = () => {
             </div>
           ) : (
             <>
-              {/* Free Delivery Meter */}
-              <div className="free-delivery-meter">
-                <div className="meter-text">
-                  <span>
-                    <Truck size={15} style={{ display: "inline", marginRight: "4px" }} />
-                    {cartSummary.isFreeDelivery
-                      ? "🎉 You have qualified for FREE Home Delivery!"
-                      : `Add ₹${formatINR(cartSummary.amountForFreeDelivery)} more for FREE Delivery!`}
-                  </span>
-                  <span>{progressPercent}%</span>
-                </div>
-                <div className="meter-bar">
-                  <div
-                    className="meter-fill"
-                    style={{ width: `${progressPercent}%` }}
-                  />
-                </div>
-              </div>
-
               {/* Cart Items List */}
               <div className="cart-items-list">
                 {cart.map((item) => {
@@ -289,7 +266,7 @@ export const CartDrawer = () => {
               <div className="checkout-details-section">
                 <h4>
                   <MapPin size={18} color="#124e2c" />
-                  Customer & Delivery Information
+                  Customer Information & Contact Address
                 </h4>
 
                 <div className={`form-group ${formErrors.name ? "has-error" : ""}`}>
@@ -329,7 +306,7 @@ export const CartDrawer = () => {
                 </div>
 
                 <div className={`form-group ${formErrors.address ? "has-error" : ""}`}>
-                  <label htmlFor="cust-address">Delivery Address (Door No, Street, Area) *</label>
+                  <label htmlFor="cust-address">Customer Address (Door No, Street, Area) *</label>
                   <textarea
                     id="cust-address"
                     rows={2}
@@ -390,9 +367,9 @@ export const CartDrawer = () => {
                       })
                     }
                   >
-                    <option value="Cash on Delivery">Cash on Delivery (COD)</option>
-                    <option value="UPI on Delivery (GPay / PhonePe / Paytm)">
-                      UPI on Delivery (GPay / PhonePe / Paytm)
+                    <option value="Cash">Cash (நேரில் பணம்)</option>
+                    <option value="UPI (GPay / PhonePe / Paytm)">
+                      UPI (GPay / PhonePe / Paytm)
                     </option>
                     <option value="Direct UPI Transfer to Mill">
                       Direct UPI Transfer to Mill
@@ -405,7 +382,7 @@ export const CartDrawer = () => {
                   <input
                     id="cust-notes"
                     type="text"
-                    placeholder="e.g. Call before delivery, leave with security"
+                    placeholder="e.g. Preferred bottle packing, order instructions"
                     value={customerDetails.notes}
                     onChange={(e) =>
                       setCustomerDetails({ ...customerDetails, notes: e.target.value })
@@ -424,16 +401,6 @@ export const CartDrawer = () => {
               <div className="bill-row">
                 <span>Items Subtotal</span>
                 <span>₹{formatINR(cartSummary.subtotal)}</span>
-              </div>
-              <div className="bill-row">
-                <span>Delivery Charges</span>
-                <span>
-                  {cartSummary.deliveryCharge === 0 ? (
-                    <strong style={{ color: "#16a34a" }}>FREE</strong>
-                  ) : (
-                    `₹${formatINR(cartSummary.deliveryCharge)}`
-                  )}
-                </span>
               </div>
               {cartSummary.discount > 0 && (
                 <div className="bill-row" style={{ color: "#16a34a" }}>

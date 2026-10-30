@@ -464,7 +464,7 @@ export const BillPreviewModal = () => {
                   </div>
                   <div className="meta-line">
                     <span className="meta-label">Payment Method:</span>
-                    <span className="meta-val">{previewOrder.paymentMethod || "Cash on Delivery"}</span>
+                    <span className="meta-val">{previewOrder.paymentMethod || "Cash"}</span>
                   </div>
                 </div>
 
@@ -478,8 +478,8 @@ export const BillPreviewModal = () => {
                     <span className="meta-val">{previewOrder.customerPhone || "—"}</span>
                   </div>
                   <div className="meta-line">
-                    <span className="meta-label">Delivery Address:</span>
-                    <span className="meta-val">{previewOrder.deliveryAddress || "Direct Order"}</span>
+                    <span className="meta-label">Customer Address:</span>
+                    <span className="meta-val">{previewOrder.customerAddress || previewOrder.address || previewOrder.deliveryAddress || "Direct Order"}</span>
                   </div>
                 </div>
               </div>
@@ -539,17 +539,6 @@ export const BillPreviewModal = () => {
                   <div className="summary-line">
                     <span>Subtotal:</span>
                     <strong>₹{formatINR(previewOrder.subtotal)}</strong>
-                  </div>
-
-                  <div className="summary-line">
-                    <span>Delivery Charge:</span>
-                    <span>
-                      {previewOrder.deliveryCharge === 0 ? (
-                        <strong style={{ color: "#16a34a" }}>FREE</strong>
-                      ) : (
-                        `₹${formatINR(previewOrder.deliveryCharge)}`
-                      )}
-                    </span>
                   </div>
 
                   {previewOrder.discount > 0 && (

@@ -367,7 +367,7 @@ export const AdminModal = () => {
               Admin Security Access
             </h3>
             <p style={{ fontSize: "0.88rem", color: "#57655d", marginBottom: "1.5rem" }}>
-              Enter the shop owner PIN to manage products, prices, stock, delivery charges, and orders.
+              Enter the shop owner PIN to manage products, prices, stock, coupons, and orders.
             </p>
 
             <form onSubmit={handleLogin}>
@@ -1170,26 +1170,6 @@ export const AdminModal = () => {
 
                   <div className="form-grid-2">
                     <div className="form-group">
-                      <label>Standard Delivery Charge (₹)</label>
-                      <input
-                        type="number"
-                        value={settingsForm.deliveryCharge}
-                        onChange={(e) => setSettingsForm({ ...settingsForm, deliveryCharge: Number(e.target.value) })}
-                      />
-                    </div>
-
-                    <div className="form-group">
-                      <label>Free Delivery Threshold (₹)</label>
-                      <input
-                        type="number"
-                        value={settingsForm.freeDeliveryThreshold}
-                        onChange={(e) => setSettingsForm({ ...settingsForm, freeDeliveryThreshold: Number(e.target.value) })}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="form-grid-2">
-                    <div className="form-group">
                       <label>FSSAI License Number</label>
                       <input
                         type="text"
@@ -1223,7 +1203,7 @@ export const AdminModal = () => {
                       <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
                         <span style={{ fontSize: "1.2rem" }}>💬</span>
                         <strong style={{ color: "#166534", fontSize: "0.95rem" }}>
-                          Official Meta WhatsApp Business Cloud API (Optional Automatic Image Delivery)
+                          Official Meta WhatsApp Business Cloud API (Optional Automatic Bill Image Dispatch)
                         </strong>
                       </div>
                       <span
@@ -1342,8 +1322,13 @@ export const AdminModal = () => {
                                 <small>{ord.date}</small>
                               </td>
                               <td>
-                                <div>{ord.customerName}</div>
+                                <div><strong>{ord.customerName}</strong></div>
                                 <small style={{ color: "#8c6819" }}>{ord.customerPhone}</small>
+                                {(ord.customerAddress || ord.address || ord.deliveryAddress) && (
+                                  <div style={{ fontSize: "0.74rem", color: "#57655d", marginTop: "2px", maxWidth: "220px", lineHeight: "1.25" }}>
+                                    {ord.customerAddress || ord.address || ord.deliveryAddress}
+                                  </div>
+                                )}
                               </td>
                               <td>
                                 <small>
@@ -1360,11 +1345,12 @@ export const AdminModal = () => {
                                   style={{ padding: "3px 6px", fontSize: "0.78rem", borderRadius: "4px" }}
                                 >
                                   <option value="WhatsApp Message Pending">WhatsApp Message Pending</option>
-                                  <option value="Redirected to WhatsApp">Redirected to WhatsApp</option>
+                                  <option value="Order Initiated">Order Initiated</option>
                                   <option value="Order Confirmed">Order Confirmed</option>
-                                  <option value="Dispatched">Dispatched</option>
-                                  <option value="Delivered">Delivered</option>
+                                  <option value="Completed">Completed</option>
                                   <option value="Cancelled">Cancelled</option>
+                                  {ord.status === "Dispatched" && <option value="Dispatched">Dispatched</option>}
+                                  {ord.status === "Delivered" && <option value="Delivered">Delivered</option>}
                                 </select>
                               </td>
                               <td>

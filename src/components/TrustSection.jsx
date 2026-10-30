@@ -1,5 +1,5 @@
 import React from "react";
-import { Award, ShieldCheck, Heart, Truck } from "lucide-react";
+import { Award, ShieldCheck, Heart, Receipt } from "lucide-react";
 
 export const TrustSection = () => {
   return (
@@ -38,11 +38,11 @@ export const TrustSection = () => {
 
           <div className="trust-card">
             <div className="trust-icon-box">
-              <Truck size={22} />
+              <Receipt size={22} />
             </div>
             <div className="trust-info">
-              <h4>WhatsApp Billing & Delivery</h4>
-              <p>Instant itemized WhatsApp invoice generation with reliable doorstep delivery.</p>
+              <h4>Instant WhatsApp Billing</h4>
+              <p>Direct itemized invoice generation with easy order confirmation on WhatsApp.</p>
             </div>
           </div>
         </div>

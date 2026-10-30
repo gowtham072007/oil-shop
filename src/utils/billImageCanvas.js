@@ -122,7 +122,7 @@ export async function generateBillImage(order, shopSettings = {}, format = 'png'
   ctx.fillText('Payment Method:', col1X, metaY + 78);
   ctx.fillStyle = '#1f2923';
   ctx.font = 'bold 12px Arial, sans-serif';
-  ctx.fillText(order.paymentMethod || 'Cash on Delivery', col1X + 115, metaY + 78);
+  ctx.fillText(order.paymentMethod || 'Cash', col1X + 115, metaY + 78);
 
   // Right Column (Customer Details)
   ctx.fillStyle = '#57655d';
@@ -144,7 +144,7 @@ export async function generateBillImage(order, shopSettings = {}, format = 'png'
   ctx.fillText('Address:', col2X, metaY + 78);
   ctx.fillStyle = '#1f2923';
   ctx.font = '12px Arial, sans-serif';
-  const cleanAddr = (order.deliveryAddress || 'Direct Order').slice(0, 42);
+  const cleanAddr = (order.customerAddress || order.address || order.deliveryAddress || 'Direct Order').slice(0, 42);
   ctx.fillText(cleanAddr, col2X + 85, metaY + 78);
 
   // 3. Itemized Products Table
@@ -256,17 +256,7 @@ export async function generateBillImage(order, shopSettings = {}, format = 'png'
   ctx.font = 'bold 13px Arial, sans-serif';
   ctx.fillText(`₹${formatINR(order.subtotal)}`, summaryX + summaryW, summaryY + 16);
 
-  // Delivery
-  ctx.textAlign = 'left';
-  ctx.font = '13px Arial, sans-serif';
-  ctx.fillStyle = '#57655d';
-  ctx.fillText('Delivery Charge:', summaryX, summaryY + 38);
-  ctx.textAlign = 'right';
-  ctx.fillStyle = order.deliveryCharge === 0 ? '#16a34a' : '#1f2923';
-  ctx.font = 'bold 13px Arial, sans-serif';
-  ctx.fillText(order.deliveryCharge === 0 ? 'FREE' : `₹${formatINR(order.deliveryCharge)}`, summaryX + summaryW, summaryY + 38);
-
-  let nextSummaryY = summaryY + 60;
+  let nextSummaryY = summaryY + 40;
   if (order.discount > 0) {
     ctx.textAlign = 'left';
     ctx.font = '13px Arial, sans-serif';
@@ -275,7 +265,7 @@ export async function generateBillImage(order, shopSettings = {}, format = 'png'
     ctx.textAlign = 'right';
     ctx.font = 'bold 13px Arial, sans-serif';
     ctx.fillText(`-₹${formatINR(order.discount)}`, summaryX + summaryW, nextSummaryY);
-    nextSummaryY += 22;
+    nextSummaryY += 24;
   }
 
   // Grand Total Highlighted Card

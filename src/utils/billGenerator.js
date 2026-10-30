@@ -104,14 +104,6 @@ export const calculateOrderTotals = (cartItems, shopSettings, appliedCoupon) => 
     };
   });
 
-  // Calculate delivery charges
-  const freeThreshold = Number(shopSettings.freeDeliveryThreshold) || 999;
-  const standardDelivery = Number(shopSettings.deliveryCharge) || 50;
-  let deliveryCharge = 0;
-  if (subtotal > 0) {
-    deliveryCharge = subtotal >= freeThreshold ? 0 : standardDelivery;
-  }
-
   // Calculate discount from coupon
   let discount = 0;
   if (appliedCoupon && subtotal >= (appliedCoupon.minOrder || 0)) {
@@ -123,17 +115,17 @@ export const calculateOrderTotals = (cartItems, shopSettings, appliedCoupon) => 
     }
   }
 
-  // Grand total cannot be negative
-  const grandTotal = Math.max(0, subtotal + deliveryCharge - discount);
+  // Grand total calculated strictly from product subtotal and applicable discounts
+  const grandTotal = Math.max(0, subtotal - discount);
 
   return {
     verifiedItems,
     subtotal,
-    deliveryCharge,
+    deliveryCharge: 0,
     discount,
     grandTotal,
-    isFreeDelivery: deliveryCharge === 0 && subtotal > 0,
-    amountForFreeDelivery: Math.max(0, freeThreshold - subtotal),
+    isFreeDelivery: false,
+    amountForFreeDelivery: 0,
   };
 };
 
@@ -150,8 +142,9 @@ export const generateWhatsAppBillText = (order) => {
   lines.push(`*Date & Time:* ${order.date}`);
   lines.push(`*Customer Name:* ${order.customerName}`);
   lines.push(`*Phone Number:* ${order.customerPhone}`);
-  if (order.deliveryAddress) {
-    lines.push(`*Delivery Address:* ${order.deliveryAddress}`);
+  const customerAddress = order.customerAddress || order.address || order.deliveryAddress;
+  if (customerAddress) {
+    lines.push(`*Customer Address:* ${customerAddress}`);
   }
   lines.push("━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
   lines.push("*ORDERED PRODUCTS / ஆர்டர் பொருட்கள்:*");
@@ -168,12 +161,11 @@ export const generateWhatsAppBillText = (order) => {
 
   lines.push("\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
   lines.push(`*Subtotal:* ₹${formatINR(order.subtotal)}`);
-  lines.push(`*Delivery Charge:* ${order.deliveryCharge === 0 ? "FREE" : `₹${formatINR(order.deliveryCharge)}`}`);
   if (order.discount > 0) {
     lines.push(`*Discount:* -₹${formatINR(order.discount)}`);
   }
   lines.push(`*GRAND TOTAL / மொத்தத் தொகை:* ₹${formatINR(order.grandTotal)}`);
-  lines.push(`*Payment Method:* ${order.paymentMethod || "Cash on Delivery"}`);
+  lines.push(`*Payment Method:* ${order.paymentMethod || "Cash"}`);
   if (order.customerNotes && order.customerNotes !== "None") {
     lines.push(`*Notes:* ${order.customerNotes}`);
   }
