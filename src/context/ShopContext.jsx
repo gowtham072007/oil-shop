@@ -82,10 +82,10 @@ export const ShopProvider = ({ children }) => {
       const saved = localStorage.getItem("oil_shop_settings");
       if (saved) {
         const parsed = JSON.parse(saved);
-        const resolvedShopName = (!parsed.shopName || parsed.shopName === "Poomani Oils")
+        const resolvedShopName = (!parsed.shopName || parsed.shopName === "Poomani Oils" || parsed.shopName.toLowerCase().includes("poomani oils"))
           ? "Poomani Chekku Ennai"
           : parsed.shopName;
-        const resolvedShopNameTamil = (!parsed.shopNameTamil || parsed.shopNameTamil === "பூமணி ஆயில்ஸ்")
+        const resolvedShopNameTamil = (!parsed.shopNameTamil || parsed.shopNameTamil.includes("ஆயில்") || parsed.shopNameTamil === "பூமணி ஆயில்ஸ்" || parsed.shopNameTamil === "பூமணி ஆயில்")
           ? "பூமணி செக்கு எண்ணெய்"
           : parsed.shopNameTamil;
 
@@ -234,10 +234,10 @@ export const ShopProvider = ({ children }) => {
     try {
       const serverSettings = await fetchShopSettings();
       if (serverSettings && Object.keys(serverSettings).length > 0) {
-        const resolvedShopName = (!serverSettings.shopName || serverSettings.shopName === "Poomani Oils")
+        const resolvedShopName = (!serverSettings.shopName || serverSettings.shopName === "Poomani Oils" || serverSettings.shopName.toLowerCase().includes("poomani oils"))
           ? "Poomani Chekku Ennai"
           : serverSettings.shopName;
-        const resolvedShopNameTamil = (!serverSettings.shopNameTamil || serverSettings.shopNameTamil === "பூமணி ஆயில்ஸ்")
+        const resolvedShopNameTamil = (!serverSettings.shopNameTamil || serverSettings.shopNameTamil.includes("ஆயில்") || serverSettings.shopNameTamil === "பூமணி ஆயில்ஸ்" || serverSettings.shopNameTamil === "பூமணி ஆயில்")
           ? "பூமணி செக்கு எண்ணெய்"
           : serverSettings.shopNameTamil;
 

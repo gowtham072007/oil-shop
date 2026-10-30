@@ -46,14 +46,19 @@ export const Header = () => {
                 className="brand-logo-img"
               />
               <div className="brand-text">
-                <h1>
-                  <span className="brand-name-en">{shopSettings.shopName || "Poomani Chekku Ennai"}</span>
+                <div className="brand-title-group">
+                  <h1 className="brand-name-en">
+                    {shopSettings.shopName ? shopSettings.shopName.toUpperCase() : "POOMANI CHEKKU ENNAI"}
+                  </h1>
                   <span className="brand-name-ta">
-                    {shopSettings.shopNameTamil || "பூமணி செக்கு எண்ணெய்"}
+                    {shopSettings.shopNameTamil && !shopSettings.shopNameTamil.includes("ஆயில்")
+                      ? shopSettings.shopNameTamil
+                      : "பூமணி செக்கு எண்ணெய்"}
                   </span>
-                </h1>
+                </div>
                 <div className="tagline">
-                  <span className="tagline-en">Pure Edible Cooking Oils</span>
+                  <span className="tagline-en">PURE EDIBLE COOKING OILS</span>
+                  <span className="tagline-sep">•</span>
                   <span className="tagline-ta">தூய சமையல் எண்ணெய்</span>
                 </div>
               </div>

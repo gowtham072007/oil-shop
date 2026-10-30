@@ -1109,7 +1109,7 @@ export const AdminModal = () => {
                         type="text"
                         value={settingsForm.shopNameTamil || ""}
                         onChange={(e) => setSettingsForm({ ...settingsForm, shopNameTamil: e.target.value })}
-                        placeholder="e.g. பூமணி ஆயில்ஸ்"
+                        placeholder="e.g. பூமணி செக்கு எண்ணெய்"
                       />
                     </div>
                   </div>

@@ -36,6 +36,7 @@
   /* Typography */
   --font-serif: 'Cinzel', Georgia, serif;
   --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-tamil: 'Noto Sans Tamil', 'Mukta Malar', 'Nirmala UI', sans-serif;
 
   /* Shadows & Elevations */
   --shadow-sm: 0 2px 6px rgba(9, 51, 29, 0.05);
@@ -194,56 +195,74 @@ input, textarea, select {
 .brand-text {
   display: flex;
   flex-direction: column;
+  justify-content: center;
 }
 
-.brand-text h1 {
-  font-size: 1.25rem;
-  font-weight: 700;
-  line-height: 1.15;
-  color: var(--primary-deep);
+.brand-text .brand-title-group {
   margin: 0;
+  padding: 0;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 2px;
-}
-
-.brand-text .brand-name-en {
-  letter-spacing: 0.02em;
-}
-
-.brand-text .brand-name-ta {
-  font-family: var(--font-sans);
-  font-size: 0.82rem;
-  color: var(--primary);
-  background: var(--gold-glow);
-  border: 1px solid var(--gold);
-  padding: 0.05rem 0.5rem;
-  border-radius: 4px;
-  font-weight: 700;
-  line-height: 1.2;
-  letter-spacing: 0.02em;
-  display: inline-block;
-}
-
-.brand-text .tagline {
-  font-size: 0.72rem;
-  color: var(--gold-deep);
-  font-weight: 600;
-  letter-spacing: 0.03em;
-  text-transform: uppercase;
-  margin-top: 3px;
-  display: flex;
-  flex-direction: column;
   gap: 1px;
 }
 
-.brand-text .tagline-ta {
-  color: var(--primary-light);
+.brand-text .brand-name-en {
+  font-family: var(--font-serif);
+  font-size: 1.25rem;
+  font-weight: 800;
+  line-height: 1.15;
+  color: var(--primary-deep);
+  letter-spacing: 0.025em;
+  text-transform: uppercase;
+  margin: 0;
+  padding: 0;
+}
+
+.brand-text .brand-name-ta {
+  font-family: var(--font-tamil);
+  font-size: 0.95rem;
+  font-weight: 700;
+  line-height: 1.25;
+  color: var(--gold-deep);
+  letter-spacing: 0.01em;
+  display: block;
+  margin: 0;
+  padding: 0;
+  background: none;
+  border: none;
+}
+
+.brand-text .tagline {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 3px;
+  line-height: 1.2;
+}
+
+.brand-text .tagline-en {
+  font-family: var(--font-sans);
   font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--gold-deep);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.brand-text .tagline-sep {
+  color: var(--gold);
+  font-size: 0.65rem;
+  opacity: 0.85;
+}
+
+.brand-text .tagline-ta {
+  font-family: var(--font-tamil);
+  font-size: 0.74rem;
   font-weight: 600;
-  text-transform: none;
+  color: var(--primary-light);
   letter-spacing: normal;
+  text-transform: none;
 }
 
 /* Header Search */
@@ -846,7 +865,7 @@ input, textarea, select {
 }
 
 .category-tamil-title {
-  font-family: var(--font-sans);
+  font-family: var(--font-tamil);
   font-size: 1.05rem;
   font-weight: 600;
   color: var(--gold-deep);
@@ -1033,6 +1052,7 @@ input, textarea, select {
 }
 
 .product-regional-name {
+  font-family: var(--font-tamil);
   font-size: 0.85rem;
   color: var(--text-muted);
   font-weight: 500;
@@ -1706,7 +1726,7 @@ input, textarea, select {
 }
 
 .invoice-brand-title {
-  font-family: var(--font-serif);
+  font-family: var(--font-serif), var(--font-tamil), serif;
   font-size: 1.4rem;
   font-weight: 700;
   color: var(--primary-deep);
@@ -1714,6 +1734,7 @@ input, textarea, select {
 }
 
 .invoice-brand-subtitle {
+  font-family: var(--font-sans), var(--font-tamil), sans-serif;
   font-size: 0.92rem;
   font-weight: 600;
   color: var(--gold-deep);
@@ -2373,24 +2394,60 @@ input, textarea, select {
     box-shadow: 0 2px 6px rgba(18, 78, 44, 0.2);
   }
 
-  .brand-text h1 {
-    font-size: 1.05rem;
+  .brand-text .brand-title-group {
+    gap: 1px;
     line-height: 1.1;
   }
 
   .brand-text .brand-name-en {
-    font-size: 1rem;
+    font-size: 0.95rem;
     font-weight: 800;
+    line-height: 1.1;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
   }
 
   .brand-text .brand-name-ta {
-    font-size: 0.7rem;
-    padding: 0.02rem 0.35rem;
-    margin-top: 1px;
+    font-family: var(--font-tamil);
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--gold-deep);
+    line-height: 1.2;
+    padding: 0;
+    background: none;
+    border: none;
+    white-space: nowrap;
   }
 
   .brand-text .tagline {
-    display: none; /* Hide multi-line tagline on mobile header for maximum compactness */
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1px;
+    margin-top: 2px;
+    line-height: 1.15;
+  }
+
+  .brand-text .tagline-sep {
+    display: none;
+  }
+
+  .brand-text .tagline-en {
+    font-family: var(--font-sans);
+    font-size: 0.58rem;
+    font-weight: 700;
+    color: var(--gold-deep);
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+
+  .brand-text .tagline-ta {
+    font-family: var(--font-tamil);
+    font-size: 0.64rem;
+    font-weight: 600;
+    color: var(--primary-light);
+    white-space: nowrap;
   }
 
   /* Compact Top Announcement Bar */
@@ -2956,6 +3013,27 @@ input, textarea, select {
 @media (max-width: 380px) {
   .container {
     padding: 0 0.5rem;
+  }
+
+  .brand-logo-img {
+    width: 34px;
+    height: 34px;
+  }
+
+  .brand-text .brand-name-en {
+    font-size: 0.82rem;
+  }
+
+  .brand-text .brand-name-ta {
+    font-size: 0.72rem;
+  }
+
+  .brand-text .tagline-en {
+    font-size: 0.52rem;
+  }
+
+  .brand-text .tagline-ta {
+    font-size: 0.58rem;
   }
 
   .product-grid {

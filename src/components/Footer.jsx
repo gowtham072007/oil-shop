@@ -20,8 +20,10 @@ export const Footer = () => {
                 />
                 {shopSettings.shopName || "Poomani Chekku Ennai"}
               </span>
-              <span style={{ fontSize: "0.92rem", color: "#e5b94c", paddingLeft: "2.6rem", fontWeight: "600" }}>
-                {shopSettings.shopNameTamil || "பூமணி செக்கு எண்ணெய்"}
+              <span style={{ fontSize: "0.92rem", color: "#e5b94c", paddingLeft: "2.6rem", fontWeight: "600", fontFamily: "var(--font-tamil)" }}>
+                {shopSettings.shopNameTamil && !shopSettings.shopNameTamil.includes("ஆயில்")
+                  ? shopSettings.shopNameTamil
+                  : "பூமணி செக்கு எண்ணெய்"}
               </span>
             </h4>
             <p>
@@ -109,7 +111,7 @@ export const Footer = () => {
         {/* Footer Bottom */}
         <div className="footer-bottom">
           <div>
-            © {new Date().getFullYear()} {shopSettings.shopName} ({shopSettings.shopNameTamil || "பூமணி செக்கு எண்ணெய்"}). All rights reserved. Pure edible cooking oils.
+            © {new Date().getFullYear()} {shopSettings.shopName} (<span style={{ fontFamily: "var(--font-tamil)" }}>{shopSettings.shopNameTamil && !shopSettings.shopNameTamil.includes("ஆயில்") ? shopSettings.shopNameTamil : "பூமணி செக்கு எண்ணெய்"}</span>). All rights reserved. Pure edible cooking oils.
           </div>
           <div>
             100% Pure Edible Oils • Pure Quality • Direct WhatsApp Billing

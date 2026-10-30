@@ -69,11 +69,11 @@ export async function generateBillImage(order, shopSettings = {}, format = 'png'
   // 1. Header Typography
   ctx.textAlign = 'center';
   ctx.fillStyle = '#09331d';
-  ctx.font = 'bold 24px Georgia, serif';
+  ctx.font = 'bold 24px "Noto Sans Tamil", Georgia, serif';
   ctx.fillText('POOMANI CHEKKU ENNAI — பூமணி செக்கு எண்ணெய்', width / 2, headerStartY + 10);
 
   ctx.fillStyle = '#8c6819';
-  ctx.font = 'italic 600 15px Arial, sans-serif';
+  ctx.font = 'italic 600 15px "Noto Sans Tamil", Arial, sans-serif';
   ctx.fillText('Customer Order Bill / வாடிக்கையாளர் ஆர்டர் ரசீது', width / 2, headerStartY + 32);
 
   ctx.fillStyle = '#57655d';
@@ -208,7 +208,7 @@ export async function generateBillImage(order, shopSettings = {}, format = 'png'
 
     if (taName) {
       ctx.fillStyle = '#8c6819';
-      ctx.font = '12px Arial, sans-serif';
+      ctx.font = '12px "Noto Sans Tamil", Arial, sans-serif';
       ctx.fillText(taName, cols[1].x + 12, currentY + 40);
     }
 
