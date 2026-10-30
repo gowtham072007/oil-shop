@@ -7,7 +7,6 @@ import {
   Plus,
   Minus,
   ShoppingBag,
-  Tag,
   Check,
   Send,
   AlertCircle,
@@ -28,16 +27,9 @@ export const CartDrawer = () => {
     clearCart,
     shopSettings,
     cartSummary,
-    appliedCoupon,
-    applyCoupon,
-    removeCoupon,
-    couponError,
     initiateWhatsAppCheckout,
     showNotification,
   } = useShop();
-
-  // Coupon input state
-  const [couponCodeInput, setCouponCodeInput] = useState("");
 
   // Customer form inputs
   const [customerDetails, setCustomerDetails] = useState({
@@ -85,13 +77,6 @@ export const CartDrawer = () => {
     if (Object.keys(errors).length === 0) {
       initiateWhatsAppCheckout(customerDetails);
     }
-  };
-
-  const handleApplyCoupon = (e) => {
-    e.preventDefault();
-    if (!couponCodeInput.trim()) return;
-    const success = applyCoupon(couponCodeInput);
-    if (success) setCouponCodeInput("");
   };
 
   return (
@@ -224,42 +209,6 @@ export const CartDrawer = () => {
                     </div>
                   );
                 })}
-              </div>
-
-              {/* Coupon Code Section */}
-              <div className="coupon-box">
-                {appliedCoupon ? (
-                  <div className="coupon-active-badge">
-                    <span>
-                      <Tag size={14} style={{ display: "inline", marginRight: "5px" }} />
-                      Coupon <strong>{appliedCoupon.code}</strong> applied (-₹{formatINR(cartSummary.discount)})
-                    </span>
-                    <button
-                      type="button"
-                      onClick={removeCoupon}
-                      style={{ color: "#dc2626", fontWeight: "700", fontSize: "0.8rem" }}
-                    >
-                      Remove
-                    </button>
-                  </div>
-                ) : (
-                  <form onSubmit={handleApplyCoupon} className="coupon-input-group">
-                    <input
-                      type="text"
-                      placeholder="Enter promo code (e.g. WELCOME50)"
-                      value={couponCodeInput}
-                      onChange={(e) => setCouponCodeInput(e.target.value)}
-                    />
-                    <button type="submit" className="btn-apply-coupon">
-                      Apply
-                    </button>
-                  </form>
-                )}
-                {couponError && (
-                  <div className="form-error-msg" style={{ marginTop: "4px" }}>
-                    {couponError}
-                  </div>
-                )}
               </div>
 
               {/* Customer Checkout Details Form */}
