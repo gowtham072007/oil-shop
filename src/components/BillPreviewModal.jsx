@@ -38,7 +38,7 @@ export const BillPreviewModal = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [activeTab, setActiveTab] = useState("image"); // Default to 'image' for Photo Bill first
   const [isSent, setIsSent] = useState(false);
-  const [shareMethod, setShareMethod] = useState(""); // 'native' | 'download'
+  const [apiStatus, setApiStatus] = useState(null); // { status: 'delivered'|'failed'|'unconfigured', messageId, error, recipient }
   const [generatedImgUrl, setGeneratedImgUrl] = useState(null);
   const [publicBillUrl, setPublicBillUrl] = useState("");
   const [downloadedFileName, setDownloadedFileName] = useState("");
@@ -47,8 +47,20 @@ export const BillPreviewModal = () => {
   useEffect(() => {
     if (!previewOrder) {
       setGeneratedImgUrl(null);
+    if (previewOrder.whatsappStatus) {
+      setApiStatus({
+        status: previewOrder.whatsappStatus,
+        messageId: previewOrder.whatsappMessageId,
+        error: previewOrder.whatsappError,
+        recipient: previewOrder.whatsappRecipient || cleanWhatsAppNumber(shopSettings?.whatsappNumber),
+      });
+      if (previewOrder.whatsappStatus === "delivered") {
+        setIsSent(true);
+      }
+    } else {
       setIsSent(false);
-      setShareMethod("");
+      setApiStatus(null);
+    }
       return;
     }
 
@@ -93,13 +105,11 @@ export const BillPreviewModal = () => {
   const shopPhoneFormatted = cleanAdminPhone ? `+${cleanAdminPhone}` : "";
 
   /**
-   * Primary action: Send Order on WhatsApp (Photo Bill)
-   * 1. Validates that shop admin WhatsApp recipient is configured
-   * 2. Generates the bill using the actual cart and customer information
-   * 3. Converts the bill into a high-quality PNG image
-   * 4. Uses Web Share API with file sharing where supported (Android, iPhone)
-   * 5. Fallback: downloads the bill image file and opens WhatsApp chat addressed to ADMIN number
-   * 6. Never shows false success on user cancellation (AbortError)
+   * Primary action: Send Order on WhatsApp (Direct Photo Bill via Meta Cloud API)
+   * 1. Validates that store owner WhatsApp recipient number is configured
+   * 2. Generates the bill PNG using actual cart and customer details
+   * 3. Dispatches image directly to store owner's entered WhatsApp number via Meta Cloud API
+   * 4. Reports verified API delivery status or clear configuration requirement
    */
   const handleSendToWhatsApp = async () => {
     if (!isAdminPhoneValid) {
@@ -111,29 +121,48 @@ export const BillPreviewModal = () => {
     }
 
     setIsGenerating(true);
+    setApiStatus(null);
     try {
       const result = await dispatchOrderPhotoBillToWhatsApp({
         order: previewOrder,
         shopSettings,
       });
 
-      if (result.cancelled) {
-        showNotification("Share cancelled. Tap again when ready to send bill photo.", "info");
-      } else {
-        setDownloadedFileName(result.fileName);
+      if (result.success && result.apiSent) {
         setGeneratedImgUrl(result.dataUrl);
         confirmOrderRedirect(previewOrder.orderNumber);
         clearCart();
         setIsSent(true);
-        setShareMethod("direct");
+        setApiStatus({
+          status: "delivered",
+          messageId: result.messageId,
+          recipient: result.recipient || cleanAdminPhone,
+        });
         showNotification(
-          `Opening WhatsApp chat with store owner (+${cleanAdminPhone}). Click Send in WhatsApp to confirm!`,
+          `Bill photo delivered directly to store owner (+${result.recipient || cleanAdminPhone}) via WhatsApp Business API!`,
           "success"
+        );
+      } else {
+        setIsSent(false);
+        setApiStatus({
+          status: result.notConfigured ? "unconfigured" : "failed",
+          error: result.error || "Meta WhatsApp Business API dispatch failed.",
+          recipient: result.recipient || cleanAdminPhone,
+        });
+        showNotification(
+          result.error || "Failed to dispatch bill photo via WhatsApp API.",
+          "error"
         );
       }
     } catch (err) {
       console.error("[BillPreview] Order dispatch error:", err);
-      showNotification("Could not prepare bill photo: " + err.message, "error");
+      setIsSent(false);
+      setApiStatus({
+        status: "failed",
+        error: err.message || "Failed to dispatch bill photo.",
+        recipient: cleanAdminPhone,
+      });
+      showNotification("Could not dispatch bill photo: " + err.message, "error");
     } finally {
       setIsGenerating(false);
     }
@@ -247,7 +276,7 @@ export const BillPreviewModal = () => {
           )}
 
           {/* POST-SUBMISSION STATUS BANNER */}
-          {isSent ? (
+          {apiStatus && apiStatus.status === "delivered" ? (
             <div
               style={{
                 background: "#f0fdf4",
@@ -258,94 +287,76 @@ export const BillPreviewModal = () => {
                 boxShadow: "0 2px 8px rgba(22, 163, 74, 0.08)",
               }}
             >
-              {shareMethod === "native" ? (
+              <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", marginBottom: "0.4rem" }}>
+                <CheckCircle size={24} color="#16a34a" />
+                <h4 style={{ margin: 0, color: "#166534", fontSize: "1.05rem" }}>
+                  Bill Photo Delivered to Store Owner via WhatsApp!
+                </h4>
+              </div>
+              <p style={{ margin: "0 0 0.75rem 0", fontSize: "0.86rem", color: "#1e3a29", lineHeight: 1.5 }}>
+                Your order <strong>#{previewOrder.orderNumber}</strong> has been transmitted directly to the store owner (+{apiStatus.recipient || cleanAdminPhone}) via the official Meta WhatsApp Business Cloud API. Your shopping cart has been cleared.
+              </p>
+              <div
+                style={{
+                  background: "#ffffff",
+                  border: "1px solid #bbf7d0",
+                  borderRadius: "8px",
+                  padding: "0.75rem 1rem",
+                  fontSize: "0.82rem",
+                  color: "#166534",
+                }}
+              >
                 <div>
-                  <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", marginBottom: "0.4rem" }}>
-                    <CheckCircle size={24} color="#16a34a" />
-                    <h4 style={{ margin: 0, color: "#166534", fontSize: "1.05rem" }}>
-                      Bill Photo Shared to WhatsApp!
-                    </h4>
-                  </div>
-                  <p style={{ margin: "0 0 0.75rem 0", fontSize: "0.86rem", color: "#1e3a29", lineHeight: 1.5 }}>
-                    Your order <strong>#{previewOrder.orderNumber}</strong> has been forwarded with your bill photo attached directly to the store owner (+{cleanAdminPhone}). Your shopping cart has been cleared.
-                  </p>
+                  <strong>WhatsApp Delivery Status:</strong> <span style={{ color: "#15803d", fontWeight: "700" }}>✓ Verified Delivered</span>
                 </div>
-              ) : (
+                {apiStatus.messageId && (
+                  <div style={{ marginTop: "4px" }}>
+                    <strong>Meta Message ID:</strong> <code style={{ background: "#f1f5f9", padding: "2px 6px", borderRadius: "4px" }}>{apiStatus.messageId}</code>
+                  </div>
+                )}
+                <div style={{ marginTop: "4px", color: "#15803d" }}>
+                  <strong>Recipient:</strong> Store Owner (+{apiStatus.recipient || cleanAdminPhone})
+                </div>
+              </div>
+            </div>
+          ) : apiStatus && (apiStatus.status === "unconfigured" || apiStatus.status === "failed") ? (
+            <div
+              style={{
+                background: "#fef2f2",
+                border: "2px solid #fca5a5",
+                borderRadius: "10px",
+                padding: "1rem 1.25rem",
+                marginBottom: "1.25rem",
+                boxShadow: "0 2px 8px rgba(220, 38, 38, 0.08)",
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", marginBottom: "0.4rem" }}>
+                <AlertTriangle size={24} color="#dc2626" />
+                <h4 style={{ margin: 0, color: "#991b1b", fontSize: "1.05rem" }}>
+                  {apiStatus.status === "unconfigured"
+                    ? "WhatsApp Business Cloud API Setup Required"
+                    : "WhatsApp API Delivery Failed"}
+                </h4>
+              </div>
+              <p style={{ margin: "0 0 0.75rem 0", fontSize: "0.86rem", color: "#7f1d1d", lineHeight: 1.5 }}>
+                {apiStatus.error || "The bill photo could not be sent via WhatsApp Business Cloud API."}
+              </p>
+              <div
+                style={{
+                  background: "#ffffff",
+                  border: "1px solid #fecaca",
+                  borderRadius: "8px",
+                  padding: "0.75rem 1rem",
+                  fontSize: "0.82rem",
+                  color: "#991b1b",
+                }}
+              >
                 <div>
-                  <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", marginBottom: "0.4rem" }}>
-                    <CheckCircle size={24} color="#16a34a" />
-                    <h4 style={{ margin: 0, color: "#166534", fontSize: "1.05rem" }}>
-                      Bill Photo Downloaded & WhatsApp Chat Opened!
-                    </h4>
-                  </div>
-
-                  <p style={{ margin: "0 0 0.75rem 0", fontSize: "0.86rem", color: "#1e3a29", lineHeight: 1.5 }}>
-                    Your cart has been cleared. To finalize your order with <strong>Poomani Chekku Ennai</strong> (+{cleanAdminPhone}):
-                  </p>
-
-                  <div
-                    style={{
-                      background: "#ffffff",
-                      border: "1px solid #bbf7d0",
-                      borderRadius: "8px",
-                      padding: "0.85rem",
-                      fontSize: "0.84rem",
-                      color: "#1e3a29",
-                    }}
-                  >
-                    <div style={{ display: "flex", alignItems: "flex-start", gap: "0.5rem", marginBottom: "0.5rem" }}>
-                      <span style={{ background: "#22c55e", color: "#fff", borderRadius: "50%", width: "20px", height: "20px", display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: "0.75rem", fontWeight: "700", flexShrink: 0 }}>1</span>
-                      <span>
-                        <strong>Bill Photo Saved:</strong> Look for <code>{fileNameDisplay}</code> in your device <strong>Downloads</strong> or <strong>Gallery</strong>.
-                      </span>
-                    </div>
-                    <div style={{ display: "flex", alignItems: "flex-start", gap: "0.5rem", marginBottom: "0.5rem" }}>
-                      <span style={{ background: "#22c55e", color: "#fff", borderRadius: "50%", width: "20px", height: "20px", display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: "0.75rem", fontWeight: "700", flexShrink: 0 }}>2</span>
-                      <span>
-                        <strong>In WhatsApp Chat:</strong> Click the <Paperclip size={14} style={{ display: "inline", verticalAlign: "middle" }} /> <strong>Attach (or ➕ Plus on mobile)</strong> button in the chat with +{cleanAdminPhone}.
-                      </span>
-                    </div>
-                    <div style={{ display: "flex", alignItems: "flex-start", gap: "0.5rem" }}>
-                      <span style={{ background: "#22c55e", color: "#fff", borderRadius: "50%", width: "20px", height: "20px", display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: "0.75rem", fontWeight: "700", flexShrink: 0 }}>3</span>
-                      <span>
-                        Select the bill photo and click <strong>Send</strong> to confirm your order!
-                      </span>
-                    </div>
-                  </div>
+                  <strong>Recipient Store Owner Number:</strong> +{apiStatus.recipient || cleanAdminPhone}
                 </div>
-              )}
-
-              <div style={{ display: "flex", gap: "0.5rem", marginTop: "0.85rem", flexWrap: "wrap" }}>
-                <a
-                  href={`https://api.whatsapp.com/send?phone=${cleanAdminPhone}&text=${encodeURIComponent(
-                    `Please find my Poomani Chekku Ennai order bill attached.\n\n*Order ID:* ${previewOrder.orderNumber}\n*Customer:* ${previewOrder.customerName}\n*Grand Total:* ₹${formatINR(previewOrder.grandTotal)}`
-                  )}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="btn-proceed-wa"
-                  style={{
-                    padding: "0.45rem 0.9rem",
-                    fontSize: "0.82rem",
-                    textDecoration: "none",
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: "0.4rem",
-                  }}
-                >
-                  <Send size={15} />
-                  <span>Open WhatsApp Chat (+{cleanAdminPhone})</span>
-                </a>
-
-                <button
-                  type="button"
-                  onClick={() => handleDownloadBill("png")}
-                  className="btn-bill-action secondary"
-                  style={{ padding: "0.45rem 0.9rem", fontSize: "0.82rem" }}
-                  disabled={isGenerating}
-                >
-                  <Download size={14} />
-                  <span>Re-download Bill (PNG)</span>
-                </button>
+                <div style={{ marginTop: "4px", color: "#64748b" }}>
+                  The store owner can configure permanent Meta WhatsApp Cloud API credentials (Phone Number ID & Access Token) in Admin Settings &gt; Meta WhatsApp Business Settings.
+                </div>
               </div>
             </div>
           ) : (
@@ -354,8 +365,8 @@ export const BillPreviewModal = () => {
               <div style={{ display: "flex", gap: "0.6rem", alignItems: "flex-start" }}>
                 <Sparkles size={20} color="#b45309" style={{ flexShrink: 0, marginTop: "2px" }} />
                 <div>
-                  <strong>Official Photo Bill Ready:</strong> Your verified invoice image has been generated below.
-                  When you tap <strong>"Send Bill Photo on WhatsApp"</strong>, your phone or browser opens the sharing screen with the bill photo attached so you can send it directly to Poomani Chekku Ennai!
+                  <strong>Official Photo Bill Ready:</strong> Your verified invoice image has been generated below with Poomani Chekku Ennai branding and exact order details.
+                  When you click <strong>"Send Bill Photo on WhatsApp"</strong>, the website dispatches this bill photo directly to the store owner's entered WhatsApp number (<strong>+{cleanAdminPhone}</strong>) via Meta WhatsApp Business API.
                 </div>
               </div>
             </div>
@@ -689,7 +700,7 @@ export const BillPreviewModal = () => {
             <span>{copied ? "Copied!" : "Copy Text"}</span>
           </button>
 
-          {/* 3. Primary CTA: Send Bill Photo on WhatsApp */}
+          {/* 3. Primary CTA: Send Bill Photo on WhatsApp via Meta API */}
           <button
             id="proceed-to-whatsapp-btn"
             type="button"
@@ -699,13 +710,13 @@ export const BillPreviewModal = () => {
             title={
               !isAdminPhoneValid
                 ? "Store WhatsApp number is not configured by the admin in Settings"
-                : "Send customer order bill photo on WhatsApp to store owner"
+                : "Send customer order bill photo directly to store owner's WhatsApp"
             }
           >
             {isGenerating ? (
               <>
                 <Loader2 size={18} className="animate-spin" />
-                <span>Generating Bill Photo...</span>
+                <span>Sending to WhatsApp...</span>
               </>
             ) : !isAdminPhoneValid ? (
               <>
@@ -715,13 +726,12 @@ export const BillPreviewModal = () => {
             ) : isSent ? (
               <>
                 <Check size={18} />
-                <span>Order Forwarded (Cart Cleared)</span>
+                <span>Bill Photo Delivered to Store Owner</span>
               </>
             ) : (
               <>
                 <Send size={18} />
-                <span>Send Bill Photo on WhatsApp</span>
-                <Share2 size={15} style={{ opacity: 0.9 }} />
+                <span>Send Order on WhatsApp</span>
               </>
             )}
           </button>

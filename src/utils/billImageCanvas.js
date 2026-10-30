@@ -474,15 +474,14 @@ export async function downloadBillImageFile(order, shopSettings = {}, format = '
 
 /**
  * Unified WhatsApp Photo Bill Dispatcher
- * Directly opens WhatsApp addressed to the store owner's entered number
- * with the full itemized order bill and official photo bill link.
- * Also automatically downloads the photo bill PNG to the customer's device.
- * Bypasses generic OS share sheet to ensure 100% direct delivery to the admin.
+ * Directly sends the generated bill photo to the store owner's entered number
+ * via the backend Meta WhatsApp Business Cloud API.
+ * NO client file downloads, NO generic empty chats, NO manual attachments.
  *
  * @param {Object} params
  * @param {Object} params.order - The completed order record
  * @param {Object} params.shopSettings - Store configuration with saved admin WhatsApp number
- * @returns {Promise<{ success: boolean, fileName: string, dataUrl: string, publicBillUrl: string, cleanAdmin: string, waUrl: string }>}
+ * @returns {Promise<{ success: boolean, apiSent: boolean, messageId?: string, error?: string, recipient: string, orderNumber: string, dataUrl: string, publicBillUrl?: string }>}
  */
 export async function dispatchOrderPhotoBillToWhatsApp({
   order,
@@ -493,37 +492,12 @@ export async function dispatchOrderPhotoBillToWhatsApp({
     throw new Error("Shop WhatsApp recipient number is not configured by the store owner in Admin Settings.");
   }
 
-  // 1. Generate high-resolution bill PNG image file from actual order
+  // 1. Generate high-resolution bill PNG image file from actual order details
   const imageResult = await generateBillImage(order, shopSettings, "png");
   const cleanOrder = String(order.orderNumber || "order").replace(/[^a-zA-Z0-9_-]/g, "_");
   const fileName = `Poomani_Chekku_Ennai_Bill_${cleanOrder}.png`;
 
-  // 2. Automatically download bill image file to customer's device
-  try {
-    const link = document.createElement("a");
-    link.download = fileName;
-    link.href = imageResult.dataUrl;
-    document.body.appendChild(link);
-    link.click();
-    setTimeout(() => {
-      if (document.body.contains(link)) document.body.removeChild(link);
-    }, 200);
-  } catch (dlErr) {
-    console.warn("[WhatsApp Dispatch] Auto-download error:", dlErr);
-  }
-
-  // 3. Upload bill image to server persistent storage for public hosting link
-  let publicBillUrl = "";
-  try {
-    const uploadRes = await uploadBillImageApi(order.orderNumber, imageResult.dataUrl);
-    if (uploadRes && uploadRes.publicUrl) {
-      publicBillUrl = uploadRes.publicUrl;
-    }
-  } catch (upErr) {
-    console.warn("[WhatsApp Dispatch] Upload bill photo:", upErr.message);
-  }
-
-  // 4. Construct complete, formatted WhatsApp bill text
+  // 2. Construct formatted WhatsApp order bill text
   const billLines = [];
   billLines.push("🧾 *POOMANI CHEKKU ENNAI — பூமணி செக்கு எண்ணெய்*");
   billLines.push("*Customer Order Bill / வாடிக்கையாளர் ஆர்டர் ரசீது*");
@@ -560,43 +534,59 @@ export async function dispatchOrderPhotoBillToWhatsApp({
     billLines.push(`*Notes:* ${order.customerNotes}`);
   }
   billLines.push("━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-
-  if (publicBillUrl) {
-    billLines.push(`🖼️ *OFFICIAL PHOTO BILL LINK:*`);
-    billLines.push(publicBillUrl);
-    billLines.push("━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-  }
-
-  billLines.push(`📎 *Bill Photo File:* ${fileName} (Saved to your device Downloads/Gallery)`);
-  billLines.push("━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-  billLines.push("Hello Poomani Chekku Ennai, I would like to confirm this order. Please check my order bill above.");
+  billLines.push("Hello Poomani Chekku Ennai, I have placed this order on your website. Please check my attached invoice photo bill above.");
 
   const fullBillText = billLines.join("\n");
 
-  // 5. DIRECTLY OPEN WHATSAPP ADDRESSED TO THE ADMIN'S ENTERED NUMBER
-  const waUrl = `https://api.whatsapp.com/send?phone=${cleanAdmin}&text=${encodeURIComponent(fullBillText)}`;
-  window.open(waUrl, "_blank", "noopener,noreferrer");
-
-  // 6. Background dispatch to server for Meta WhatsApp Cloud API if configured
+  // 3. Dispatch image bill directly to store owner's WhatsApp number via Meta Cloud API backend
+  let apiResult;
   try {
-    await sendWhatsAppBillApi({
+    apiResult = await sendWhatsAppBillApi({
       orderNumber: order.orderNumber,
-      customerPhone: order.customerPhone,
       customerName: order.customerName,
+      customerPhone: order.customerPhone,
+      customerAddress: customerAddress || "",
+      items: order.items || [],
+      subtotal: order.subtotal || 0,
+      discount: order.discount || 0,
+      grandTotal: order.grandTotal || 0,
+      paymentMethod: order.paymentMethod || "Cash",
       billDataUrl: imageResult.dataUrl,
       billText: fullBillText,
     });
-  } catch (cloudErr) {
-    console.warn("[WhatsApp Dispatch] Background Cloud API:", cloudErr.message);
+  } catch (err) {
+    return {
+      success: false,
+      apiSent: false,
+      error: err.message || "Failed to contact backend WhatsApp dispatch service.",
+      recipient: cleanAdmin,
+      orderNumber: order.orderNumber,
+      dataUrl: imageResult.dataUrl,
+    };
+  }
+
+  if (apiResult && apiResult.apiSent) {
+    return {
+      success: true,
+      apiSent: true,
+      messageId: apiResult.messageId,
+      recipient: apiResult.recipient || cleanAdmin,
+      orderNumber: order.orderNumber,
+      fileName,
+      dataUrl: imageResult.dataUrl,
+      publicBillUrl: apiResult.publicUrl || "",
+    };
   }
 
   return {
-    success: true,
-    shareMethod: "direct",
+    success: false,
+    apiSent: false,
+    notConfigured: Boolean(apiResult?.notConfigured),
+    error: apiResult?.error || "Meta WhatsApp Business API dispatch failed.",
+    recipient: apiResult?.recipient || cleanAdmin,
+    orderNumber: order.orderNumber,
     fileName,
     dataUrl: imageResult.dataUrl,
-    publicBillUrl,
-    cleanAdmin,
-    waUrl,
+    publicBillUrl: apiResult?.publicUrl || "",
   };
 }

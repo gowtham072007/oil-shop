@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useShop } from "../context/ShopContext";
 import { formatINR, parseCountryAndLocalPhone, cleanWhatsAppNumber } from "../utils/billGenerator";
+import { testWhatsAppCloudApi } from "../utils/api";
 import {
   X,
   Lock,
@@ -46,12 +47,15 @@ export const AdminModal = () => {
     exportStoreData,
     importStoreData,
     showNotification,
+    adminToken,
   } = useShop();
 
   const [enteredPin, setEnteredPin] = useState("");
   const [pinError, setPinError] = useState("");
   const [isLoggingIn, setIsLoggingIn] = useState(false);
   const [isSavingProduct, setIsSavingProduct] = useState(false);
+  const [isTestingApi, setIsTestingApi] = useState(false);
+  const [testApiResult, setTestApiResult] = useState(null);
   const [activeTab, setActiveTab] = useState("products"); // 'products' | 'categories' | 'settings' | 'orders' | 'backup'
 
   // Product Form State (for Add / Edit)
@@ -322,6 +326,39 @@ export const AdminModal = () => {
       setTimeout(() => setSettingsSuccess(""), 4000);
     } catch (err) {
       setSettingsError(err.message || "Failed to save settings. Please try again.");
+    }
+  };
+
+  const handleTestWhatsAppApi = async () => {
+    setIsTestingApi(true);
+    setTestApiResult(null);
+    try {
+      const res = await testWhatsAppCloudApi(
+        {
+          token: settingsForm.whatsappCloudApiToken,
+          phoneNumberId: settingsForm.whatsappPhoneNumberId,
+        },
+        adminToken
+      );
+
+      if (res.success) {
+        setTestApiResult({
+          success: true,
+          message: `Verified Active with Meta! Business Name: "${res.verifiedName || 'Poomani Chekku Ennai'}", Display Number: ${res.displayPhoneNumber || res.id} (Quality: ${res.qualityRating || 'GREEN'})`,
+        });
+      } else {
+        setTestApiResult({
+          success: false,
+          error: res.error || "Meta WhatsApp Cloud API verification failed.",
+        });
+      }
+    } catch (err) {
+      setTestApiResult({
+        success: false,
+        error: err.message || "Failed to connect to Meta WhatsApp Cloud API endpoint.",
+      });
+    } finally {
+      setIsTestingApi(false);
     }
   };
 
@@ -1498,6 +1535,65 @@ export const AdminModal = () => {
                         🔒 Securely stored in backend database. Never exposed to customer browser bundles.
                       </small>
                     </div>
+
+                    {/* Test WhatsApp Cloud API Connection Button */}
+                    <div style={{ marginTop: "1rem", display: "flex", alignItems: "center", gap: "0.75rem", flexWrap: "wrap" }}>
+                      <button
+                        type="button"
+                        onClick={handleTestWhatsAppApi}
+                        disabled={isTestingApi || !settingsForm.whatsappPhoneNumberId}
+                        style={{
+                          background: "#09331d",
+                          color: "#deb869",
+                          border: "1.5px solid #d4af37",
+                          padding: "0.5rem 1rem",
+                          borderRadius: "6px",
+                          fontSize: "0.82rem",
+                          fontWeight: "700",
+                          cursor: isTestingApi || !settingsForm.whatsappPhoneNumberId ? "not-allowed" : "pointer",
+                          opacity: isTestingApi || !settingsForm.whatsappPhoneNumberId ? 0.6 : 1,
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: "0.45rem",
+                        }}
+                      >
+                        <RefreshCw size={14} className={isTestingApi ? "spin-icon" : ""} />
+                        <span>{isTestingApi ? "Verifying with Meta..." : "Test WhatsApp API Connection"}</span>
+                      </button>
+
+                      <span style={{ fontSize: "0.76rem", color: "#57655d" }}>
+                        Validates your Phone ID and Token against Meta Graph API in real-time.
+                      </span>
+                    </div>
+
+                    {testApiResult && (
+                      <div
+                        style={{
+                          marginTop: "0.85rem",
+                          padding: "0.75rem 1rem",
+                          borderRadius: "8px",
+                          fontSize: "0.84rem",
+                          background: testApiResult.success ? "#f0fdf4" : "#fef2f2",
+                          border: `1.5px solid ${testApiResult.success ? "#86efac" : "#fca5a5"}`,
+                          color: testApiResult.success ? "#166534" : "#991b1b",
+                          display: "flex",
+                          alignItems: "flex-start",
+                          gap: "0.5rem",
+                        }}
+                      >
+                        {testApiResult.success ? (
+                          <CheckCircle size={18} color="#16a34a" style={{ flexShrink: 0, marginTop: "2px" }} />
+                        ) : (
+                          <AlertCircle size={18} color="#dc2626" style={{ flexShrink: 0, marginTop: "2px" }} />
+                        )}
+                        <div>
+                          <strong>{testApiResult.success ? "Meta API Verification Successful:" : "Meta API Verification Failed:"}</strong>
+                          <div style={{ marginTop: "2px", lineHeight: "1.4" }}>
+                            {testApiResult.message || testApiResult.error}
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   <button type="submit" className="btn-primary-glow" style={{ marginTop: "1rem" }}>
@@ -1533,6 +1629,7 @@ export const AdminModal = () => {
                             <th>Customer</th>
                             <th>Items</th>
                             <th>Total (₹)</th>
+                            <th>WhatsApp Delivery</th>
                             <th>Status</th>
                             <th>Bill</th>
                           </tr>
@@ -1562,6 +1659,59 @@ export const AdminModal = () => {
                               </td>
                               <td>
                                 <strong>₹{formatINR(ord.grandTotal)}</strong>
+                              </td>
+                              <td>
+                                {ord.whatsappStatus === "delivered" ? (
+                                  <span
+                                    style={{
+                                      display: "inline-flex",
+                                      alignItems: "center",
+                                      gap: "3px",
+                                      background: "#f0fdf4",
+                                      color: "#166534",
+                                      border: "1px solid #86efac",
+                                      borderRadius: "12px",
+                                      padding: "2px 8px",
+                                      fontSize: "0.72rem",
+                                      fontWeight: "700",
+                                    }}
+                                    title={`Delivered via Meta Cloud API. Message ID: ${ord.whatsappMessageId || "Confirmed"}`}
+                                  >
+                                    <CheckCircle size={11} color="#16a34a" /> Cloud API Sent
+                                  </span>
+                                ) : ord.whatsappStatus === "failed" ? (
+                                  <span
+                                    style={{
+                                      display: "inline-flex",
+                                      alignItems: "center",
+                                      gap: "3px",
+                                      background: "#fef2f2",
+                                      color: "#991b1b",
+                                      border: "1px solid #fca5a5",
+                                      borderRadius: "12px",
+                                      padding: "2px 8px",
+                                      fontSize: "0.72rem",
+                                      fontWeight: "700",
+                                    }}
+                                    title={ord.whatsappError || "Dispatch failed"}
+                                  >
+                                    <AlertCircle size={11} color="#dc2626" /> Failed
+                                  </span>
+                                ) : (
+                                  <span
+                                    style={{
+                                      background: "#fefce8",
+                                      color: "#854d0e",
+                                      border: "1px solid #fde047",
+                                      borderRadius: "12px",
+                                      padding: "2px 8px",
+                                      fontSize: "0.72rem",
+                                      fontWeight: "600",
+                                    }}
+                                  >
+                                    {ord.whatsappStatus || "Pending"}
+                                  </span>
+                                )}
                               </td>
                               <td>
                                 <select

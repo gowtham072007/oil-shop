@@ -32,6 +32,7 @@ export const CartDrawer = () => {
     initiateWhatsAppCheckout,
     confirmOrderRedirect,
     showNotification,
+    setPreviewOrder,
   } = useShop();
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -96,19 +97,36 @@ export const CartDrawer = () => {
       const order = initiateWhatsAppCheckout(customerDetails);
       if (!order) return;
 
-      // 2. Dynamically generate professional bill photo & open WhatsApp with admin's saved number
+      // 2. Dynamically generate professional bill photo & dispatch directly to store owner's WhatsApp
       const result = await dispatchOrderPhotoBillToWhatsApp({
         order,
         shopSettings,
       });
 
-      if (result.cancelled) {
-        showNotification("Share cancelled. Tap 'Send Order on WhatsApp' when ready.", "info");
-      } else {
+      if (result.success && result.apiSent) {
+        setPreviewOrder({
+          ...order,
+          whatsappStatus: "delivered",
+          whatsappMessageId: result.messageId,
+          whatsappRecipient: result.recipient || cleanAdminPhone,
+          billDataUrl: result.dataUrl,
+        });
         confirmOrderRedirect(order.orderNumber);
         showNotification(
-          `Opening WhatsApp chat with store owner (+${cleanAdminPhone}). Click Send in WhatsApp to confirm!`,
+          `Bill photo delivered directly to store owner (+${result.recipient || cleanAdminPhone}) via WhatsApp Business API!`,
           "success"
+        );
+      } else {
+        setPreviewOrder({
+          ...order,
+          whatsappStatus: result.notConfigured ? "unconfigured" : "failed",
+          whatsappError: result.error || "Meta WhatsApp Business API dispatch failed.",
+          whatsappRecipient: result.recipient || cleanAdminPhone,
+          billDataUrl: result.dataUrl,
+        });
+        showNotification(
+          result.error || "WhatsApp Business API dispatch failed.",
+          "error"
         );
       }
     } catch (err) {
@@ -413,7 +431,7 @@ export const CartDrawer = () => {
               {isSubmitting ? (
                 <>
                   <Loader2 size={18} className="animate-spin" />
-                  <span>Generating Bill Photo & Opening WhatsApp...</span>
+                  <span>Generating Bill Photo & Sending to Store Owner...</span>
                 </>
               ) : (
                 <>
@@ -424,7 +442,7 @@ export const CartDrawer = () => {
             </button>
 
             <div className="cart-footer-notice">
-              📸 Automatically generates your verified bill photo for WhatsApp sharing.
+              📸 Automatically generates your official invoice photo bill and dispatches directly to the store owner's WhatsApp.
             </div>
           </div>
         )}

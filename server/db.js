@@ -47,12 +47,13 @@ function readJsonStore() {
       return {
         products: Array.isArray(data.products) ? data.products : [],
         settings: typeof data.settings === 'object' && data.settings !== null ? data.settings : {},
+        orders: Array.isArray(data.orders) ? data.orders : [],
       };
     }
   } catch (err) {
     console.warn('[Database] Could not read JSON store, initializing clean state:', err.message);
   }
-  return { products: [], settings: {} };
+  return { products: [], settings: {}, orders: [] };
 }
 
 function writeJsonStore(data) {
@@ -107,6 +108,28 @@ export async function initDb() {
       );
     `;
 
+    const ordersTableSql = `
+      CREATE TABLE IF NOT EXISTS orders (
+        id VARCHAR(64) PRIMARY KEY,
+        order_number VARCHAR(64) NOT NULL UNIQUE,
+        customer_name VARCHAR(255) NOT NULL,
+        customer_phone VARCHAR(50) NOT NULL,
+        customer_address TEXT,
+        items JSONB NOT NULL,
+        subtotal NUMERIC(10, 2) NOT NULL,
+        discount NUMERIC(10, 2) DEFAULT 0,
+        grand_total NUMERIC(10, 2) NOT NULL,
+        payment_method VARCHAR(50),
+        bill_image_url TEXT,
+        whatsapp_recipient VARCHAR(50),
+        whatsapp_status VARCHAR(50) DEFAULT 'pending',
+        whatsapp_message_id VARCHAR(120),
+        whatsapp_error TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `;
+
     let client = null;
     try {
       client = await pgPool.connect();
@@ -114,6 +137,7 @@ export async function initDb() {
       await client.query(productsTableSql);
       await client.query(variantsTableSql);
       await client.query(settingsTableSql);
+      await client.query(ordersTableSql);
       await client.query('COMMIT');
       console.log('[Database] PostgreSQL schema verified successfully.');
     } catch (err) {
@@ -480,6 +504,214 @@ export async function saveShopSettings(settingsObject) {
   const updatedSettings = { ...store.settings, ...settingsObject };
   writeJsonStore({ ...store, settings: updatedSettings });
   return updatedSettings;
+}
+
+/**
+ * Save an order in persistent storage (Postgres or JSON file store)
+ */
+export async function saveOrder(orderData) {
+  const id = orderData.id || `ord-${Date.now()}`;
+  const orderNumber = orderData.orderNumber || `OS-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
+  const now = new Date().toISOString();
+
+  const formattedOrder = {
+    id,
+    orderNumber,
+    customerName: String(orderData.customerName || 'Customer').trim(),
+    customerPhone: String(orderData.customerPhone || '').trim(),
+    customerAddress: String(orderData.customerAddress || orderData.address || '').trim(),
+    items: Array.isArray(orderData.items) ? orderData.items : [],
+    subtotal: Number(orderData.subtotal) || 0,
+    discount: Number(orderData.discount) || 0,
+    grandTotal: Number(orderData.grandTotal) || 0,
+    paymentMethod: orderData.paymentMethod || 'Cash',
+    billImageUrl: orderData.billImageUrl || orderData.publicUrl || '',
+    whatsappRecipient: String(orderData.whatsappRecipient || '').trim(),
+    whatsappStatus: orderData.whatsappStatus || 'pending',
+    whatsappMessageId: orderData.whatsappMessageId || '',
+    whatsappError: orderData.whatsappError || '',
+    createdAt: orderData.createdAt || orderData.date || now,
+    updatedAt: now,
+  };
+
+  if (activeEngine === 'postgres' && pgPool) {
+    const client = await pgPool.connect();
+    try {
+      const sql = `
+        INSERT INTO orders (
+          id, order_number, customer_name, customer_phone, customer_address,
+          items, subtotal, discount, grand_total, payment_method,
+          bill_image_url, whatsapp_recipient, whatsapp_status, whatsapp_message_id, whatsapp_error,
+          created_at, updated_at
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
+        ON CONFLICT (order_number) DO UPDATE SET
+          customer_name = EXCLUDED.customer_name,
+          customer_phone = EXCLUDED.customer_phone,
+          customer_address = EXCLUDED.customer_address,
+          items = EXCLUDED.items,
+          subtotal = EXCLUDED.subtotal,
+          discount = EXCLUDED.discount,
+          grand_total = EXCLUDED.grand_total,
+          bill_image_url = EXCLUDED.bill_image_url,
+          whatsapp_recipient = EXCLUDED.whatsapp_recipient,
+          whatsapp_status = EXCLUDED.whatsapp_status,
+          whatsapp_message_id = EXCLUDED.whatsapp_message_id,
+          whatsapp_error = EXCLUDED.whatsapp_error,
+          updated_at = EXCLUDED.updated_at
+      `;
+      await client.query(sql, [
+        formattedOrder.id,
+        formattedOrder.orderNumber,
+        formattedOrder.customerName,
+        formattedOrder.customerPhone,
+        formattedOrder.customerAddress,
+        JSON.stringify(formattedOrder.items),
+        formattedOrder.subtotal,
+        formattedOrder.discount,
+        formattedOrder.grandTotal,
+        formattedOrder.paymentMethod,
+        formattedOrder.billImageUrl,
+        formattedOrder.whatsappRecipient,
+        formattedOrder.whatsappStatus,
+        formattedOrder.whatsappMessageId,
+        formattedOrder.whatsappError,
+        formattedOrder.createdAt,
+        now,
+      ]);
+    } catch (err) {
+      console.warn('[Database] PostgreSQL save order failed:', err.message);
+    } finally {
+      client.release();
+    }
+  }
+
+  // Update persistent JSON store
+  const store = readJsonStore();
+  const existingIdx = (store.orders || []).findIndex((o) => o.orderNumber === orderNumber);
+  let updatedOrders;
+  if (existingIdx >= 0) {
+    updatedOrders = [...store.orders];
+    updatedOrders[existingIdx] = { ...updatedOrders[existingIdx], ...formattedOrder };
+  } else {
+    updatedOrders = [formattedOrder, ...(store.orders || [])];
+  }
+  writeJsonStore({ ...store, orders: updatedOrders });
+  return formattedOrder;
+}
+
+/**
+ * Fetch all orders from database
+ */
+export async function getAllOrders() {
+  if (activeEngine === 'postgres' && pgPool) {
+    try {
+      const res = await pgPool.query('SELECT * FROM orders ORDER BY created_at DESC');
+      return res.rows.map((r) => ({
+        id: r.id,
+        orderNumber: r.order_number,
+        customerName: r.customer_name,
+        customerPhone: r.customer_phone,
+        customerAddress: r.customer_address,
+        items: typeof r.items === 'string' ? JSON.parse(r.items) : (r.items || []),
+        subtotal: Number(r.subtotal),
+        discount: Number(r.discount),
+        grandTotal: Number(r.grand_total),
+        paymentMethod: r.payment_method,
+        billImageUrl: r.bill_image_url,
+        whatsappRecipient: r.whatsapp_recipient,
+        whatsappStatus: r.whatsapp_status,
+        whatsappMessageId: r.whatsapp_message_id,
+        whatsappError: r.whatsapp_error,
+        createdAt: r.created_at,
+        updatedAt: r.updated_at,
+      }));
+    } catch (err) {
+      console.warn('[Database] PostgreSQL fetch orders failed:', err.message);
+    }
+  }
+
+  const store = readJsonStore();
+  return store.orders || [];
+}
+
+/**
+ * Fetch a single order by orderNumber
+ */
+export async function getOrderById(orderNumber) {
+  if (activeEngine === 'postgres' && pgPool) {
+    try {
+      const res = await pgPool.query('SELECT * FROM orders WHERE order_number = $1', [orderNumber]);
+      if (res.rows.length > 0) {
+        const r = res.rows[0];
+        return {
+          id: r.id,
+          orderNumber: r.order_number,
+          customerName: r.customer_name,
+          customerPhone: r.customer_phone,
+          customerAddress: r.customer_address,
+          items: typeof r.items === 'string' ? JSON.parse(r.items) : (r.items || []),
+          subtotal: Number(r.subtotal),
+          discount: Number(r.discount),
+          grandTotal: Number(r.grand_total),
+          paymentMethod: r.payment_method,
+          billImageUrl: r.bill_image_url,
+          whatsappRecipient: r.whatsapp_recipient,
+          whatsappStatus: r.whatsapp_status,
+          whatsappMessageId: r.whatsapp_message_id,
+          whatsappError: r.whatsapp_error,
+          createdAt: r.created_at,
+          updatedAt: r.updated_at,
+        };
+      }
+    } catch (err) {
+      console.warn('[Database] PostgreSQL fetch order by ID failed:', err.message);
+    }
+  }
+
+  const store = readJsonStore();
+  return (store.orders || []).find((o) => o.orderNumber === orderNumber) || null;
+}
+
+/**
+ * Update WhatsApp dispatch status of an order
+ */
+export async function updateOrderWhatsAppStatus(orderNumber, { status, messageId, error, recipient, billImageUrl }) {
+  const existing = await getOrderById(orderNumber);
+  const now = new Date().toISOString();
+
+  const updateFields = {
+    whatsappStatus: status,
+    updatedAt: now,
+  };
+  if (messageId !== undefined) updateFields.whatsappMessageId = messageId;
+  if (error !== undefined) updateFields.whatsappError = error;
+  if (recipient !== undefined) updateFields.whatsappRecipient = recipient;
+  if (billImageUrl !== undefined) updateFields.billImageUrl = billImageUrl;
+
+  if (activeEngine === 'postgres' && pgPool) {
+    try {
+      await pgPool.query(
+        `UPDATE orders
+         SET whatsapp_status = $1,
+             whatsapp_message_id = COALESCE($2, whatsapp_message_id),
+             whatsapp_error = $3,
+             whatsapp_recipient = COALESCE($4, whatsapp_recipient),
+             bill_image_url = COALESCE($5, bill_image_url),
+             updated_at = $6
+         WHERE order_number = $7`,
+        [status, messageId || null, error || null, recipient || null, billImageUrl || null, now, orderNumber]
+      );
+    } catch (err) {
+      console.warn('[Database] PostgreSQL update order WhatsApp status failed:', err.message);
+    }
+  }
+
+  const store = readJsonStore();
+  const updatedOrders = (store.orders || []).map((o) =>
+    o.orderNumber === orderNumber ? { ...o, ...updateFields } : o
+  );
+  writeJsonStore({ ...store, orders: updatedOrders });
+  return existing ? { ...existing, ...updateFields } : updateFields;
 }
 
 export function isUsingPostgres() {

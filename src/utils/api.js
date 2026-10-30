@@ -227,3 +227,31 @@ export async function fetchWhatsAppStatusApi() {
   }
 }
 
+/**
+ * Test Meta WhatsApp Business Cloud API Connection (Admin)
+ */
+export async function testWhatsAppCloudApi({ token, phoneNumberId }, adminToken) {
+  const res = await fetch(`${API_BASE}/api/whatsapp/test-connection`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${adminToken}`,
+    },
+    body: JSON.stringify({ token, phoneNumberId }),
+  });
+  return await handleResponse(res);
+}
+
+/**
+ * Fetch all orders from central database (Admin)
+ */
+export async function fetchOrdersApi(adminToken) {
+  const res = await fetch(`${API_BASE}/api/orders`, {
+    headers: {
+      Authorization: `Bearer ${adminToken}`,
+    },
+  });
+  const data = await handleResponse(res);
+  return data.orders || [];
+}
+

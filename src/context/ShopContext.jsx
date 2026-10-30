@@ -853,6 +853,7 @@ export const ShopProvider = ({ children }) => {
         isAdminOpen,
         setIsAdminOpen,
         isAdminAuthenticated,
+        adminToken,
         previewOrder,
         setPreviewOrder,
         quickViewProduct,

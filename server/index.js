@@ -19,6 +19,10 @@ import {
   saveShopSettings,
   isUsingPostgres,
   getDatabaseDiagnostics,
+  saveOrder,
+  getAllOrders,
+  getOrderById,
+  updateOrderWhatsAppStatus,
 } from './db.js';
 import {
   verifyAdminPin,
@@ -37,6 +41,7 @@ import {
   saveBillImageFile,
   getWhatsAppCloudConfig,
   sendWhatsAppCloudImage,
+  verifyWhatsAppCloudCredentials,
 } from './whatsappCloudApi.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -324,60 +329,199 @@ app.post('/api/orders/upload-bill', async (req, res) => {
   }
 });
 
-// Dispatch bill via Meta WhatsApp Cloud API (if configured)
+// Dispatch bill via Meta WhatsApp Cloud API directly to store owner's entered WhatsApp number
 app.post('/api/orders/send-whatsapp-bill', async (req, res) => {
   try {
-    const { orderNumber, customerPhone, billDataUrl, billText } = req.body;
+    const {
+      orderNumber,
+      customerName,
+      customerPhone,
+      customerAddress,
+      items,
+      subtotal,
+      discount,
+      grandTotal,
+      paymentMethod,
+      billDataUrl,
+      billText,
+    } = req.body;
+
+    if (!orderNumber) {
+      return res.status(400).json({ success: false, error: 'Order number is required.' });
+    }
 
     let publicUrl = '';
     let relativeUrl = '';
+    let saved = null;
 
     if (billDataUrl) {
-      const saved = await saveBillImageFile(orderNumber, billDataUrl, req);
+      saved = await saveBillImageFile(orderNumber, billDataUrl, req);
       publicUrl = saved.publicUrl;
       relativeUrl = saved.relativeUrl;
     }
 
-    const config = await getWhatsAppCloudConfig();
-    if (!config.isConfigured || !config.isEnabled) {
-      return res.json({
-        success: true,
-        apiSent: false,
-        relativeUrl,
-        publicUrl,
-        reason: 'WhatsApp Cloud API not enabled or configured. Use client-side assisted dispatch.',
-      });
-    }
-
-    // Route to configured shop admin WhatsApp recipient number
+    // Load store owner settings to get the latest saved recipient WhatsApp number
     const settings = await getShopSettings();
     const adminWhatsApp = sanitizeWhatsAppPhone(settings.whatsappNumber);
+
+    // Record order in central database
+    await saveOrder({
+      orderNumber,
+      customerName: customerName || 'Valued Customer',
+      customerPhone: customerPhone || '',
+      customerAddress: customerAddress || '',
+      items: Array.isArray(items) ? items : [],
+      subtotal: Number(subtotal) || 0,
+      discount: Number(discount) || 0,
+      grandTotal: Number(grandTotal) || 0,
+      paymentMethod: paymentMethod || 'Cash',
+      billImageUrl: publicUrl,
+      whatsappRecipient: adminWhatsApp || '',
+      whatsappStatus: 'pending',
+    });
+
     if (!adminWhatsApp) {
-      return res.json({
-        success: true,
+      await updateOrderWhatsAppStatus(orderNumber, {
+        status: 'failed',
+        error: 'Shop owner WhatsApp number is not configured in Admin Dashboard Settings.',
+        billImageUrl: publicUrl,
+      });
+      return res.status(400).json({
+        success: false,
         apiSent: false,
-        relativeUrl,
+        error: 'Shop owner WhatsApp number is not configured in Admin Dashboard Settings. Please enter a valid 10-digit mobile number with country code (+91).',
+        orderNumber,
         publicUrl,
-        reason: 'Shop admin WhatsApp number is not configured in settings.',
+        relativeUrl,
       });
     }
 
+    const config = await getWhatsAppCloudConfig();
+    if (!config.isConfigured || !config.isEnabled) {
+      await updateOrderWhatsAppStatus(orderNumber, {
+        status: 'unconfigured',
+        recipient: adminWhatsApp,
+        error: 'WhatsApp Business Cloud API is not configured on this server.',
+        billImageUrl: publicUrl,
+      });
+
+      return res.json({
+        success: false,
+        apiSent: false,
+        notConfigured: true,
+        error: 'WhatsApp Business Cloud API is not configured on this server. To send bill photos directly to the shop owner, please configure Meta WhatsApp Business API credentials (Phone Number ID and Access Token) in Admin Settings.',
+        recipient: adminWhatsApp,
+        orderNumber,
+        publicUrl,
+        relativeUrl,
+      });
+    }
+
+    // Call Meta WhatsApp Business Cloud API
     const result = await sendWhatsAppCloudImage({
       to: adminWhatsApp, // Route customer order bill photo strictly to shop owner, not customer
+      filePath: saved ? saved.filePath : undefined,
+      fileName: saved ? saved.fileName : undefined,
       imageUrl: publicUrl,
       caption: billText,
       orderNumber,
     });
 
-    res.json({
-      success: true,
-      ...result,
-      relativeUrl,
+    if (result.success && result.apiSent) {
+      await updateOrderWhatsAppStatus(orderNumber, {
+        status: 'delivered',
+        messageId: result.messageId,
+        recipient: adminWhatsApp,
+        billImageUrl: publicUrl,
+      });
+
+      // Broadcast order update to connected admin sessions
+      broadcast('order:created', {
+        orderNumber,
+        customerName,
+        customerPhone,
+        grandTotal,
+        whatsappStatus: 'delivered',
+        whatsappMessageId: result.messageId,
+        recipient: adminWhatsApp,
+      });
+
+      return res.json({
+        success: true,
+        apiSent: true,
+        messageId: result.messageId,
+        recipient: adminWhatsApp,
+        orderNumber,
+        publicUrl,
+        relativeUrl,
+      });
+    }
+
+    // Meta API returned error
+    await updateOrderWhatsAppStatus(orderNumber, {
+      status: 'failed',
+      error: result.error || 'Meta WhatsApp API dispatch error',
+      recipient: adminWhatsApp,
+      billImageUrl: publicUrl,
+    });
+
+    return res.status(400).json({
+      success: false,
+      apiSent: false,
+      error: result.error || 'Failed to dispatch bill photo via WhatsApp Cloud API.',
+      metaDetails: result.metaDetails,
+      recipient: adminWhatsApp,
+      orderNumber,
       publicUrl,
+      relativeUrl,
     });
   } catch (err) {
     console.error('[API] Error dispatching WhatsApp Cloud message:', err);
     res.status(500).json({ success: false, error: err.message || 'Failed to dispatch WhatsApp message.' });
+  }
+});
+
+// Admin Route: Get all orders from persistent database
+app.get('/api/orders', requireAdminAuth, async (req, res) => {
+  try {
+    const orders = await getAllOrders();
+    res.json({ success: true, orders });
+  } catch (err) {
+    console.error('[API] Error loading orders:', err);
+    res.status(500).json({ success: false, error: 'Failed to load customer orders.' });
+  }
+});
+
+// Admin Route: Test Meta WhatsApp Business Cloud API Connection
+app.post('/api/whatsapp/test-connection', requireAdminAuth, async (req, res) => {
+  try {
+    const { token, phoneNumberId } = req.body;
+    const settings = await getShopSettings();
+    const testToken = token || settings.whatsappCloudApiToken || process.env.WHATSAPP_CLOUD_API_TOKEN;
+    const testPhoneId = phoneNumberId || settings.whatsappPhoneNumberId || process.env.WHATSAPP_PHONE_NUMBER_ID;
+
+    if (!testToken || !testPhoneId) {
+      return res.status(400).json({
+        success: false,
+        error: 'Both Access Token and Phone Number ID are required to test the WhatsApp Cloud API.',
+      });
+    }
+
+    const verification = await verifyWhatsAppCloudCredentials(testToken, testPhoneId);
+    if (!verification.valid) {
+      return res.status(400).json({
+        success: false,
+        error: verification.error || 'Meta WhatsApp verification failed.',
+        details: verification.details,
+      });
+    }
+
+    res.json({
+      success: true,
+      ...verification,
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
   }
 });
 

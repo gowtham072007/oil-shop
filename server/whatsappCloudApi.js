@@ -76,7 +76,11 @@ export async function getWhatsAppCloudConfig() {
   const token = process.env.WHATSAPP_CLOUD_API_TOKEN || settings.whatsappCloudApiToken || '';
   const phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID || settings.whatsappPhoneNumberId || '';
   const wabaId = process.env.WHATSAPP_WABA_ID || settings.whatsappWabaId || '';
-  const isEnabled = Boolean(process.env.WHATSAPP_CLOUD_API_ENABLED === 'true' || settings.whatsappCloudApiEnabled);
+  const isEnabled = Boolean(
+    process.env.WHATSAPP_CLOUD_API_ENABLED === 'true' ||
+    settings.whatsappCloudApiEnabled === true ||
+    (settings.whatsappCloudApiEnabled !== false && token && phoneNumberId)
+  );
 
   return {
     isConfigured: Boolean(token && phoneNumberId),
@@ -90,60 +94,164 @@ export async function getWhatsAppCloudConfig() {
 }
 
 /**
- * Send an image with caption via Official Meta WhatsApp Business Platform (Cloud API)
- * 
- * Requirements:
- * 1. Meta Business Account & System User Access Token with `whatsapp_business_messaging` permission
- * 2. WhatsApp Business Phone Number ID registered on Meta
- * 3. Publicly accessible HTTPS URL for the image
- * 4. Customer opt-in consent to receive WhatsApp messages
+ * Verify WhatsApp Cloud API credentials against Meta Graph API
+ * @param {string} token - Meta System User Access Token
+ * @param {string} phoneNumberId - Meta Phone Number ID
+ * @returns {Promise<{ valid: boolean, verifiedName?: string, displayPhoneNumber?: string, qualityRating?: string, error?: string }>}
+ */
+export async function verifyWhatsAppCloudCredentials(token, phoneNumberId) {
+  if (!token || !phoneNumberId) {
+    return { valid: false, error: 'Both Access Token and Phone Number ID are required.' };
+  }
+
+  try {
+    const metaUrl = `https://graph.facebook.com/v20.0/${phoneNumberId}?access_token=${encodeURIComponent(token)}`;
+    const res = await fetch(metaUrl);
+    const data = await res.json();
+
+    if (!res.ok) {
+      return {
+        valid: false,
+        error: data.error?.message || `Meta API verification failed with HTTP ${res.status}`,
+        details: data.error,
+      };
+    }
+
+    return {
+      valid: true,
+      verifiedName: data.verified_name || 'Verified WhatsApp Business',
+      displayPhoneNumber: data.display_phone_number || '',
+      qualityRating: data.quality_rating || 'GREEN',
+      id: data.id,
+    };
+  } catch (err) {
+    return {
+      valid: false,
+      error: `Network error connecting to Meta: ${err.message}`,
+    };
+  }
+}
+
+/**
+ * Send an image bill with caption via Official Meta WhatsApp Business Platform (Cloud API)
+ * Directly uploads media to Meta's WhatsApp Media Endpoint where supported,
+ * and delivers the photo bill directly to the admin's saved WhatsApp number.
  *
  * @param {Object} params
- * @param {string} params.to - Customer WhatsApp phone number
- * @param {string} params.imageUrl - Publicly accessible HTTPS image URL
+ * @param {string} params.to - Admin shop WhatsApp phone number
+ * @param {string} [params.filePath] - Absolute path to saved bill image file on server
+ * @param {Buffer} [params.fileBuffer] - In-memory image buffer
+ * @param {string} [params.fileName] - Filename (e.g. Poomani_Bill_OS-2026-8492.png)
+ * @param {string} [params.imageUrl] - Publicly accessible HTTPS image URL fallback
  * @param {string} params.caption - Order text caption matching bill details
  * @param {string} params.orderNumber - Order identifier
  * @returns {Promise<Object>}
  */
-export async function sendWhatsAppCloudImage({ to, imageUrl, caption, orderNumber }) {
+export async function sendWhatsAppCloudImage({
+  to,
+  filePath,
+  fileBuffer,
+  fileName,
+  imageUrl,
+  caption,
+  orderNumber,
+}) {
   const config = await getWhatsAppCloudConfig();
 
   if (!config.isConfigured || !config.rawToken || !config.rawPhoneNumberId) {
     return {
       success: false,
       apiSent: false,
-      reason: 'WhatsApp Business Cloud API is not configured on this server. Standard client-assisted WhatsApp dispatch is used.',
+      error: 'WhatsApp Business Cloud API is not configured on this server. Please enter your Meta Phone Number ID and System User Access Token in Admin Settings.',
     };
   }
 
   const cleanRecipient = sanitizeWhatsAppPhone(to);
   if (!cleanRecipient) {
-    throw new Error('Valid recipient phone number is required to send via WhatsApp Cloud API.');
+    return {
+      success: false,
+      apiSent: false,
+      error: 'Valid store owner WhatsApp phone number is required to send order bills.',
+    };
   }
 
-  // Ensure image URL is public HTTPS
-  if (!imageUrl.startsWith('http://') && !imageUrl.startsWith('https://')) {
-    throw new Error('WhatsApp Cloud API requires a fully qualified HTTP/HTTPS image URL.');
+  // 1. Resolve image buffer from filePath if provided
+  let buffer = fileBuffer;
+  if (!buffer && filePath && fs.existsSync(filePath)) {
+    try {
+      buffer = await fs.promises.readFile(filePath);
+    } catch (readErr) {
+      console.warn('[WhatsApp Cloud API] Could not read bill image file:', readErr.message);
+    }
   }
 
+  let mediaId = null;
+
+  // 2. Upload binary bill image directly to Meta WhatsApp Media Endpoint
+  if (buffer && Buffer.isBuffer(buffer)) {
+    try {
+      const mediaUploadUrl = `https://graph.facebook.com/v20.0/${config.rawPhoneNumberId}/media`;
+      const formData = new FormData();
+      formData.append('messaging_product', 'whatsapp');
+      formData.append('type', 'image/png');
+      const blob = new Blob([buffer], { type: 'image/png' });
+      formData.append('file', blob, fileName || `Poomani_Bill_${orderNumber || Date.now()}.png`);
+
+      const mediaRes = await fetch(mediaUploadUrl, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${config.rawToken}`,
+        },
+        body: formData,
+      });
+
+      const mediaData = await mediaRes.json();
+      if (mediaRes.ok && mediaData.id) {
+        mediaId = mediaData.id;
+        console.log(`[WhatsApp Cloud API] Bill photo uploaded to Meta Media API, Media ID: ${mediaId}`);
+      } else {
+        console.warn('[WhatsApp Cloud API] Meta Media upload response:', mediaData);
+      }
+    } catch (uploadErr) {
+      console.warn('[WhatsApp Cloud API] Direct media upload error:', uploadErr.message);
+    }
+  }
+
+  // 3. Assemble Meta message payload
   const metaUrl = `https://graph.facebook.com/v20.0/${config.rawPhoneNumberId}/messages`;
+  let imagePayload = null;
+
+  if (mediaId) {
+    imagePayload = {
+      id: mediaId,
+      caption: caption || `POOMANI CHEKKU ENNAI — Order Bill ${orderNumber || ''}`,
+    };
+  } else if (imageUrl && (imageUrl.startsWith('http://') || imageUrl.startsWith('https://'))) {
+    imagePayload = {
+      link: imageUrl,
+      caption: caption || `POOMANI CHEKKU ENNAI — Order Bill ${orderNumber || ''}`,
+    };
+  } else {
+    return {
+      success: false,
+      apiSent: false,
+      error: 'Cannot send bill photo: Direct upload to Meta Media API failed and no public HTTPS link is available.',
+    };
+  }
 
   const payload = {
     messaging_product: 'whatsapp',
     recipient_type: 'individual',
     to: cleanRecipient,
     type: 'image',
-    image: {
-      link: imageUrl,
-      caption: caption || `POOMANI OILS — Order Bill ${orderNumber || ''}`,
-    },
+    image: imagePayload,
   };
 
   try {
     const response = await fetch(metaUrl, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${config.rawToken}`,
+        Authorization: `Bearer ${config.rawToken}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(payload),
@@ -152,20 +260,23 @@ export async function sendWhatsAppCloudImage({ to, imageUrl, caption, orderNumbe
     const data = await response.json();
 
     if (!response.ok) {
-      console.error('[WhatsApp Cloud API] Meta API error:', data);
+      console.error('[WhatsApp Cloud API] Meta message dispatch error:', data);
       return {
         success: false,
         apiSent: false,
-        error: data.error?.message || `Meta API error (${response.status})`,
+        error: data.error?.message || `Meta WhatsApp API error (${response.status})`,
         metaDetails: data.error,
+        recipient: cleanRecipient,
       };
     }
 
-    console.log(`[WhatsApp Cloud API] Message dispatched successfully for order ${orderNumber}:`, data);
+    const messageId = data.messages?.[0]?.id || `wamid.${Date.now()}`;
+    console.log(`[WhatsApp Cloud API] Bill photo dispatched successfully for order ${orderNumber}, ID: ${messageId}`);
     return {
       success: true,
       apiSent: true,
-      messageId: data.messages?.[0]?.id,
+      messageId,
+      recipient: cleanRecipient,
       data,
     };
   } catch (err) {
@@ -174,6 +285,7 @@ export async function sendWhatsAppCloudImage({ to, imageUrl, caption, orderNumbe
       success: false,
       apiSent: false,
       error: `Failed to contact Meta WhatsApp API: ${err.message}`,
+      recipient: cleanRecipient,
     };
   }
 }
