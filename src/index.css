@@ -1010,13 +1010,13 @@ input, textarea, select {
 
 /* Product Ingredient Photograph on Left */
 .cat-card-img-wrap {
-  width: 140px;
-  height: 96px;
-  border-radius: 12px;
+  width: 175px;
+  height: 115px;
+  border-radius: 14px;
   overflow: hidden;
   flex-shrink: 0;
-  border: 1.5px solid rgba(198, 146, 34, 0.35);
-  box-shadow: 0 3px 10px rgba(9, 51, 29, 0.1);
+  border: 1.5px solid rgba(198, 146, 34, 0.4);
+  box-shadow: 0 4px 14px rgba(9, 51, 29, 0.12);
   background: #f4ede1;
   position: relative;
 }
@@ -2911,9 +2911,9 @@ input, textarea, select {
   }
 
   .cat-card-img-wrap {
-    width: 92px;
-    height: 66px;
-    border-radius: 8px;
+    width: 112px;
+    height: 78px;
+    border-radius: 10px;
   }
 
   .cat-card-title-row {
@@ -3339,8 +3339,9 @@ input, textarea, select {
   }
 
   .cat-card-img-wrap {
-    width: 72px;
-    height: 52px;
+    width: 86px;
+    height: 62px;
+    border-radius: 8px;
   }
 
   .cat-card-title-en {

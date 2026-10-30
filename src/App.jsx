@@ -29,7 +29,7 @@ const OIL_CATEGORY_SECTIONS = [
     name: "COCONUT OIL",
     regionalName: "தேங்காய் எண்ணெய்",
     image: "/images/cat_ingredient_coconut.jpg",
-    alt: "Pure Coconut Oil - Fresh Whole Coconut & Slices with Leaves",
+    alt: "Pure Coconut Oil - Fresh Whole Coconut & Cut Halves with Leaves and Oil Bowl",
     icon: Palmtree,
   },
   {
@@ -37,7 +37,7 @@ const OIL_CATEGORY_SECTIONS = [
     name: "SESAME OIL",
     regionalName: "நல்லெண்ணெய்",
     image: "/images/cat_ingredient_sesame.jpg",
-    alt: "Pure Sesame Oil - Black Sesame Seeds & Leaves",
+    alt: "Pure Sesame Oil - Black Sesame Seeds Bowl & Golden Sesame Oil with Leaves",
     icon: Sparkles,
   },
   {
@@ -45,7 +45,7 @@ const OIL_CATEGORY_SECTIONS = [
     name: "GROUNDNUT OIL",
     regionalName: "கடலை எண்ணெய்",
     image: "/images/cat_ingredient_groundnut.jpg",
-    alt: "Pure Groundnut Oil - Peanuts & Pods with Leaves",
+    alt: "Pure Groundnut Oil - Roasted Peanuts & Pods with Leaves and Oil Bowl",
     icon: Nut,
   },
 ];
