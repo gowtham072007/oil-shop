@@ -56,11 +56,6 @@ export const Header = () => {
                       : "பூமணி செக்கு எண்ணெய்"}
                   </span>
                 </div>
-                <div className="tagline">
-                  <span className="tagline-en">PURE EDIBLE COOKING OILS</span>
-                  <span className="tagline-sep">•</span>
-                  <span className="tagline-ta">தூய சமையல் எண்ணெய்</span>
-                </div>
               </div>
             </div>
 
