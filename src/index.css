@@ -741,16 +741,14 @@ input, textarea, select {
   width: 100%;
   max-width: 1140px;
   margin: 0 auto;
-  border-radius: var(--radius-lg);
+  border-radius: 18px;
   overflow: hidden;
   box-shadow: 0 4px 18px rgba(9, 51, 29, 0.07), 0 1px 4px rgba(198, 146, 34, 0.12);
-  border: 1.5px solid rgba(198, 146, 34, 0.45);
-  background: #fbfaf5;
+  background: transparent;
   opacity: 0;
   transform: translate3d(0, 20px, 0);
   transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1),
-              box-shadow 0.35s cubic-bezier(0.16, 1, 0.3, 1),
-              border-color 0.35s ease;
+              box-shadow 0.35s cubic-bezier(0.16, 1, 0.3, 1);
   will-change: transform, opacity;
 }
 
@@ -772,7 +770,6 @@ input, textarea, select {
 .trust-banner-wrap:hover {
   transform: translateY(-2px);
   box-shadow: 0 8px 24px rgba(9, 51, 29, 0.1), 0 3px 10px rgba(198, 146, 34, 0.18);
-  border-color: var(--gold);
 }
 
 .trust-banner-img {
