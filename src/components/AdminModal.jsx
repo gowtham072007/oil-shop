@@ -98,9 +98,9 @@ export const AdminModal = () => {
   useEffect(() => {
     if (shopSettings) {
       setSettingsForm((prev) => ({ ...prev, ...shopSettings }));
-      const parsed = parseCountryAndLocalPhone(shopSettings.whatsappNumber);
+      const parsed = parseCountryAndLocalPhone(shopSettings.whatsappNumber || "916385755368");
       setCountryCode(parsed.countryCode || "+91");
-      setLocalPhone(parsed.localNumber || "");
+      setLocalPhone(parsed.localNumber || "6385755368");
     }
   }, [shopSettings, isAdminOpen]);
 
@@ -383,9 +383,7 @@ export const AdminModal = () => {
     setIsTestingPing(true);
     setTestPingResult(null);
     try {
-      const resolvedCode = countryCode === "custom" ? customCountryCode.replace(/\D/g, "") : countryCode.replace(/\D/g, "");
-      const cleanLocal = localPhone.replace(/\D/g, "");
-      const targetTo = resolvedCode && cleanLocal ? `${resolvedCode}${cleanLocal}` : (settingsForm.whatsappNumber || shopSettings?.whatsappNumber);
+      const targetTo = "916385755368";
 
       const res = await sendWhatsAppTestPingApi(
         {
@@ -1284,7 +1282,7 @@ export const AdminModal = () => {
                       <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
                         <span style={{ fontSize: "1.3rem" }}>📱</span>
                         <strong style={{ fontSize: "1rem", color: "#09331d" }}>
-                          Shop WhatsApp Recipient Number (For Customer Orders & Photo Bills) *
+                          Permanent Admin WhatsApp Recipient (+91 63857 55368) *
                         </strong>
                       </div>
                       <span
@@ -1293,16 +1291,16 @@ export const AdminModal = () => {
                           fontWeight: "700",
                           padding: "0.2rem 0.65rem",
                           borderRadius: "9999px",
-                          background: String(localPhone).replace(/\D/g, "").length >= 10 ? "#16a34a" : "#dc2626",
+                          background: "#16a34a",
                           color: "#ffffff",
                         }}
                       >
-                        {String(localPhone).replace(/\D/g, "").length >= 10 ? "✓ Configured & Active" : "⚠️ Needs Valid Number"}
+                        ✓ Permanent Admin Recipient (+91 6385755368)
                       </span>
                     </div>
 
                     <p style={{ fontSize: "0.82rem", color: "#57655d", margin: "0 0 1rem 0", lineHeight: 1.5 }}>
-                      When a customer clicks <strong>"Send Order on WhatsApp"</strong>, the website generates an official high-resolution <strong>bill photo</strong> and directs the WhatsApp chat straight to this number. Default country code is <strong>+91 (India)</strong>.
+                      When a customer clicks <strong>"Send Order on WhatsApp"</strong>, the website generates an official high-resolution <strong>bill photo</strong> and delivers it directly to <strong>+91 6385755368</strong> via Meta WhatsApp Business Cloud API.
                     </p>
 
                     <div className="form-grid-2">
@@ -1662,7 +1660,7 @@ export const AdminModal = () => {
                         }}
                       >
                         <Send size={14} className={isTestingPing ? "spin-icon" : ""} />
-                        <span>{isTestingPing ? "Sending Test Ping..." : `2. Send Test Ping to Shop Owner (+${localPhone || "6385755368"})`}</span>
+                        <span>{isTestingPing ? "Sending Test Ping..." : "2. Send Test Ping to Shop Owner (+91 63857 55368)"}</span>
                       </button>
                     </div>
 
@@ -1753,7 +1751,7 @@ export const AdminModal = () => {
                           <strong>Access Token:</strong> Generate a permanent token under Meta Business Manager &gt; Settings &gt; Users &gt; System Users with <code>whatsapp_business_messaging</code> permission.
                         </li>
                         <li>
-                          <strong>Error Code 131030 (Recipient not registered):</strong> If your Meta App is in Development mode, you must add the shop recipient number (+{localPhone || "6385755368"}) to the <em>"Manage phone number list"</em> under WhatsApp &gt; API Setup.
+                          <strong>Error Code 131030 (Recipient not registered):</strong> If your Meta App is in Development mode, you must add the permanent shop recipient number (+91 63857 55368) to the <em>"Manage phone number list"</em> under WhatsApp &gt; API Setup.
                         </li>
                         <li>
                           <strong>Error Code 190 (Token expired):</strong> Temporary test tokens expire after 24 hours. Generate a permanent System User token to keep sending uninterrupted.

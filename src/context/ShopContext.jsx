@@ -94,8 +94,8 @@ export const ShopProvider = ({ children }) => {
           ...parsed,
           shopName: resolvedShopName,
           shopNameTamil: resolvedShopNameTamil,
-          whatsappNumber: parsed.whatsappNumber || DEFAULT_SHOP_SETTINGS.whatsappNumber,
-          phoneDisplay: parsed.phoneDisplay || DEFAULT_SHOP_SETTINGS.phoneDisplay,
+          whatsappNumber: "916385755368",
+          phoneDisplay: "+91 63857 55368",
         };
       }
       return DEFAULT_SHOP_SETTINGS;
@@ -625,13 +625,10 @@ export const ShopProvider = ({ children }) => {
   };
 
   const updateShopSettings = async (newSettings) => {
-    const cleanedNumber = cleanWhatsAppNumber(newSettings.whatsappNumber || shopSettings.whatsappNumber);
-    if (!cleanedNumber || cleanedNumber.length < 10) {
-      throw new Error("Invalid WhatsApp number. Please provide a valid number with country code (e.g. +91 98765 43210).");
-    }
     const cleaned = {
       ...newSettings,
-      whatsappNumber: cleanedNumber,
+      whatsappNumber: "916385755368",
+      phoneDisplay: "+91 63857 55368",
     };
     if (adminToken) {
       try {

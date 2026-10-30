@@ -23,6 +23,8 @@ import {
   getAllOrders,
   getOrderById,
   updateOrderWhatsAppStatus,
+  PERMANENT_ADMIN_WHATSAPP,
+  PERMANENT_ADMIN_WHATSAPP_DISPLAY,
 } from './db.js';
 import {
   verifyAdminPin,
@@ -362,9 +364,9 @@ app.post('/api/orders/send-whatsapp-bill', async (req, res) => {
       relativeUrl = saved.relativeUrl;
     }
 
-    // Load store owner settings to get the latest saved recipient WhatsApp number
-    const settings = await getShopSettings();
-    const adminWhatsApp = sanitizeWhatsAppPhone(settings.whatsappNumber);
+    // Fixed Admin WhatsApp recipient number: +91 6385755368
+    // All customer order bills must be dispatched exclusively to this number.
+    const adminWhatsApp = PERMANENT_ADMIN_WHATSAPP;
 
     // Record order in central database
     await saveOrder({
@@ -378,7 +380,7 @@ app.post('/api/orders/send-whatsapp-bill', async (req, res) => {
       grandTotal: Number(grandTotal) || 0,
       paymentMethod: paymentMethod || 'Cash',
       billImageUrl: publicUrl,
-      whatsappRecipient: adminWhatsApp || '',
+      whatsappRecipient: adminWhatsApp,
       whatsappStatus: 'pending',
     });
 
@@ -536,7 +538,7 @@ app.post('/api/whatsapp/send-test-ping', requireAdminAuth, async (req, res) => {
     const settings = await getShopSettings();
     const testToken = token || settings.whatsappCloudApiToken || process.env.WHATSAPP_CLOUD_API_TOKEN;
     const testPhoneId = phoneNumberId || settings.whatsappPhoneNumberId || process.env.WHATSAPP_PHONE_NUMBER_ID;
-    const testRecipient = to || settings.whatsappNumber;
+    const testRecipient = PERMANENT_ADMIN_WHATSAPP;
 
     if (!testToken || !testPhoneId) {
       return res.status(400).json({
@@ -646,19 +648,10 @@ app.put('/api/settings', requireAdminAuth, async (req, res) => {
       updatePayload.whatsappCloudApiToken = existing.whatsappCloudApiToken;
     }
 
-    if (updatePayload.whatsappNumber) {
-      let digits = String(updatePayload.whatsappNumber).replace(/\D/g, '');
-      if (digits.length === 10) {
-        digits = `91${digits}`;
-      }
-      if (digits.length < 10) {
-        return res.status(400).json({
-          success: false,
-          error: 'Shop WhatsApp number must be at least 10 digits including country code (e.g. 919876543210).',
-        });
-      }
-      updatePayload.whatsappNumber = digits;
-    }
+    // Fixed Admin WhatsApp recipient number (+91 6385755368) permanently locked
+    updatePayload.whatsappNumber = PERMANENT_ADMIN_WHATSAPP;
+    updatePayload.phoneDisplay = PERMANENT_ADMIN_WHATSAPP_DISPLAY;
+
     const updated = await saveShopSettings(updatePayload);
     broadcast('settings:updated', updated);
     res.json({ success: true, settings: updated });

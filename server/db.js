@@ -159,6 +159,30 @@ export async function initDb() {
 
   // Seed default 8 products if they do not exist
   await seedDefaultProducts();
+
+  // Permanently store and lock +91 6385755368 as the admin WhatsApp recipient
+  await ensurePermanentAdminWhatsApp();
+}
+
+export const PERMANENT_ADMIN_WHATSAPP = '916385755368';
+export const PERMANENT_ADMIN_WHATSAPP_DISPLAY = '+91 63857 55368';
+
+/**
+ * Ensure permanent admin WhatsApp recipient number is permanently stored in database
+ */
+export async function ensurePermanentAdminWhatsApp() {
+  try {
+    const current = await getShopSettings();
+    if (current.whatsappNumber !== PERMANENT_ADMIN_WHATSAPP || current.phoneDisplay !== PERMANENT_ADMIN_WHATSAPP_DISPLAY) {
+      await saveShopSettings({
+        whatsappNumber: PERMANENT_ADMIN_WHATSAPP,
+        phoneDisplay: PERMANENT_ADMIN_WHATSAPP_DISPLAY,
+      });
+      console.log(`[Database] Stored permanent Admin WhatsApp recipient number: ${PERMANENT_ADMIN_WHATSAPP_DISPLAY}`);
+    }
+  } catch (err) {
+    console.warn('[Database] Could not verify permanent admin phone:', err.message);
+  }
 }
 
 /**

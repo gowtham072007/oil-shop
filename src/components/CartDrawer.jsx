@@ -1,7 +1,11 @@
 import React, { useState } from "react";
 import { useShop } from "../context/ShopContext";
 import { formatINR, cleanWhatsAppNumber } from "../utils/billGenerator";
-import { dispatchOrderPhotoBillToWhatsApp } from "../utils/billImageCanvas";
+import {
+  dispatchOrderPhotoBillToWhatsApp,
+  PERMANENT_ADMIN_WHATSAPP,
+  PERMANENT_ADMIN_WHATSAPP_DISPLAY,
+} from "../utils/billImageCanvas";
 import {
   X,
   Trash2,
@@ -81,15 +85,8 @@ export const CartDrawer = () => {
     setFormErrors(errors);
     if (Object.keys(errors).length > 0) return;
 
-    // Verify store owner WhatsApp recipient number is configured
-    const cleanAdminPhone = cleanWhatsAppNumber(shopSettings?.whatsappNumber);
-    if (!cleanAdminPhone || cleanAdminPhone.length < 10) {
-      showNotification(
-        "Shop WhatsApp recipient number is not configured by the store owner. Please configure it in the Admin Dashboard Settings.",
-        "error"
-      );
-      return;
-    }
+    // Permanent Store Owner WhatsApp recipient number (+91 6385755368)
+    const cleanAdminPhone = PERMANENT_ADMIN_WHATSAPP;
 
     setIsSubmitting(true);
     try {

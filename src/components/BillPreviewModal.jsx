@@ -1,7 +1,13 @@
 import React, { useState, useEffect } from "react";
 import { useShop } from "../context/ShopContext";
 import { formatINR, cleanWhatsAppNumber } from "../utils/billGenerator";
-import { generateBillImage, downloadBillImageFile, dispatchOrderPhotoBillToWhatsApp } from "../utils/billImageCanvas";
+import {
+  generateBillImage,
+  downloadBillImageFile,
+  dispatchOrderPhotoBillToWhatsApp,
+  PERMANENT_ADMIN_WHATSAPP,
+  PERMANENT_ADMIN_WHATSAPP_DISPLAY,
+} from "../utils/billImageCanvas";
 import { uploadBillImageApi, sendWhatsAppBillApi } from "../utils/api";
 import {
   X,
@@ -106,9 +112,9 @@ export const BillPreviewModal = () => {
     }
   };
 
-  const cleanAdminPhone = cleanWhatsAppNumber(shopSettings?.whatsappNumber);
-  const isAdminPhoneValid = Boolean(cleanAdminPhone && cleanAdminPhone.length >= 10);
-  const shopPhoneFormatted = cleanAdminPhone ? `+${cleanAdminPhone}` : "";
+  const cleanAdminPhone = PERMANENT_ADMIN_WHATSAPP;
+  const isAdminPhoneValid = true;
+  const shopPhoneFormatted = PERMANENT_ADMIN_WHATSAPP_DISPLAY;
 
   /**
    * Primary action: Send Order on WhatsApp (Direct Photo Bill via Meta Cloud API)
@@ -274,7 +280,7 @@ export const BillPreviewModal = () => {
               <div style={{ display: "flex", alignItems: "center", gap: "0.45rem" }}>
                 <Send size={14} color="#16a34a" />
                 <span>
-                  <strong>WhatsApp Order Recipient:</strong> Store Owner (+{cleanAdminPhone})
+                  <strong>WhatsApp Order Recipient:</strong> Store Owner ({PERMANENT_ADMIN_WHATSAPP_DISPLAY})
                 </span>
               </div>
               <div style={{ color: "#15803d", fontSize: "0.78rem" }}>
@@ -323,7 +329,7 @@ export const BillPreviewModal = () => {
                   </div>
                 )}
                 <div style={{ marginTop: "4px", color: "#15803d" }}>
-                  <strong>Recipient:</strong> Store Owner (+{apiStatus.recipient || cleanAdminPhone})
+                  <strong>Recipient:</strong> Store Owner ({PERMANENT_ADMIN_WHATSAPP_DISPLAY})
                 </div>
               </div>
             </div>
@@ -403,7 +409,7 @@ export const BillPreviewModal = () => {
                 }}
               >
                 <div>
-                  <strong>Recipient Store Owner Number:</strong> +{apiStatus.recipient || cleanAdminPhone}
+                  <strong>Recipient Store Owner Number:</strong> {PERMANENT_ADMIN_WHATSAPP_DISPLAY}
                 </div>
                 <div style={{ marginTop: "4px", color: "#64748b" }}>
                   The store owner can configure permanent Meta WhatsApp Cloud API credentials (Phone Number ID & Access Token) in Admin Settings &gt; Meta WhatsApp Business Settings.
@@ -463,7 +469,7 @@ export const BillPreviewModal = () => {
                 <Sparkles size={20} color="#b45309" style={{ flexShrink: 0, marginTop: "2px" }} />
                 <div>
                   <strong>Official Photo Bill Ready:</strong> Your verified invoice image has been generated below with Poomani Chekku Ennai branding and exact order details.
-                  When you click <strong>"Send Bill Photo on WhatsApp"</strong>, the website dispatches this bill photo directly to the store owner's entered WhatsApp number (<strong>+{cleanAdminPhone}</strong>) via Meta WhatsApp Business API.
+                  When you click <strong>"Send Bill Photo on WhatsApp"</strong>, the website dispatches this bill photo directly to the store owner's WhatsApp number (<strong>{PERMANENT_ADMIN_WHATSAPP_DISPLAY}</strong>) via Meta WhatsApp Business API.
                 </div>
               </div>
             </div>

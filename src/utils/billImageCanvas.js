@@ -200,7 +200,7 @@ export async function generateBillImage(order, shopSettings = {}, format = 'png'
   // Shop Address & FSSAI
   ctx.fillStyle = '#6b7280';
   ctx.font = '11px "Plus Jakarta Sans", Arial, sans-serif';
-  const shopPhone = shopSettings?.phoneDisplay || (shopSettings?.whatsappNumber ? `+${shopSettings.whatsappNumber}` : '');
+  const shopPhone = PERMANENT_ADMIN_WHATSAPP_DISPLAY;
   const phonePart = shopPhone ? ` • Phone: ${shopPhone}` : '';
   const millInfo = `${shopSettings?.address || 'Gopalasamuthiram, Tamil Nadu'}${phonePart} • FSSAI #${shopSettings?.fssaiNumber || '12421008000421'}`;
   ctx.fillText(millInfo, titleX, headerY + 72);
@@ -472,25 +472,26 @@ export async function downloadBillImageFile(order, shopSettings = {}, format = '
   };
 }
 
+export const PERMANENT_ADMIN_WHATSAPP = "916385755368";
+export const PERMANENT_ADMIN_WHATSAPP_DISPLAY = "+91 63857 55368";
+
 /**
  * Unified WhatsApp Photo Bill Dispatcher
- * Directly sends the generated bill photo to the store owner's entered number
+ * Directly sends the generated bill photo to the permanent Admin WhatsApp (+91 6385755368)
  * via the backend Meta WhatsApp Business Cloud API.
  * NO client file downloads, NO generic empty chats, NO manual attachments.
  *
  * @param {Object} params
  * @param {Object} params.order - The completed order record
- * @param {Object} params.shopSettings - Store configuration with saved admin WhatsApp number
+ * @param {Object} params.shopSettings - Store configuration
  * @returns {Promise<{ success: boolean, apiSent: boolean, messageId?: string, error?: string, recipient: string, orderNumber: string, dataUrl: string, publicBillUrl?: string }>}
  */
 export async function dispatchOrderPhotoBillToWhatsApp({
   order,
   shopSettings = {},
 }) {
-  const cleanAdmin = cleanWhatsAppNumber(shopSettings?.whatsappNumber);
-  if (!cleanAdmin || cleanAdmin.length < 10) {
-    throw new Error("Shop WhatsApp recipient number is not configured by the store owner in Admin Settings.");
-  }
+  // Permanent Admin WhatsApp recipient: +91 6385755368
+  const cleanAdmin = PERMANENT_ADMIN_WHATSAPP;
 
   // 1. Generate high-resolution bill PNG image file from actual order details
   const imageResult = await generateBillImage(order, shopSettings, "png");
