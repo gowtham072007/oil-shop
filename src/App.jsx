@@ -26,20 +26,26 @@ import {
 const OIL_CATEGORY_SECTIONS = [
   {
     id: "coconut",
-    name: "Coconut Oil",
+    name: "COCONUT OIL",
     regionalName: "தேங்காய் எண்ணெய்",
+    image: "/images/cat_ingredient_coconut.jpg",
+    alt: "Pure Coconut Oil - Fresh Whole Coconut & Slices with Leaves",
     icon: Palmtree,
   },
   {
     id: "sesame",
-    name: "Sesame Oil",
+    name: "SESAME OIL",
     regionalName: "நல்லெண்ணெய்",
+    image: "/images/cat_ingredient_sesame.jpg",
+    alt: "Pure Sesame Oil - Black Sesame Seeds & Leaves",
     icon: Sparkles,
   },
   {
     id: "groundnut",
-    name: "Groundnut Oil",
+    name: "GROUNDNUT OIL",
     regionalName: "கடலை எண்ணெய்",
+    image: "/images/cat_ingredient_groundnut.jpg",
+    alt: "Pure Groundnut Oil - Peanuts & Pods with Leaves",
     icon: Nut,
   },
 ];
@@ -232,22 +238,53 @@ const ShopMain = () => {
                     className="category-products-section"
                     id={`section-${cat.id}`}
                   >
-                    {/* Category Section Header in English & Tamil */}
-                    <div className="category-section-header">
-                      <div className="category-header-info">
-                        <span className="category-icon-bubble">
-                          <IconComp size={22} />
-                        </span>
-                        <div>
-                          <h3 className="category-section-title">
-                            {cat.name}{" "}
-                            <span className="category-tamil-title">/ {cat.regionalName}</span>
-                          </h3>
+                    {/* Premium Horizontal Category Banner Card */}
+                    <div
+                      className="category-hero-card"
+                      onClick={() => {
+                        const el = document.getElementById(`section-${cat.id}`);
+                        if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+                      }}
+                      role="button"
+                      tabIndex={0}
+                      title={`Browse ${cat.name} / ${cat.regionalName}`}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          const el = document.getElementById(`section-${cat.id}`);
+                          if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+                        }
+                      }}
+                    >
+                      <div className="cat-card-left">
+                        {/* Product ingredient photograph on the left */}
+                        <div className="cat-card-img-wrap">
+                          <img
+                            src={cat.image}
+                            alt={cat.alt}
+                            className="cat-card-img"
+                            loading="lazy"
+                          />
+                        </div>
+
+                        {/* Category Name & Tamil Regional Name */}
+                        <div className="cat-card-info">
+                          <div className="cat-card-title-row">
+                            <span className="cat-card-icon-pill" aria-hidden="true">
+                              <IconComp size={16} />
+                            </span>
+                            <h2 className="cat-card-title-en">{cat.name}</h2>
+                          </div>
+                          <div className="cat-card-title-ta">{cat.regionalName}</div>
                         </div>
                       </div>
-                      <span className="category-count-badge">
-                        {catProducts.length} {catProducts.length === 1 ? "Product" : "Products"}
-                      </span>
+
+                      {/* Green rounded badge on the right showing actual dynamic product count */}
+                      <div className="cat-card-right">
+                        <span className="cat-card-badge">
+                          <span className="badge-count-num">{catProducts.length}</span>{" "}
+                          {catProducts.length === 1 ? "Product" : "Products"}
+                        </span>
+                      </div>
                     </div>
 
                     {/* Products Grid under this category */}
