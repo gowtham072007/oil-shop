@@ -1,23 +1,10 @@
-import React, { useState, useEffect, useRef } from "react";
+import React from "react";
 import { useShop } from "../context/ShopContext";
 import { formatINR } from "../utils/billGenerator";
 import { ShoppingCart, ArrowRight } from "lucide-react";
 
 export const FloatingCartButton = () => {
   const { totalCartCount, cartSummary, setIsCartOpen, isCartOpen } = useShop();
-
-  const [isPulsing, setIsPulsing] = useState(false);
-  const prevCountRef = useRef(totalCartCount);
-
-  // Trigger bounce animation whenever an item is added or quantity increases
-  useEffect(() => {
-    if (totalCartCount > prevCountRef.current && totalCartCount > 0) {
-      setIsPulsing(true);
-      const timer = setTimeout(() => setIsPulsing(false), 700);
-      return () => clearTimeout(timer);
-    }
-    prevCountRef.current = totalCartCount;
-  }, [totalCartCount]);
 
   // Only display floating button when cart has at least 1 item and cart drawer is not already open
   if (totalCartCount <= 0 || isCartOpen) {
@@ -33,7 +20,7 @@ export const FloatingCartButton = () => {
       id="floating-cart-button"
       type="button"
       onClick={handleOpenCart}
-      className={`floating-cart-btn ${isPulsing ? "pulsing" : ""}`}
+      className="floating-cart-btn"
       aria-label={`View Shopping Cart: ${totalCartCount} ${
         totalCartCount === 1 ? "item" : "items"
       }, Total ₹${formatINR(cartSummary.grandTotal)}`}
