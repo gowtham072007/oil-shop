@@ -11,7 +11,10 @@ export const ProductCard = ({ product }) => {
     ? product.variants
     : [{ id: "v-default", size: "1 Litre", price: product.price || 300, stock: 10, unit: "Bottle" }];
 
-  const [selectedVariant, setSelectedVariant] = useState(variants[0]);
+  const [selectedVariantId, setSelectedVariantId] = useState(variants[0]?.id || "v-default");
+
+  // Always derive active variant with the latest price directly from updated product variants
+  const selectedVariant = variants.find((v) => v.id === selectedVariantId) || variants[0];
   const [quantity, setQuantity] = useState(1);
   const [isAddedAnim, setIsAddedAnim] = useState(false);
 
@@ -118,7 +121,7 @@ export const ProductCard = ({ product }) => {
                     type="button"
                     className={`size-pill-btn ${isSelected ? "active" : ""}`}
                     onClick={() => {
-                      setSelectedVariant(v);
+                      setSelectedVariantId(v.id);
                       setQuantity(1);
                     }}
                     title={`₹${v.price} / ${v.size}`}

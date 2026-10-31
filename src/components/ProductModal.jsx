@@ -4,21 +4,22 @@ import { formatINR } from "../utils/billGenerator";
 import { X, CheckCircle, ShoppingBag, ShieldCheck, Plus, Minus } from "lucide-react";
 
 export const ProductModal = () => {
-  const { quickViewProduct, setQuickViewProduct, addToCart } = useShop();
+  const { quickViewProduct, setQuickViewProduct, addToCart, products } = useShop();
 
-  const [selectedVariant, setSelectedVariant] = useState(null);
+  const [selectedVariantId, setSelectedVariantId] = useState(null);
   const [qty, setQty] = useState(1);
   const [added, setAdded] = useState(false);
 
   if (!quickViewProduct) return null;
 
-  const product = quickViewProduct;
+  // Always bind to live product with the latest prices from database
+  const product = (products && products.find((p) => p.id === quickViewProduct.id)) || quickViewProduct;
   const variants = product.variants && product.variants.length > 0
     ? product.variants
     : [{ id: "v-default", size: "1 Litre", price: product.price || 300, stock: 10, unit: "Bottle" }];
 
-  const activeVariant = selectedVariant && variants.some(v => v.id === selectedVariant.id)
-    ? selectedVariant
+  const activeVariant = selectedVariantId
+    ? (variants.find((v) => v.id === selectedVariantId) || variants[0])
     : variants[0];
 
   const handleAdd = () => {
@@ -105,7 +106,7 @@ export const ProductModal = () => {
                     key={v.id}
                     type="button"
                     className={`size-pill-btn ${activeVariant.id === v.id ? "active" : ""}`}
-                    onClick={() => setSelectedVariant(v)}
+                    onClick={() => setSelectedVariantId(v.id)}
                   >
                     {v.size} — ₹{formatINR(v.price)}
                   </button>

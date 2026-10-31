@@ -262,6 +262,76 @@ export const ShopProvider = ({ children }) => {
     loadCentralSettings();
   }, [loadCentralProducts, loadCentralSettings]);
 
+  // Background polling (every 15s) and tab focus/visibility listener to ensure all devices show updated prices
+  useEffect(() => {
+    const handleVisibility = () => {
+      if (document.visibilityState === "visible") {
+        loadCentralProducts(true);
+      }
+    };
+    const handleFocus = () => loadCentralProducts(true);
+
+    document.addEventListener("visibilitychange", handleVisibility);
+    window.addEventListener("focus", handleFocus);
+
+    const interval = setInterval(() => {
+      loadCentralProducts(true);
+    }, 15000);
+
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibility);
+      window.removeEventListener("focus", handleFocus);
+      clearInterval(interval);
+    };
+  }, [loadCentralProducts]);
+
+  // Automatically re-synchronize cart item prices with latest central database products
+  useEffect(() => {
+    if (!products || products.length === 0) return;
+
+    setCart((prevCart) => {
+      let hasChanges = false;
+      const synchronizedCart = prevCart.map((item) => {
+        const liveProduct = products.find((p) => p.id === item.productId);
+        if (!liveProduct) return item;
+
+        const liveVariant =
+          liveProduct.variants?.find(
+            (v) =>
+              v.size === (item.selectedVariant?.size || item.packSize) ||
+              v.id === item.selectedVariant?.id
+          ) || (liveProduct.variants && liveProduct.variants[0]);
+
+        const latestPrice = Number(liveVariant?.price || liveProduct.price || item.price);
+
+        if (item.price !== latestPrice || item.selectedVariant?.price !== latestPrice) {
+          hasChanges = true;
+          return {
+            ...item,
+            name: liveProduct.name,
+            regionalName: liveProduct.regionalName || item.regionalName,
+            image: liveProduct.image || item.image,
+            price: latestPrice,
+            selectedVariant: liveVariant
+              ? { ...liveVariant, price: latestPrice }
+              : { ...item.selectedVariant, price: latestPrice },
+          };
+        }
+        return item;
+      });
+
+      if (hasChanges) {
+        try {
+          localStorage.setItem("oil_shop_cart", JSON.stringify(synchronizedCart));
+        } catch {
+          // ignore
+        }
+        return synchronizedCart;
+      }
+      return prevCart;
+    });
+  }, [products]);
+
   // -------------------------------------------------------------
   // Real-Time Server-Sent Events (SSE) Multi-Device Sync
   // -------------------------------------------------------------
@@ -553,6 +623,32 @@ export const ShopProvider = ({ children }) => {
 
     setProducts((prev) => prev.map((p) => (p.id === id ? { ...p, ...finalProduct } : p)));
 
+    // Immediately synchronize matching cart items with the updated price
+    setCart((prevCart) =>
+      prevCart.map((item) => {
+        if (item.productId === id) {
+          const matchingVariant =
+            finalProduct.variants?.find(
+              (v) =>
+                v.size === (item.selectedVariant?.size || item.packSize) ||
+                v.id === item.selectedVariant?.id
+            ) || (finalProduct.variants && finalProduct.variants[0]);
+          const newPrice = matchingVariant
+            ? Number(matchingVariant.price)
+            : Number(finalProduct.price || item.price);
+          return {
+            ...item,
+            name: finalProduct.name,
+            price: newPrice,
+            selectedVariant: matchingVariant
+              ? { ...matchingVariant, price: newPrice }
+              : { ...item.selectedVariant, price: newPrice },
+          };
+        }
+        return item;
+      })
+    );
+
     try {
       const current = JSON.parse(localStorage.getItem("oil_shop_products") || "[]");
       const updated = current.map((p) => (p.id === id ? { ...p, ...finalProduct } : p));
@@ -655,14 +751,22 @@ export const ShopProvider = ({ children }) => {
       return;
     }
 
-    const variant = selectedVariant || (product.variants && product.variants[0]) || {
-      id: "default",
-      size: "1 Litre",
-      price: product.price || 300,
-      stock: 10,
-    };
+    // Always fetch latest authoritative product from central products list
+    const liveProduct = products.find((p) => p.id === product.id) || product;
+    const liveVariants =
+      liveProduct.variants && liveProduct.variants.length > 0
+        ? liveProduct.variants
+        : [{ id: "default", size: "1 Litre", price: liveProduct.price || 300, stock: 10 }];
 
-    const cartItemId = `${product.id}-${variant.size}`;
+    const variant =
+      liveVariants.find(
+        (v) =>
+          v.id === selectedVariant?.id ||
+          v.size === selectedVariant?.size
+      ) || selectedVariant || liveVariants[0];
+
+    const currentPrice = Number(variant.price || liveProduct.price || 0);
+    const cartItemId = `${liveProduct.id}-${variant.size}`;
 
     setCart((prevCart) => {
       const existingIndex = prevCart.findIndex((item) => item.id === cartItemId);
@@ -671,6 +775,10 @@ export const ShopProvider = ({ children }) => {
         const newQty = updated[existingIndex].quantity + quantity;
         updated[existingIndex] = {
           ...updated[existingIndex],
+          name: liveProduct.name,
+          regionalName: liveProduct.regionalName || "",
+          price: currentPrice,
+          selectedVariant: { ...variant, price: currentPrice },
           quantity: newQty,
         };
         return updated;
@@ -679,21 +787,21 @@ export const ShopProvider = ({ children }) => {
           ...prevCart,
           {
             id: cartItemId,
-            productId: product.id,
-            name: product.name,
-            regionalName: product.regionalName || "",
-            brand: product.brand,
-            image: product.image,
-            oilType: product.oilType,
-            selectedVariant: variant,
+            productId: liveProduct.id,
+            name: liveProduct.name,
+            regionalName: liveProduct.regionalName || "",
+            brand: liveProduct.brand,
+            image: liveProduct.image,
+            oilType: liveProduct.oilType,
+            selectedVariant: { ...variant, price: currentPrice },
             quantity: quantity,
-            price: variant.price,
+            price: currentPrice,
           },
         ];
       }
     });
 
-    showNotification(`Added ${product.name} (${variant.size}) to cart!`);
+    showNotification(`Added ${liveProduct.name} (${variant.size}) to cart!`);
   };
 
   const updateCartQuantity = (cartItemId, newQuantity) => {
@@ -776,7 +884,33 @@ export const ShopProvider = ({ children }) => {
     })}`;
 
     const orderNumber = generateOrderNumber();
-    const totals = calculateOrderTotals(cart, shopSettings, appliedCoupon);
+
+    // Re-validate all cart items against latest database product prices
+    const validatedCart = cart.map((item) => {
+      const liveProduct = products.find((p) => p.id === item.productId);
+      if (!liveProduct) return item;
+
+      const liveVariant =
+        liveProduct.variants?.find(
+          (v) =>
+            v.size === (item.selectedVariant?.size || item.packSize) ||
+            v.id === item.selectedVariant?.id
+        ) || (liveProduct.variants && liveProduct.variants[0]);
+
+      const authoritativePrice = Number(liveVariant?.price || liveProduct.price || item.price);
+
+      return {
+        ...item,
+        name: liveProduct.name,
+        regionalName: liveProduct.regionalName || item.regionalName,
+        price: authoritativePrice,
+        selectedVariant: liveVariant
+          ? { ...liveVariant, price: authoritativePrice }
+          : { ...item.selectedVariant, price: authoritativePrice },
+      };
+    });
+
+    const totals = calculateOrderTotals(validatedCart, shopSettings, appliedCoupon);
 
     const fullAddress = [
       customerDetails.address,

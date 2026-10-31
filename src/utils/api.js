@@ -40,7 +40,7 @@ export async function getBackendHealth() {
  * Fetch all products from central database
  */
 export async function fetchAllProducts() {
-  const res = await fetch(`${API_BASE}/api/products`, {
+  const res = await fetch(`${API_BASE}/api/products?_t=${Date.now()}`, {
     cache: 'no-store',
   });
   const data = await handleResponse(res);

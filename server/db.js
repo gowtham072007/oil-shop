@@ -292,8 +292,13 @@ export async function createProduct(productData) {
     sortOrder: i,
   }));
 
+  const minPrice = formattedVariants.length > 0
+    ? Math.min(...formattedVariants.map((v) => Number(v.price) || 0))
+    : (Number(productData.price) || 0);
+
   const productRecord = {
     id,
+    price: minPrice,
     name: productData.name.trim(),
     regional_name: productData.regionalName?.trim() || '',
     regionalName: productData.regionalName?.trim() || '',
@@ -378,9 +383,14 @@ export async function updateProduct(id, productData) {
     sortOrder: i,
   }));
 
+  const minPrice = formattedVariants.length > 0
+    ? Math.min(...formattedVariants.map((v) => Number(v.price) || 0))
+    : (Number(productData.price) || Number(existing.price) || 0);
+
   const updatedRecord = {
     ...existing,
     id,
+    price: minPrice,
     name: productData.name !== undefined ? productData.name.trim() : existing.name,
     regional_name: productData.regionalName !== undefined ? productData.regionalName.trim() : (existing.regionalName || ''),
     regionalName: productData.regionalName !== undefined ? productData.regionalName.trim() : (existing.regionalName || ''),

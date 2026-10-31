@@ -260,8 +260,14 @@ export const AdminModal = () => {
 
     // 4. Save Product to Shared Database
     setIsSavingProduct(true);
+    const minVariantPrice =
+      productForm.variants?.length > 0
+        ? Math.min(...productForm.variants.map((v) => Number(v.price) || 0))
+        : Number(productForm.price) || 0;
+
     const cleanedProduct = {
       ...productForm,
+      price: minVariantPrice,
       name: productForm.name.trim(),
       regionalName: productForm.regionalName?.trim() || "",
       oilType: productForm.oilType?.trim() || "Wood-Pressed Cold Extracted",

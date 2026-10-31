@@ -108,6 +108,7 @@ app.get('/api/admin/verify', requireAdminAuth, (req, res) => {
 // GET all products (Public)
 app.get('/api/products', async (req, res) => {
   try {
+    res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
     const products = await getAllProducts();
     res.json({ success: true, products });
   } catch (err) {
@@ -119,6 +120,7 @@ app.get('/api/products', async (req, res) => {
 // GET single product (Public)
 app.get('/api/products/:id', async (req, res) => {
   try {
+    res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
     const product = await getProductById(req.params.id);
     if (!product) {
       return res.status(404).json({ success: false, error: 'Product not found.' });

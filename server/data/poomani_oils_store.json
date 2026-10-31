@@ -3,15 +3,11 @@
     {
       "id": "prod-coconut-200ml",
       "name": "Coconut Oil – 200 ml",
-      "regional_name": "தேங்காய் எண்ணெய் – 200 மி.லி",
       "regionalName": "தேங்காய் எண்ணெய் – 200 மி.லி",
       "brand": "Poomani Chekku Ennai",
-      "oil_type": "100% Pure Edible Oil",
       "oilType": "100% Pure Edible Oil",
-      "category": "coconut",
       "description": "100% pure edible coconut oil with authentic natural aroma, perfect for daily cooking, traditional recipes, and dietary wellness.",
       "image": "/images/coconut_oil.jpg",
-      "image_file_name": "coconut_oil.jpg",
       "imageFileName": "coconut_oil.jpg",
       "price": 90,
       "inStock": true,
@@ -22,12 +18,16 @@
           "price": 90,
           "stock": 50,
           "unit": "Bottle",
-          "sort_order": 1,
-          "sortOrder": 1
+          "sort_order": 0,
+          "sortOrder": 0
         }
       ],
-      "created_at": "2026-10-29T06:00:00.000Z",
-      "createdAt": "2026-10-29T06:00:00.000Z"
+      "createdAt": "2026-10-29T06:00:00.000Z",
+      "updatedAt": "2026-10-31T06:24:29.698Z",
+      "regional_name": "தேங்காய் எண்ணெய் – 200 மி.லி",
+      "oil_type": "100% Pure Edible Oil",
+      "image_file_name": "coconut_oil.jpg",
+      "updated_at": "2026-10-31T06:24:29.698Z"
     },
     {
       "id": "prod-coconut-500ml",
@@ -243,5 +243,6 @@
     "address": "Gopalasamuthiram (கோபாலசமுத்திரம்), Tamil Nadu",
     "fssaiNumber": "12421008000421",
     "adminPin": "1234"
-  }
+  },
+  "orders": []
 }
