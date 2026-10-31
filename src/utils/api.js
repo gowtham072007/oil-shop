@@ -3,7 +3,32 @@
  * Centralized communication with shared PostgreSQL / SQLite backend.
  */
 
-const API_BASE = ''; // Relative path, works locally and on Render production
+function getApiBase() {
+  if (typeof window === 'undefined') return '';
+  // When running on poomani-oils.onrender.com (Render static site without Node backend),
+  // automatically route API calls to the central backend at mani-oils.onrender.com
+  const host = window.location.hostname || '';
+  if (host === 'poomani-oils.onrender.com' || host.includes('poomani-oils')) {
+    return 'https://mani-oils.onrender.com';
+  }
+  if (import.meta.env?.VITE_API_URL) {
+    return String(import.meta.env.VITE_API_URL).replace(/\/+$/, '');
+  }
+  return '';
+}
+
+export const API_BASE = getApiBase();
+
+/**
+ * Resolve relative image paths for uploads when frontend is hosted separately from backend
+ */
+export function resolveImageUrl(url) {
+  if (!url || typeof url !== 'string') return '';
+  if (url.startsWith('/uploads/') && API_BASE) {
+    return `${API_BASE}${url}`;
+  }
+  return url;
+}
 
 /**
  * Helper to handle fetch responses and errors

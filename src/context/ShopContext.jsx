@@ -16,6 +16,8 @@ import {
   PERMANENT_ADMIN_WHATSAPP,
 } from "../utils/billGenerator";
 import {
+  API_BASE,
+  resolveImageUrl,
   fetchAllProducts,
   createProductApi,
   updateProductApi,
@@ -199,15 +201,19 @@ export const ShopProvider = ({ children }) => {
     try {
       const serverProducts = await fetchAllProducts();
       if (Array.isArray(serverProducts) && serverProducts.length > 0) {
-        setProducts(serverProducts);
+        const resolved = serverProducts.map((p) => ({
+          ...p,
+          image: resolveImageUrl(p.image),
+        }));
+        setProducts(resolved);
         try {
-          localStorage.setItem("oil_shop_products", JSON.stringify(serverProducts));
+          localStorage.setItem("oil_shop_products", JSON.stringify(resolved));
           localStorage.removeItem("oil_shop_pending_sync");
         } catch {
           // ignore
         }
         setSyncStatus("connected");
-        return serverProducts;
+        return resolved;
       }
       return null;
     } catch (err) {
@@ -331,7 +337,7 @@ export const ShopProvider = ({ children }) => {
       }
 
       try {
-        const es = new EventSource("/api/events");
+        const es = new EventSource(`${API_BASE}/api/events`);
         eventSourceRef.current = es;
 
         es.onopen = () => {
@@ -550,21 +556,22 @@ export const ShopProvider = ({ children }) => {
     }
 
     const confirmedProduct = res.product;
+    const resolvedProduct = { ...confirmedProduct, image: resolveImageUrl(confirmedProduct.image) };
 
     // 2. Update React state immediately so product is visible everywhere
-    setProducts((prev) => [confirmedProduct, ...prev.filter((p) => p.id !== confirmedProduct.id)]);
+    setProducts((prev) => [resolvedProduct, ...prev.filter((p) => p.id !== resolvedProduct.id)]);
 
     // 3. Keep local cache updated for offline resilience
     try {
       const current = JSON.parse(localStorage.getItem("oil_shop_products") || "[]");
-      const updated = [confirmedProduct, ...current.filter((p) => p.id !== confirmedProduct.id)];
+      const updated = [resolvedProduct, ...current.filter((p) => p.id !== resolvedProduct.id)];
       localStorage.setItem("oil_shop_products", JSON.stringify(updated));
     } catch {
       // ignore
     }
 
-    showNotification(`Product "${confirmedProduct.name}" saved permanently in database!`);
-    return confirmedProduct;
+    showNotification(`Product "${resolvedProduct.name}" saved permanently in database!`);
+    return resolvedProduct;
   };
 
   const updateProduct = async (id, updatedFields) => {
@@ -577,20 +584,22 @@ export const ShopProvider = ({ children }) => {
       throw new Error(res?.error || `Failed to update product '${id}' in database.`);
     }
 
+    const resolvedProduct = { ...confirmedProduct, image: resolveImageUrl(confirmedProduct.image) };
+
     // 2. Only after database confirms: update in-memory React state
     setProducts((prev) => {
       const exists = prev.some((p) => p.id === id);
-      return exists ? prev.map((p) => (p.id === id ? confirmedProduct : p)) : [confirmedProduct, ...prev];
+      return exists ? prev.map((p) => (p.id === id ? resolvedProduct : p)) : [resolvedProduct, ...prev];
     });
 
     // Also update quickViewProduct if currently viewed
-    setQuickViewProduct((prev) => (prev && prev.id === id ? confirmedProduct : prev));
+    setQuickViewProduct((prev) => (prev && prev.id === id ? resolvedProduct : prev));
 
     // 3. Update localStorage cache with the database-confirmed product
     try {
       const current = JSON.parse(localStorage.getItem("oil_shop_products") || "[]");
       const exists = current.some((p) => p.id === id);
-      const updated = exists ? current.map((p) => (p.id === id ? confirmedProduct : p)) : [confirmedProduct, ...current];
+      const updated = exists ? current.map((p) => (p.id === id ? resolvedProduct : p)) : [resolvedProduct, ...current];
       localStorage.setItem("oil_shop_products", JSON.stringify(updated));
     } catch {
       // ignore
