@@ -104,6 +104,13 @@ export const AdminModal = () => {
     }
   }, [shopSettings, isAdminOpen]);
 
+  // Proactively fetch latest product prices from central database whenever admin dashboard opens or tab switches
+  useEffect(() => {
+    if (isAdminOpen && isAdminAuthenticated) {
+      refetchProducts(true);
+    }
+  }, [isAdminOpen, isAdminAuthenticated, activeTab, refetchProducts]);
+
   // Fetch full WhatsApp configuration when admin is authenticated and in settings tab
   useEffect(() => {
     if (isAdminAuthenticated && adminToken) {
@@ -281,6 +288,7 @@ export const AdminModal = () => {
         await updateProduct(editingProduct, cleanedProduct);
       }
       setEditingProduct(null);
+      await refetchProducts(true);
     } catch (err) {
       setFormError(err.message || "Failed to save product to central database. Please check connection.");
     } finally {
@@ -638,15 +646,30 @@ export const AdminModal = () => {
                         <h4 style={{ fontSize: "1.1rem", color: "#09331d" }}>
                           Manage Product Catalog
                         </h4>
-                        <button
-                          type="button"
-                          className="btn-primary-glow"
-                          onClick={openNewProductForm}
-                          style={{ padding: "0.5rem 1rem", fontSize: "0.85rem" }}
-                        >
-                          <Plus size={16} />
-                          Add New Product
-                        </button>
+                        <div style={{ display: "flex", gap: "0.5rem" }}>
+                          <button
+                            type="button"
+                            className="btn-outline"
+                            onClick={async () => {
+                              await refetchProducts(true);
+                              showNotification("Product prices synchronized with central database!");
+                            }}
+                            style={{ padding: "0.5rem 0.85rem", fontSize: "0.85rem", display: "flex", alignItems: "center", gap: "0.4rem" }}
+                            title="Fetch latest prices directly from central database"
+                          >
+                            <RefreshCw size={14} />
+                            Sync Database
+                          </button>
+                          <button
+                            type="button"
+                            className="btn-primary-glow"
+                            onClick={openNewProductForm}
+                            style={{ padding: "0.5rem 1rem", fontSize: "0.85rem" }}
+                          >
+                            <Plus size={16} />
+                            Add New Product
+                          </button>
+                        </div>
                       </div>
 
                       {products.length === 0 ? (

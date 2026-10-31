@@ -15,7 +15,11 @@ async function handleResponse(response) {
     data = await response.json();
   } else {
     const text = await response.text();
-    data = { success: false, error: text };
+    try {
+      data = JSON.parse(text);
+    } catch {
+      data = { success: false, error: text };
+    }
   }
 
   if (!response.ok) {
