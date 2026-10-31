@@ -8,6 +8,7 @@ import {
   ShieldCheck,
   X,
 } from "lucide-react";
+import { InstagramIcon } from "./InstagramIcon";
 
 export const Header = () => {
   const {
@@ -110,6 +111,19 @@ export const Header = () => {
               >
                 {mobileSearchOpen ? <X size={20} /> : <Search size={20} />}
               </button>
+
+              {/* Official Instagram Profile Link */}
+              <a
+                href="https://www.instagram.com/poomani_oils?obrf=M2xiZGIyMHZnb2Rr"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn-instagram-pill"
+                title="Follow @poomani_oils on Instagram"
+                aria-label="Follow Poomani Oils on Instagram"
+              >
+                <InstagramIcon size={16} />
+                <span className="d-none-sm">Instagram</span>
+              </a>
 
               {/* WhatsApp Quick Link (Desktop/Tablet) */}
               <a

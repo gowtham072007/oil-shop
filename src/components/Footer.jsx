@@ -2,6 +2,7 @@ import React from "react";
 import { useShop } from "../context/ShopContext";
 import { cleanWhatsAppNumber } from "../utils/billGenerator";
 import { MapPin, Phone, Clock, ShieldCheck } from "lucide-react";
+import { InstagramIcon } from "./InstagramIcon";
 
 export const Footer = () => {
   const { shopSettings, setSelectedCategory } = useShop();
@@ -34,6 +35,24 @@ export const Footer = () => {
             <div style={{ display: "flex", alignItems: "center", gap: "0.4rem", color: "#e5b94c", fontSize: "0.82rem", fontWeight: "600", marginTop: "0.5rem" }}>
               <ShieldCheck size={16} />
               <span>FSSAI License No: {shopSettings.fssaiNumber || "12421008000421"}</span>
+            </div>
+
+            {/* Official Instagram Profile */}
+            <div style={{ marginTop: "0.85rem" }}>
+              <span style={{ fontSize: "0.78rem", color: "#c8d8ce", display: "block", marginBottom: "0.4rem", fontWeight: "600" }}>
+                Official Instagram:
+              </span>
+              <a
+                href="https://www.instagram.com/poomani_oils?obrf=M2xiZGIyMHZnb2Rr"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn-instagram-footer"
+                title="Follow @poomani_oils on Instagram"
+                aria-label="Follow Poomani Oils on Instagram"
+              >
+                <InstagramIcon size={17} color="#deb869" />
+                <span>@poomani_oils</span>
+              </a>
             </div>
           </div>
 
@@ -106,6 +125,24 @@ export const Footer = () => {
             >
               💬 WhatsApp: {shopSettings?.phoneDisplay || (shopSettings?.whatsappNumber ? `+${shopSettings.whatsappNumber}` : "")}
             </a>
+
+            {/* Social Media Link */}
+            <div style={{ marginTop: "0.85rem" }}>
+              <span style={{ fontSize: "0.78rem", color: "#c8d8ce", display: "block", marginBottom: "0.4rem", fontWeight: "600" }}>
+                Social Media:
+              </span>
+              <a
+                href="https://www.instagram.com/poomani_oils?obrf=M2xiZGIyMHZnb2Rr"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn-instagram-footer"
+                title="Follow @poomani_oils on Instagram"
+                aria-label="Follow Poomani Oils on Instagram"
+              >
+                <InstagramIcon size={17} color="#deb869" />
+                <span>Follow on Instagram</span>
+              </a>
+            </div>
           </div>
         </div>
 
@@ -114,8 +151,27 @@ export const Footer = () => {
           <div>
             © {new Date().getFullYear()} {shopSettings.shopName} (<span style={{ fontFamily: "var(--font-tamil)" }}>{shopSettings.shopNameTamil && !shopSettings.shopNameTamil.includes("ஆயில்") ? shopSettings.shopNameTamil : "பூமணி செக்கு எண்ணெய்"}</span>). All rights reserved. Pure edible chekku ennai.
           </div>
-          <div>
-            100% Pure Edible Chekku Ennai • Pure Quality • Direct WhatsApp Billing
+          <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", flexWrap: "wrap", justifyContent: "center" }}>
+            <span>100% Pure Edible Chekku Ennai • Pure Quality • Direct WhatsApp Billing</span>
+            <span style={{ color: "rgba(222, 184, 105, 0.4)" }}>•</span>
+            <a
+              href="https://www.instagram.com/poomani_oils?obrf=M2xiZGIyMHZnb2Rr"
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                color: "#deb869",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "0.35rem",
+                fontWeight: "600",
+                textDecoration: "none",
+                transition: "color 0.2s ease",
+              }}
+              title="Official Instagram: @poomani_oils"
+            >
+              <InstagramIcon size={14} color="#deb869" />
+              <span>@poomani_oils</span>
+            </a>
           </div>
         </div>
       </div>
