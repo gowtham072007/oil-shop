@@ -46,7 +46,7 @@ export const CartDrawer = () => {
     name: "",
     phone: "",
     address: "",
-    city: "Bengaluru",
+    city: "",
     state: "Tamil Nadu",
     pincode: "",
     paymentMethod: "Cash",
@@ -75,6 +75,10 @@ export const CartDrawer = () => {
 
     if (!customerDetails.address.trim()) {
       errors.address = "Complete address is required";
+    }
+
+    if (!customerDetails.city.trim()) {
+      errors.city = "City / District is required";
     }
 
     if (!customerDetails.pincode.trim()) {
@@ -290,16 +294,20 @@ export const CartDrawer = () => {
                 </div>
 
                 <div className="form-grid-2">
-                  <div className="form-group">
-                    <label htmlFor="cust-city">City / District</label>
+                  <div className={`form-group ${formErrors.city ? "has-error" : ""}`}>
+                    <label htmlFor="cust-city">City / District *</label>
                     <input
                       id="cust-city"
                       type="text"
+                      placeholder="Enter your city / district"
                       value={customerDetails.city}
                       onChange={(e) =>
                         setCustomerDetails({ ...customerDetails, city: e.target.value })
                       }
                     />
+                    {formErrors.city && (
+                      <div className="form-error-msg">{formErrors.city}</div>
+                    )}
                   </div>
 
                   <div className={`form-group ${formErrors.pincode ? "has-error" : ""}`}>
