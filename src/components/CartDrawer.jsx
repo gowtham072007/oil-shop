@@ -180,6 +180,11 @@ export const CartDrawer = () => {
                       />
                       <div className="cart-item-info">
                         <div className="cart-item-title">{item.name}</div>
+                        {item.regionalName && (
+                          <div style={{ fontSize: "0.78rem", color: "#8c6819", fontWeight: "600", marginTop: "1px" }}>
+                            {item.regionalName}
+                          </div>
+                        )}
                         <div className="cart-item-meta">
                           Pack: {item.selectedVariant?.size || "1 Litre"} • ₹{formatINR(item.price)} each
                         </div>

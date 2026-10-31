@@ -11,6 +11,7 @@ import { BillPreviewModal } from "./components/BillPreviewModal";
 import { AdminModal } from "./components/AdminModal";
 import { Footer } from "./components/Footer";
 import { MobileBottomNav } from "./components/MobileBottomNav";
+import { FloatingCartButton } from "./components/FloatingCartButton";
 import { filterCustomerProducts } from "./utils/customerOilFilter";
 import {
   MessageCircle,
@@ -61,6 +62,7 @@ const ShopMain = () => {
     setSearchQuery,
     shopSettings,
     notification,
+    totalCartCount,
   } = useShop();
 
   const [sortBy, setSortBy] = useState("default"); // 'default' | 'price-low' | 'price-high'
@@ -317,12 +319,15 @@ const ShopMain = () => {
         )}%2C%20I%20would%20like%20to%20place%20an%20order%20for%20pure%20edible%20cooking%20oils.`}
         target="_blank"
         rel="noopener noreferrer"
-        className="floating-wa-btn"
+        className={`floating-wa-btn ${totalCartCount > 0 ? "shifted-up" : ""}`}
         title="Direct WhatsApp with Oil Shop"
         aria-label="Direct WhatsApp with Oil Shop"
       >
         <MessageCircle size={28} />
       </a>
+
+      {/* Floating Cart Button (visible when cart has items) */}
+      <FloatingCartButton />
 
       {/* Modals & Slide-overs */}
       <CartDrawer />
