@@ -964,12 +964,12 @@ input, textarea, select {
   display: flex;
   align-items: center;
   justify-content: flex-start;
-  background: linear-gradient(180deg, #ffffff 0%, #fffdf9 40%, #fcf8f0 100%);
-  border: 1.5px solid rgba(198, 146, 34, 0.45);
-  border-radius: 20px;
-  padding: 0.75rem 1.25rem 0.75rem 0.95rem;
+  background: linear-gradient(135deg, #ffffff 0%, #fffdf8 30%, #fffbf0 70%, #fdf5dd 100%);
+  border: 1.5px solid rgba(212, 175, 55, 0.65);
+  border-radius: 22px;
+  padding: 0.75rem 1.4rem 0.75rem 1rem;
   margin-bottom: 1.85rem;
-  box-shadow: 0 4px 18px rgba(9, 51, 29, 0.05), 0 1px 4px rgba(198, 146, 34, 0.08);
+  box-shadow: 0 4px 18px rgba(9, 51, 29, 0.05), 0 1px 4px rgba(198, 146, 34, 0.1);
   transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1),
               box-shadow 0.28s cubic-bezier(0.16, 1, 0.3, 1),
               border-color 0.28s ease,
@@ -982,9 +982,9 @@ input, textarea, select {
 
 .category-hero-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(9, 51, 29, 0.09), 0 2px 8px rgba(198, 146, 34, 0.16);
+  box-shadow: 0 8px 24px rgba(9, 51, 29, 0.09), 0 2px 8px rgba(198, 146, 34, 0.18);
   border-color: var(--gold);
-  background: linear-gradient(180deg, #ffffff 0%, #fffcfa 50%, #faf3e2 100%);
+  background: linear-gradient(135deg, #ffffff 0%, #fffcfa 30%, #fffbf0 65%, #fdf2d4 100%);
 }
 
 .category-hero-card:active {
@@ -996,21 +996,22 @@ input, textarea, select {
   align-items: center;
   flex: 1;
   min-width: 0;
+  position: relative;
+  z-index: 2;
 }
 
 /* 1. Product Ingredient Photograph on Left */
 .cat-card-img-wrap {
-  width: 145px;
-  height: 86px;
-  border-radius: 12px;
-  overflow: hidden;
+  width: 140px;
+  height: 90px;
   flex-shrink: 0;
-  border: 1.5px solid rgba(198, 146, 34, 0.4);
-  box-shadow: 0 2px 8px rgba(9, 51, 29, 0.06);
-  background: #ffffff;
+  background: transparent;
+  border: none;
+  box-shadow: none;
   display: flex;
   align-items: center;
   justify-content: center;
+  overflow: visible;
 }
 
 .cat-card-img {
@@ -1018,6 +1019,7 @@ input, textarea, select {
   height: 100%;
   object-fit: contain;
   display: block;
+  mix-blend-mode: multiply;
   transition: transform 0.35s cubic-bezier(0.2, 0.8, 0.25, 1);
 }
 
@@ -1028,9 +1030,9 @@ input, textarea, select {
 /* 2. Vertical golden divider line with centered dot */
 .cat-card-divider {
   width: 1px;
-  height: 44px;
-  margin: 0 1.15rem;
-  background: linear-gradient(180deg, transparent 0%, rgba(198, 146, 34, 0.45) 20%, rgba(198, 146, 34, 0.75) 50%, rgba(198, 146, 34, 0.45) 80%, transparent 100%);
+  height: 48px;
+  margin: 0 1.25rem;
+  background: linear-gradient(180deg, transparent 0%, #d4af37 20%, #c69222 50%, #d4af37 80%, transparent 100%);
   position: relative;
   flex-shrink: 0;
   display: flex;
@@ -1039,39 +1041,38 @@ input, textarea, select {
 }
 
 .cat-card-divider-dot {
-  width: 5px;
-  height: 5px;
+  width: 6px;
+  height: 6px;
   background: #c69222;
   border-radius: 50%;
   position: absolute;
-  box-shadow: 0 0 4px rgba(198, 146, 34, 0.55);
+  box-shadow: 0 0 5px rgba(198, 146, 34, 0.6);
 }
 
-/* 3. Small matching decorative circular icon badge */
+/* 3. Small matching decorative circular icon badge with green leaf / icon */
 .cat-card-icon-pill {
   width: 44px;
   height: 44px;
   border-radius: 50%;
-  background: radial-gradient(circle, #fffbf0 0%, #faedd0 100%);
-  border: 1.5px solid rgba(198, 146, 34, 0.5);
-  color: #8c6411;
+  background: #ffffff;
+  border: 1.5px solid #d4af37;
+  color: #1b6d2f;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  margin-right: 1.15rem;
-  box-shadow: 0 2px 6px rgba(198, 146, 34, 0.16);
-  transition: transform 0.25s ease, background 0.25s ease, border-color 0.25s ease, color 0.25s ease;
+  margin-right: 1.25rem;
+  box-shadow: 0 2px 8px rgba(198, 146, 34, 0.18);
+  transition: transform 0.25s ease, background 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
 }
 
 .category-hero-card:hover .cat-card-icon-pill {
   transform: scale(1.08);
-  border-color: var(--gold);
-  color: #09331d;
-  background: radial-gradient(circle, #ffffff 0%, #fdf2d8 100%);
+  border-color: #b8860b;
+  box-shadow: 0 3px 10px rgba(198, 146, 34, 0.28);
 }
 
-/* 4. Category Typography */
+/* 4. Category Typography (Title Case, Deep Green & Amber Gold) */
 .cat-card-info {
   display: flex;
   flex-direction: column;
@@ -1080,29 +1081,46 @@ input, textarea, select {
 }
 
 .cat-card-title-en {
-  font-family: var(--font-serif);
-  font-size: 1.45rem;
+  font-family: 'Playfair Display', Georgia, 'Times New Roman', serif;
+  font-size: clamp(1.4rem, 3.5vw, 1.95rem);
   font-weight: 800;
-  color: #09331d;
-  letter-spacing: 0.04em;
+  color: #073d20;
+  letter-spacing: -0.015em;
   margin: 0;
   line-height: 1.15;
-  text-transform: uppercase;
+  text-transform: none;
   transition: color 0.25s ease;
 }
 
 .category-hero-card:hover .cat-card-title-en {
-  color: #0c4323;
+  color: #0c522b;
 }
 
 .cat-card-title-ta {
   font-family: var(--font-tamil);
-  font-size: 1.08rem;
-  font-weight: 600;
-  color: #8c6411;
+  font-size: clamp(1.1rem, 2.7vw, 1.45rem);
+  font-weight: 700;
+  color: #a05e0e;
   line-height: 1.25;
   margin-top: 4px;
   letter-spacing: 0.01em;
+}
+
+/* 5. Right-side decorative palm leaves & flowing golden oil splash */
+.cat-card-decor-right {
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 250px;
+  pointer-events: none;
+  background-image: url('/images/cat_decor_right_fade.png');
+  background-repeat: no-repeat;
+  background-position: right center;
+  background-size: contain;
+  mix-blend-mode: multiply;
+  opacity: 0.95;
+  z-index: 1;
 }
 
 /* 5. Dark Green, gold-bordered product count badge on the right */
@@ -3158,15 +3176,17 @@ input, textarea, select {
   }
 
   .category-hero-card {
-    padding: 0.65rem 0.85rem 0.65rem 0.65rem;
-    border-radius: 14px;
+    padding: 0.55rem 0.85rem 0.55rem 0.65rem;
+    border-radius: 16px;
     margin-bottom: 1.25rem;
   }
 
   .cat-card-img-wrap {
-    width: 105px;
-    height: 68px;
-    border-radius: 10px;
+    width: 95px;
+    height: 64px;
+    border: none;
+    background: transparent;
+    box-shadow: none;
   }
 
   .cat-card-divider {
@@ -3180,24 +3200,29 @@ input, textarea, select {
   }
 
   .cat-card-icon-pill {
-    width: 32px;
-    height: 32px;
+    width: 34px;
+    height: 34px;
     margin-right: 0.65rem;
   }
 
   .cat-card-icon-pill svg {
-    width: 15px;
-    height: 15px;
+    width: 16px;
+    height: 16px;
   }
 
   .cat-card-title-en {
-    font-size: 1.05rem;
-    letter-spacing: 0.025em;
+    font-size: 1.15rem;
+    letter-spacing: -0.01em;
   }
 
   .cat-card-title-ta {
-    font-size: 0.84rem;
+    font-size: 0.92rem;
     margin-top: 2px;
+  }
+
+  .cat-card-decor-right {
+    width: 135px;
+    opacity: 0.75;
   }
 
   .cat-card-right {
@@ -3608,19 +3633,21 @@ input, textarea, select {
   }
 
   .category-hero-card {
-    padding: 0.45rem 0.55rem 0.45rem 0.45rem;
-    border-radius: 12px;
+    padding: 0.45rem 0.65rem 0.45rem 0.45rem;
+    border-radius: 14px;
   }
 
   .cat-card-img-wrap {
-    width: 72px;
-    height: 50px;
-    border-radius: 6px;
+    width: 68px;
+    height: 48px;
+    border: none;
+    background: transparent;
+    box-shadow: none;
   }
 
   .cat-card-divider {
     height: 28px;
-    margin: 0 0.35rem;
+    margin: 0 0.4rem;
   }
 
   .cat-card-divider-dot {
@@ -3629,34 +3656,29 @@ input, textarea, select {
   }
 
   .cat-card-icon-pill {
-    width: 26px;
-    height: 26px;
-    margin-right: 0.35rem;
+    width: 28px;
+    height: 28px;
+    margin-right: 0.45rem;
   }
 
   .cat-card-icon-pill svg {
-    width: 12px;
-    height: 12px;
+    width: 13px;
+    height: 13px;
   }
 
   .cat-card-title-en {
-    font-size: 0.82rem;
-    letter-spacing: 0.01em;
+    font-size: 0.95rem;
+    letter-spacing: 0;
   }
 
   .cat-card-title-ta {
-    font-size: 0.7rem;
+    font-size: 0.8rem;
     margin-top: 1px;
   }
 
-  .cat-card-right {
-    margin-left: 0.4rem;
-  }
-
-  .cat-card-badge {
-    padding: 0.22rem 0.5rem;
-    font-size: 0.65rem;
-    gap: 3px;
+  .cat-card-decor-right {
+    width: 85px;
+    opacity: 0.5;
   }
 
   .cat-card-badge-chevron {

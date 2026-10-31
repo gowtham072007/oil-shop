@@ -27,26 +27,26 @@ import {
 const OIL_CATEGORY_SECTIONS = [
   {
     id: "coconut",
-    name: "COCONUT OIL",
+    name: "Coconut Oil",
     regionalName: "தேங்காய் எண்ணெய்",
-    image: "/images/cat_ingredient_coconut.jpg",
-    alt: "Pure Coconut Oil - Fresh Whole Coconut & Slices with Leaves",
+    image: "/images/cat_theme_coconut.png",
+    alt: "Pure Cold-Pressed Coconut Oil - Fresh Whole Coconut & Oil Bowl with Leaves",
     icon: Leaf,
   },
   {
     id: "sesame",
-    name: "SESAME OIL",
+    name: "Sesame Oil",
     regionalName: "நல்லெண்ணெய்",
-    image: "/images/cat_ingredient_sesame.jpg",
-    alt: "Pure Sesame Oil - Black Sesame Seeds Bowl with Leaves",
+    image: "/images/cat_theme_sesame.png",
+    alt: "Pure Cold-Pressed Sesame Oil - Black Sesame Seeds Bowl with Leaves",
     icon: Droplet,
   },
   {
     id: "groundnut",
-    name: "GROUNDNUT OIL",
+    name: "Groundnut Oil",
     regionalName: "கடலை எண்ணெய்",
-    image: "/images/cat_ingredient_groundnut.jpg",
-    alt: "Pure Groundnut Oil - Roasted Peanuts & Pods with Leaves",
+    image: "/images/cat_theme_groundnut.png",
+    alt: "Pure Cold-Pressed Groundnut Oil - Roasted Peanuts in Shell & Kernels",
     icon: Nut,
   },
 ];
@@ -274,7 +274,7 @@ const ShopMain = () => {
 
                         {/* 3. Small matching decorative circular icon badge */}
                         <div className="cat-card-icon-pill" aria-hidden="true">
-                          <IconComp size={18} strokeWidth={2.2} />
+                          <IconComp size={20} strokeWidth={2.2} fill="rgba(27, 109, 47, 0.18)" />
                         </div>
 
                         {/* 4. English & Tamil Category Typography */}
@@ -283,6 +283,9 @@ const ShopMain = () => {
                           <div className="cat-card-title-ta">{cat.regionalName}</div>
                         </div>
                       </div>
+
+                      {/* 5. Right-side decorative palm leaves & flowing golden oil splash */}
+                      <div className="cat-card-decor-right" aria-hidden="true"></div>
                     </div>
 
                     {/* Products Grid under this category */}
