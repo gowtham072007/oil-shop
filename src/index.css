@@ -622,6 +622,280 @@ input, textarea, select {
   display: block;
 }
 
+/* ==========================================================================
+   Animated Hero Promotional Video Showcase
+   ========================================================================== */
+.hero-video-card {
+  position: relative;
+  width: 100%;
+  max-width: 1160px;
+  margin: 0 auto;
+  border-radius: var(--radius-lg, 16px);
+  background: #072212;
+  border: 2px solid var(--gold, #d4af37);
+  box-shadow: 0 14px 44px rgba(7, 34, 18, 0.3), 0 4px 16px rgba(212, 175, 55, 0.25);
+  overflow: hidden;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.hero-video-card:hover {
+  box-shadow: 0 18px 52px rgba(7, 34, 18, 0.38), 0 6px 22px rgba(212, 175, 55, 0.35);
+}
+
+.hero-video-wrapper {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  cursor: pointer;
+  background: #072212;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.hero-video-player {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  background: #072212;
+}
+
+.hero-video-top-bar {
+  position: absolute;
+  top: 12px;
+  left: 14px;
+  right: 14px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  pointer-events: none;
+  z-index: 3;
+}
+
+.hero-video-brand-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(7, 34, 18, 0.9);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  color: #ffffff;
+  border: 1px solid rgba(222, 184, 105, 0.7);
+  padding: 6px 14px;
+  border-radius: 9999px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.35);
+}
+
+.gold-sparkle-icon {
+  color: #ffd700;
+}
+
+.hero-video-fssai-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(7, 34, 18, 0.9);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  color: #deb869;
+  border: 1px solid rgba(222, 184, 105, 0.7);
+  padding: 6px 14px;
+  border-radius: 9999px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.35);
+}
+
+.hero-video-center-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: rgba(7, 34, 18, 0.45);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+  z-index: 4;
+  cursor: pointer;
+  transition: background 0.25s ease;
+}
+
+.hero-video-center-overlay:hover {
+  background: rgba(7, 34, 18, 0.55);
+}
+
+.hero-video-play-circle {
+  width: 74px;
+  height: 74px;
+  border-radius: 50%;
+  background: rgba(18, 80, 40, 0.95);
+  border: 3px solid #deb869;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 8px 26px rgba(0, 0, 0, 0.45), 0 0 24px rgba(222, 184, 105, 0.4);
+  transition: transform 0.2s ease;
+}
+
+.hero-video-center-overlay:hover .hero-video-play-circle {
+  transform: scale(1.08);
+}
+
+.play-icon-offset {
+  margin-left: 4px;
+}
+
+.hero-video-center-text {
+  color: #ffffff;
+  margin-top: 12px;
+  font-weight: 600;
+  font-size: 0.92rem;
+  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.8);
+  background: rgba(7, 34, 18, 0.75);
+  padding: 5px 16px;
+  border-radius: 20px;
+  border: 1px solid rgba(222, 184, 105, 0.4);
+}
+
+.hero-video-bottom-bar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 12px 18px;
+  background: linear-gradient(to top, rgba(7, 34, 18, 0.95) 0%, rgba(7, 34, 18, 0.8) 60%, transparent 100%);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  z-index: 5;
+}
+
+.hero-video-controls-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.video-ctrl-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.16);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  border: 1px solid rgba(222, 184, 105, 0.6);
+  color: #ffffff;
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.video-ctrl-btn:hover {
+  background: rgba(222, 184, 105, 0.35);
+  border-color: #ffd700;
+}
+
+.ctrl-btn-label {
+  font-size: 0.82rem;
+}
+
+.hero-video-tag-pill {
+  color: #deb869;
+  font-size: 0.82rem;
+  font-weight: 600;
+  margin-left: 6px;
+  letter-spacing: 0.02em;
+}
+
+.hero-video-controls-right {
+  display: flex;
+  align-items: center;
+}
+
+.hero-video-cta-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: linear-gradient(135deg, #1b7a3e 0%, #0d4a24 100%);
+  color: #ffd700;
+  border: 1.5px solid #deb869;
+  padding: 7px 18px;
+  border-radius: 22px;
+  font-size: 0.84rem;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3);
+  transition: all 0.2s ease;
+}
+
+.hero-video-cta-btn:hover {
+  background: linear-gradient(135deg, #22944b 0%, #115c2d 100%);
+  color: #ffffff;
+  transform: translateY(-1px);
+  border-color: #ffd700;
+}
+
+@media (max-width: 768px) {
+  .hero-video-top-bar {
+    top: 8px;
+    left: 8px;
+    right: 8px;
+  }
+
+  .hero-video-brand-badge {
+    font-size: 0.72rem;
+    padding: 4px 10px;
+    max-width: 60%;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .hero-video-fssai-badge {
+    font-size: 0.68rem;
+    padding: 4px 8px;
+  }
+
+  .hero-video-bottom-bar {
+    padding: 8px 10px;
+  }
+
+  .video-ctrl-btn {
+    padding: 5px 9px;
+  }
+
+  .ctrl-btn-label {
+    display: none;
+  }
+
+  .d-none-mobile {
+    display: none !important;
+  }
+
+  .hero-video-cta-btn {
+    padding: 6px 12px;
+    font-size: 0.75rem;
+  }
+
+  .hero-video-play-circle {
+    width: 58px;
+    height: 58px;
+  }
+
+  .hero-video-center-text {
+    font-size: 0.78rem;
+    padding: 4px 12px;
+  }
+}
+
 .hero-grid {
   display: grid;
   grid-template-columns: 1.15fr 0.85fr;
