@@ -181,9 +181,11 @@ app.post('/api/products', requireAdminAuth, async (req, res) => {
       if (isNaN(priceNum) || priceNum <= 0) {
         return res.status(400).json({ success: false, error: `Price for pack size '${v.size}' must be greater than ₹0.` });
       }
-      const stockNum = Number(v.stock);
-      if (isNaN(stockNum) || stockNum < 0) {
-        return res.status(400).json({ success: false, error: `Available stock for pack size '${v.size}' cannot be negative.` });
+      if (v.stock !== undefined && v.stock !== null && v.stock !== "") {
+        const stockNum = Number(v.stock);
+        if (isNaN(stockNum) || stockNum < 0) {
+          return res.status(400).json({ success: false, error: `Available stock for pack size '${v.size}' cannot be negative.` });
+        }
       }
     }
 
@@ -244,9 +246,11 @@ app.put('/api/products/:id', requireAdminAuth, async (req, res) => {
         if (isNaN(priceNum) || priceNum <= 0) {
           return res.status(400).json({ success: false, error: `Price for pack size '${v.size}' must be greater than ₹0.` });
         }
-        const stockNum = Number(v.stock);
-        if (isNaN(stockNum) || stockNum < 0) {
-          return res.status(400).json({ success: false, error: `Available stock for pack size '${v.size}' cannot be negative.` });
+        if (v.stock !== undefined && v.stock !== null && v.stock !== "") {
+          const stockNum = Number(v.stock);
+          if (isNaN(stockNum) || stockNum < 0) {
+            return res.status(400).json({ success: false, error: `Available stock for pack size '${v.size}' cannot be negative.` });
+          }
         }
       }
     }

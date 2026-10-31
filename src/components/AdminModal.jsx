@@ -258,11 +258,6 @@ export const AdminModal = () => {
         setFormError(`Selling price for '${v.size}' must be greater than ₹0.`);
         return;
       }
-      const stockNum = Number(v.stock);
-      if (v.stock === "" || isNaN(stockNum) || stockNum < 0) {
-        setFormError(`Available stock for '${v.size}' cannot be negative.`);
-        return;
-      }
     }
 
     // 4. Save Product to Shared Database
@@ -272,8 +267,14 @@ export const AdminModal = () => {
         ? Math.min(...productForm.variants.map((v) => Number(v.price) || 0))
         : Number(productForm.price) || 0;
 
+    const cleanedVariants = (productForm.variants || []).map((v) => ({
+      ...v,
+      stock: v.stock !== undefined && v.stock !== null && v.stock !== "" ? Number(v.stock) : 50,
+    }));
+
     const cleanedProduct = {
       ...productForm,
+      variants: cleanedVariants,
       price: minVariantPrice,
       name: productForm.name.trim(),
       regionalName: productForm.regionalName?.trim() || "",
@@ -300,7 +301,7 @@ export const AdminModal = () => {
     const updated = [...productForm.variants];
     updated[index] = {
       ...updated[index],
-      [field]: field === "price" || field === "stock"
+      [field]: field === "price"
         ? (value === "" ? "" : Number(value))
         : value,
     };
@@ -312,7 +313,7 @@ export const AdminModal = () => {
       ...productForm,
       variants: [
         ...productForm.variants,
-        { id: `v-${Date.now()}`, size: "", price: "", stock: 10, unit: "Bottle" },
+        { id: `v-${Date.now()}`, size: "", price: "", stock: 50, unit: "Bottle" },
       ],
     });
   };
@@ -760,7 +761,7 @@ export const AdminModal = () => {
                                     <td>
                                       {p.variants?.map((v, vIdx) => (
                                         <div key={v.id || vIdx} style={{ fontSize: "0.78rem" }}>
-                                          <strong>{v.size}</strong>: ₹{v.price} ({v.stock} in stock{v.unit ? `, ${v.unit}` : ""})
+                                          <strong>{v.size}</strong>: ₹{v.price}{v.unit ? ` (${v.unit})` : ""}
                                         </div>
                                       ))}
                                     </td>
@@ -1082,7 +1083,7 @@ export const AdminModal = () => {
                       <div style={{ marginTop: "1.25rem", marginBottom: "1.25rem" }}>
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.5rem" }}>
                           <label style={{ fontWeight: "700", color: "#09331d" }}>
-                            Pack Sizes, Prices (₹), Stock Levels & Packaging: <span style={{ color: "#dc2626" }}>*</span>
+                            Pack Sizes, Prices (₹) & Packaging: <span style={{ color: "#dc2626" }}>*</span>
                           </label>
                           <button
                             type="button"
@@ -1105,7 +1106,7 @@ export const AdminModal = () => {
                             key={v.id || idx}
                             style={{
                               display: "grid",
-                              gridTemplateColumns: "1.3fr 1fr 1fr 1fr 40px",
+                              gridTemplateColumns: "1.5fr 1fr 1fr 40px",
                               gap: "0.5rem",
                               alignItems: "center",
                               marginBottom: "0.5rem",
@@ -1124,14 +1125,6 @@ export const AdminModal = () => {
                               value={v.price}
                               onChange={(e) => updateVariantInForm(idx, "price", e.target.value)}
                               placeholder="Price in ₹"
-                              required
-                            />
-                            <input
-                              type="number"
-                              min="0"
-                              value={v.stock}
-                              onChange={(e) => updateVariantInForm(idx, "stock", e.target.value)}
-                              placeholder="Stock Qty"
                               required
                             />
                             <input
