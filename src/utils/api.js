@@ -14,11 +14,26 @@ async function handleResponse(response) {
   if (contentType.includes('application/json')) {
     data = await response.json();
   } else {
-    data = { success: false, error: await response.text() };
+    const text = await response.text();
+    data = { success: false, error: text };
   }
 
   if (!response.ok) {
-    const errorMsg = data?.error || `Server error (${response.status})`;
+    let errorMsg = data?.error;
+    // Translate HTML error pages from Render/proxies into clean human messages
+    if (!errorMsg || typeof errorMsg !== 'string' || errorMsg.includes('<!DOCTYPE') || errorMsg.includes('<html')) {
+      if (response.status === 503) {
+        errorMsg = 'Central database server is suspended on Render (HTTP 503). To update prices permanently, open dashboard.render.com and click Resume on "mani-oils".';
+      } else if (response.status === 502 || response.status === 504) {
+        errorMsg = `Central server is currently waking up (HTTP ${response.status}). Please wait 15 seconds and try again.`;
+      } else if (response.status === 401) {
+        errorMsg = 'Admin authentication required or session expired. Please log in with your Admin PIN.';
+      } else if (response.status === 404) {
+        errorMsg = 'Product not found in central database.';
+      } else {
+        errorMsg = `Server error (${response.status}): Could not complete database update.`;
+      }
+    }
     throw new Error(errorMsg);
   }
   return data;
@@ -113,30 +128,44 @@ export async function uploadProductPhoto(file, token, pin) {
  * Create Product in central database (Admin)
  */
 export async function createProductApi(productData, token, pin) {
-  const res = await fetch(`${API_BASE}/api/products`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      ...buildAuthHeaders(token, pin),
-    },
-    body: JSON.stringify(productData),
-  });
-  return await handleResponse(res);
+  try {
+    const res = await fetch(`${API_BASE}/api/products`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...buildAuthHeaders(token, pin),
+      },
+      body: JSON.stringify(productData),
+    });
+    return await handleResponse(res);
+  } catch (err) {
+    if (err.message && (err.message.includes('Failed to fetch') || err.message.includes('NetworkError'))) {
+      throw new Error("Cannot connect to database server. If testing locally, ensure backend is running with 'npm run dev'. If on Render, verify 'mani-oils' is resumed.");
+    }
+    throw err;
+  }
 }
 
 /**
  * Update Product in central database (Admin)
  */
 export async function updateProductApi(id, productData, token, pin) {
-  const res = await fetch(`${API_BASE}/api/products/${encodeURIComponent(id)}`, {
-    method: 'PUT',
-    headers: {
-      'Content-Type': 'application/json',
-      ...buildAuthHeaders(token, pin),
-    },
-    body: JSON.stringify(productData),
-  });
-  return await handleResponse(res);
+  try {
+    const res = await fetch(`${API_BASE}/api/products/${encodeURIComponent(id)}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        ...buildAuthHeaders(token, pin),
+      },
+      body: JSON.stringify(productData),
+    });
+    return await handleResponse(res);
+  } catch (err) {
+    if (err.message && (err.message.includes('Failed to fetch') || err.message.includes('NetworkError'))) {
+      throw new Error("Cannot connect to database server. If testing locally, ensure backend is running with 'npm run dev'. If on Render, verify 'mani-oils' is resumed.");
+    }
+    throw err;
+  }
 }
 
 /**
