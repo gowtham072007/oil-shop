@@ -791,8 +791,13 @@ export const ShopProvider = ({ children }) => {
       date: formattedDate,
       customerName: customerDetails.name.trim(),
       customerPhone: customerDetails.phone.trim(),
-      address: fullAddress,
-      customerAddress: fullAddress,
+      address: customerDetails.address.trim(),
+      customerAddress: customerDetails.address.trim(),
+      customerCity: customerDetails.city?.trim() || "",
+      city: customerDetails.city?.trim() || "",
+      customerPincode: customerDetails.pincode?.trim() || "",
+      pincode: customerDetails.pincode?.trim() || "",
+      fullAddress: fullAddress,
       deliveryAddress: fullAddress,
       items: totals.verifiedItems,
       subtotal: totals.subtotal,
@@ -805,7 +810,7 @@ export const ShopProvider = ({ children }) => {
       timestamp: Date.now(),
     };
 
-    const billText = generateWhatsAppTaxInvoiceText(orderRecord, shopSettings);
+    const billText = generateWhatsAppBillText(orderRecord, shopSettings);
     const waUrl = buildWhatsAppUrl(PERMANENT_ADMIN_WHATSAPP, billText);
 
     const completeOrder = {

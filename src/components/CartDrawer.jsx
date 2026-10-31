@@ -1,11 +1,12 @@
 import React, { useState } from "react";
 import { useShop } from "../context/ShopContext";
-import { formatINR, cleanWhatsAppNumber } from "../utils/billGenerator";
 import {
-  dispatchOrderPhotoBillToWhatsApp,
+  formatINR,
+  cleanWhatsAppNumber,
+  openWhatsAppOrder,
   PERMANENT_ADMIN_WHATSAPP,
   PERMANENT_ADMIN_WHATSAPP_DISPLAY,
-} from "../utils/billImageCanvas";
+} from "../utils/billGenerator";
 import {
   X,
   Trash2,
@@ -90,11 +91,19 @@ export const CartDrawer = () => {
     setFormErrors(errors);
     if (Object.keys(errors).length > 0) return;
 
-    // Create order record and open Tax Invoice review modal
+    // Create order record and open WhatsApp click-to-chat directly with professional text bill
+    setIsSubmitting(true);
     const order = initiateWhatsAppCheckout(customerDetails);
     if (order) {
-      showNotification("Official Tax Invoice generated! Review and send on WhatsApp.", "success");
+      showNotification(
+        "WhatsApp opened with order bill! Please tap Send in WhatsApp to forward to +91 63857 55368.",
+        "info"
+      );
+      openWhatsAppOrder(order.whatsappRecipient || PERMANENT_ADMIN_WHATSAPP, order.billText);
+      setIsCartOpen(false);
+      clearCart();
     }
+    setIsSubmitting(false);
   };
 
   return (
@@ -398,11 +407,11 @@ export const CartDrawer = () => {
               disabled={isSubmitting}
             >
               <Send size={18} />
-              <span>Review Tax Invoice & Send on WhatsApp</span>
+              <span>Send Order on WhatsApp</span>
             </button>
 
             <div className="cart-footer-notice">
-              🧾 Formats your official Tax Invoice and opens WhatsApp addressed to the store owner (+91 63857 55368).
+              🌿 Formats your official Customer Order Bill and opens WhatsApp addressed to the store owner (+91 63857 55368).
             </div>
           </div>
         )}

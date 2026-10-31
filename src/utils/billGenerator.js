@@ -77,21 +77,21 @@ export const getStandardOilNames = (name = "", regionalName = "") => {
     return {
       en: "Coconut Oil",
       ta: "தேங்காய் எண்ணெய்",
-      combined: "Coconut Oil — தேங்காய் எண்ணெய்",
+      combined: "Coconut Oil / தேங்காய் எண்ணெய்",
     };
   }
   if (combined.includes("sesame") || combined.includes("gingelly") || combined.includes("நல்லெண்ணெய்")) {
     return {
       en: "Sesame Oil",
       ta: "நல்லெண்ணெய்",
-      combined: "Sesame Oil — நல்லெண்ணெய்",
+      combined: "Sesame Oil / நல்லெண்ணெய்",
     };
   }
   if (combined.includes("groundnut") || combined.includes("peanut") || combined.includes("கடலை")) {
     return {
       en: "Groundnut Oil",
       ta: "கடலை எண்ணெய்",
-      combined: "Groundnut Oil — கடலை எண்ணெய்",
+      combined: "Groundnut Oil / கடலை எண்ணெய்",
     };
   }
 
@@ -101,7 +101,7 @@ export const getStandardOilNames = (name = "", regionalName = "") => {
   return {
     en: enName,
     ta: taName,
-    combined: taName ? `${enName} — ${taName}` : enName,
+    combined: taName ? `${enName} / ${taName}` : enName,
   };
 };
 
@@ -216,103 +216,121 @@ export const numberToIndianRupeesWords = (num) => {
 };
 
 /**
- * Generates the official Tax Invoice text formatted specifically for WhatsApp messaging:
- * Follows the Poomani Chekku Ennai Tax Invoice structure:
- * 1. Invoice Header (*POOMANI CHEKKU ENNAI*, *TAX INVOICE*, Invoice Type, No, Date & Time)
- * 2. Seller Details (Poomani Chekku Ennai, Address, Contact, GSTIN if applicable)
- * 3. Buyer Details (Customer Name, Phone, Address, State)
- * 4. Order Details – Invoice Table (| Sl. No. | Particulars | Quantity | Rate | Amount |)
- * 5. Invoice Totals (Subtotal, Discount, Taxable Value, CGST, SGST, Total Tax, GRAND TOTAL, Amount in Words)
- * 6. Footer (For Poomani Chekku Ennai, Thank you for your purchase!)
+ * Generates the professional Customer Order Bill formatted specifically for WhatsApp messaging:
+ * Follows the Poomani Chekku Ennai Customer Order Bill structure:
+ * 1. Header (*POOMANI CHEKKU ENNAI*, *CUSTOMER ORDER BILL*)
+ * 2. Order No & Date
+ * 3. Customer Details (Name, Phone, Address, City, Pincode)
+ * 4. Order Items (1. Product Name – Size, Quantity, Rate, Amount)
+ * 5. Totals & Payment Method (Total Items, Grand Total, Payment Method)
+ * 6. Footer (Thank you for choosing POOMANI CHEKKU ENNAI, நன்றி! 🙏)
  */
-export const generateWhatsAppTaxInvoiceText = (order, shopSettings = {}) => {
+export const generateWhatsAppOrderBillText = (order, shopSettings = {}) => {
   const lines = [];
 
-  // 1. Invoice Header
-  lines.push("*POOMANI CHEKKU ENNAI*");
+  // 1. Header
+  lines.push("🌿 *POOMANI CHEKKU ENNAI*");
   lines.push("*பூமணி செக்கு எண்ணெய்*");
   lines.push("");
-  lines.push("                     *TAX INVOICE*");
+  lines.push("        *CUSTOMER ORDER BILL*");
   lines.push("");
-  lines.push("Invoice Type: Original");
-  lines.push(`Invoice No: ${order.orderNumber}`);
-  lines.push(`Date & Time: ${order.date || new Date().toLocaleString("en-IN")}`);
+  lines.push("━━━━━━━━━━━━━━━━━━");
+
+  // 2. Order Metadata
+  lines.push(`*Order No:* ${order.orderNumber}`);
+  const orderDate =
+    order.date ||
+    new Date().toLocaleString("en-IN", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true,
+    });
+  lines.push(`*Date & Time:* ${orderDate}`);
   lines.push("");
 
-  // 2. Seller Details
-  lines.push("━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-  lines.push("*SELLER DETAILS*");
-  lines.push(shopSettings.shopName || "Poomani Chekku Ennai");
-  lines.push(`Address: ${shopSettings.address || "Gopalasamuthiram (கோபாலசமுத்திரம்), Tamil Nadu"}`);
-  lines.push(`Contact: ${shopSettings.phoneDisplay || PERMANENT_ADMIN_WHATSAPP_DISPLAY}`);
-  if (shopSettings.gstin && String(shopSettings.gstin).trim()) {
-    lines.push(`GSTIN: ${String(shopSettings.gstin).trim()}`);
+  // 3. Customer Details
+  lines.push("*CUSTOMER DETAILS*");
+  lines.push(`Name: ${order.customerName || "Valued Customer"}`);
+
+  // Format customer phone
+  let phoneDisplay = order.customerPhone || "";
+  const phoneDigits = String(phoneDisplay).replace(/\D/g, "");
+  if (phoneDigits.length === 10) {
+    phoneDisplay = `+91 ${phoneDigits}`;
+  } else if (phoneDigits.startsWith("91") && phoneDigits.length === 12) {
+    phoneDisplay = `+91 ${phoneDigits.slice(2)}`;
+  }
+  lines.push(`Phone: ${phoneDisplay}`);
+
+  const address =
+    order.customerAddress ||
+    order.address ||
+    order.deliveryAddress ||
+    "—";
+  const city = order.customerCity || order.city || "";
+  const pincode = order.customerPincode || order.pincode || "";
+
+  lines.push(`Address: ${address}`);
+  if (city) {
+    lines.push(`City: ${city}`);
+  }
+  if (pincode) {
+    lines.push(`Pincode: ${pincode}`);
   }
   lines.push("");
 
-  // 3. Buyer Details
-  lines.push("━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-  lines.push("*BUYER DETAILS*");
-  lines.push(`Customer Name: ${order.customerName || "Valued Customer"}`);
-  lines.push(`Phone: ${order.customerPhone || ""}`);
-  const customerAddress = order.customerAddress || order.address || order.deliveryAddress || "";
-  lines.push(`Address: ${customerAddress}`);
-  const customerState = order.customerState || order.state || "Tamil Nadu";
-  lines.push(`State: ${customerState}`);
+  // 4. Order Items
+  lines.push("━━━━━━━━━━━━━━━━━━");
+  lines.push("*ORDER ITEMS*");
   lines.push("");
 
-  // 4. Order Details – Invoice Table
-  lines.push("━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-  lines.push("*ORDER DETAILS – INVOICE ITEMS*");
-  lines.push("| Sl. No. | Particulars | Quantity | Rate | Amount |");
-  lines.push("|---|---|---|---|---|");
+  let totalQuantity = 0;
+  const items = order.items || [];
 
-  (order.items || []).forEach((item, idx) => {
-    const sNo = item.sNo || idx + 1;
-    const std = getStandardOilNames(item.name, item.regionalName);
-    const size = item.packSize || item.selectedVariant?.size || "1 Litre";
-    const particulars = `${std.combined} – ${size}`;
-    const qty = item.quantity || 1;
+  items.forEach((item, index) => {
+    const sNo = index + 1;
+    const qty = parseInt(item.quantity, 10) || 1;
+    totalQuantity += qty;
     const rate = Number(item.rate || item.price || 0);
     const amount = Number(item.amount || rate * qty);
 
-    lines.push(`| ${sNo} | ${particulars} | ${qty} | ₹${formatINR(rate)} | ₹${formatINR(amount)} |`);
-  });
-  lines.push("");
+    // Support English and Tamil product names with pack size
+    const std = getStandardOilNames(item.name, item.regionalName);
+    const packSize = item.packSize || item.selectedVariant?.size || "1 Litre";
 
-  // 5. Invoice Totals
-  lines.push("━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-  lines.push("*INVOICE TOTALS*");
-  lines.push(`Subtotal: ₹${formatINR(order.subtotal)}`);
+    // Clean size from title if already present in base string
+    const baseTitle = std.combined || item.name;
+    const hasSize =
+      baseTitle.toLowerCase().includes(packSize.toLowerCase()) ||
+      /\b(200\s*ml|500\s*ml|1\s*litre|1\s*l|5\s*litre|5\s*l)\b/i.test(baseTitle);
+    const itemTitle = hasSize ? baseTitle : `${baseTitle} – ${packSize}`;
+
+    lines.push(`${sNo}. ${itemTitle}`);
+    lines.push(`   Quantity: ${qty}`);
+    lines.push(`   Rate: ₹${formatINR(rate)}`);
+    lines.push(`   Amount: ₹${formatINR(amount)}`);
+    lines.push("");
+  });
+
+  // 5. Totals & Payment Method
+  lines.push("━━━━━━━━━━━━━━━━━━");
+  lines.push(`*Total Items:* ${totalQuantity}`);
   if (order.discount && Number(order.discount) > 0) {
     lines.push(`Discount: -₹${formatINR(order.discount)}`);
   }
-
-  const taxableValue = Math.max(0, (Number(order.subtotal) || 0) - (Number(order.discount) || 0));
-  lines.push(`Taxable Value: ₹${formatINR(taxableValue)}`);
-
-  // Include GST only when applicable and configured by admin. Never invent GSTIN or tax rates.
-  const gstRate = Number(shopSettings.gstRate) || 0;
-  if (shopSettings.gstin && gstRate > 0) {
-    const halfRate = (gstRate / 2).toFixed(1);
-    const halfTax = Math.round((taxableValue * (gstRate / 2)) / 100);
-    const totalTax = halfTax * 2;
-    lines.push(`CGST (${halfRate}%): ₹${formatINR(halfTax)}`);
-    lines.push(`SGST (${halfRate}%): ₹${formatINR(halfTax)}`);
-    lines.push(`Total Tax: ₹${formatINR(totalTax)}`);
-  }
-
+  lines.push(`*Grand Total: ₹${formatINR(order.grandTotal)}*`);
   lines.push("");
-  lines.push(`*GRAND TOTAL: ₹${formatINR(order.grandTotal)}*`);
-  lines.push("");
-  lines.push(`Amount in Words: ${numberToIndianRupeesWords(order.grandTotal)}`);
+  lines.push(`*Payment Method:* ${order.paymentMethod || "Cash"}`);
   lines.push("");
 
   // 6. Footer
-  lines.push("━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-  lines.push("For Poomani Chekku Ennai");
-  lines.push("");
-  lines.push("Thank you for your purchase!");
+  lines.push("━━━━━━━━━━━━━━━━━━");
+  lines.push("Thank you for choosing");
+  lines.push("*POOMANI CHEKKU ENNAI*");
+  lines.push("நன்றி! 🙏");
 
   return lines.join("\n");
 };
@@ -321,7 +339,11 @@ export const generateWhatsAppTaxInvoiceText = (order, shopSettings = {}) => {
  * Generates the professional bill text adhering to the user's requirements:
  */
 export const generateWhatsAppBillText = (order, shopSettings) => {
-  return generateWhatsAppTaxInvoiceText(order, shopSettings);
+  return generateWhatsAppOrderBillText(order, shopSettings);
+};
+
+export const generateWhatsAppTaxInvoiceText = (order, shopSettings) => {
+  return generateWhatsAppOrderBillText(order, shopSettings);
 };
 
 /**
