@@ -36,6 +36,11 @@ async function handleResponse(response) {
     }
     throw new Error(errorMsg);
   }
+
+  if (data && typeof data === 'object' && data.success === false) {
+    throw new Error(data.error || 'Database operation was not successful.');
+  }
+
   return data;
 }
 

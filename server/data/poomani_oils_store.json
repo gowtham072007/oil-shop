@@ -24,11 +24,11 @@
         }
       ],
       "createdAt": "2026-10-29T06:00:00.000Z",
-      "updatedAt": "2026-10-31T06:59:19.248Z",
+      "updatedAt": "2026-10-31T08:41:35.850Z",
       "regional_name": "தேங்காய் எண்ணெய் – 200 மி.லி",
       "oil_type": "100% Pure Edible Oil",
       "image_file_name": "coconut_oil.jpg",
-      "updated_at": "2026-10-31T06:59:19.248Z"
+      "updated_at": "2026-10-31T08:41:35.850Z"
     },
     {
       "id": "prod-coconut-500ml",
@@ -54,11 +54,11 @@
         }
       ],
       "createdAt": "2026-10-29T06:01:00.000Z",
-      "updatedAt": "2026-10-31T06:57:36.114Z",
+      "updatedAt": "2026-10-31T08:41:35.860Z",
       "regional_name": "தேங்காய் எண்ணெய் – 500 மி.லி",
       "oil_type": "100% Pure Edible Oil",
       "image_file_name": "coconut_oil.jpg",
-      "updated_at": "2026-10-31T06:57:36.114Z"
+      "updated_at": "2026-10-31T08:41:35.860Z"
     },
     {
       "id": "prod-coconut-1l",
@@ -84,11 +84,11 @@
         }
       ],
       "createdAt": "2026-10-29T06:02:00.000Z",
-      "updatedAt": "2026-10-31T06:57:36.118Z",
+      "updatedAt": "2026-10-31T08:41:35.871Z",
       "regional_name": "தேங்காய் எண்ணெய் – 1 லிட்டர்",
       "oil_type": "100% Pure Edible Oil",
       "image_file_name": "coconut_oil.jpg",
-      "updated_at": "2026-10-31T06:57:36.118Z"
+      "updated_at": "2026-10-31T08:41:35.871Z"
     },
     {
       "id": "prod-sesame-200ml",
@@ -114,11 +114,11 @@
         }
       ],
       "createdAt": "2026-10-29T06:03:00.000Z",
-      "updatedAt": "2026-10-31T06:57:36.121Z",
+      "updatedAt": "2026-10-31T08:41:35.880Z",
       "regional_name": "நல்லெண்ணெய் – 200 மி.லி",
       "oil_type": "100% Pure Edible Oil",
       "image_file_name": "sesame_oil.jpg",
-      "updated_at": "2026-10-31T06:57:36.121Z"
+      "updated_at": "2026-10-31T08:41:35.880Z"
     },
     {
       "id": "prod-sesame-500ml",
@@ -144,11 +144,11 @@
         }
       ],
       "createdAt": "2026-10-29T06:04:00.000Z",
-      "updatedAt": "2026-10-31T06:57:36.125Z",
+      "updatedAt": "2026-10-31T08:41:35.890Z",
       "regional_name": "நல்லெண்ணெய் – 500 மி.லி",
       "oil_type": "100% Pure Edible Oil",
       "image_file_name": "sesame_oil.jpg",
-      "updated_at": "2026-10-31T06:57:36.125Z"
+      "updated_at": "2026-10-31T08:41:35.890Z"
     },
     {
       "id": "prod-sesame-1l",
@@ -174,11 +174,11 @@
         }
       ],
       "createdAt": "2026-10-29T06:05:00.000Z",
-      "updatedAt": "2026-10-31T06:57:36.128Z",
+      "updatedAt": "2026-10-31T08:41:35.899Z",
       "regional_name": "நல்லெண்ணெய் – 1 லிட்டர்",
       "oil_type": "100% Pure Edible Oil",
       "image_file_name": "sesame_oil.jpg",
-      "updated_at": "2026-10-31T06:57:36.128Z"
+      "updated_at": "2026-10-31T08:41:35.899Z"
     },
     {
       "id": "prod-groundnut-500ml",
@@ -204,11 +204,11 @@
         }
       ],
       "createdAt": "2026-10-29T06:06:00.000Z",
-      "updatedAt": "2026-10-31T06:57:36.134Z",
+      "updatedAt": "2026-10-31T08:41:35.908Z",
       "regional_name": "கடலை எண்ணெய் – 500 மி.லி",
       "oil_type": "100% Pure Edible Oil",
       "image_file_name": "groundnut_oil.jpg",
-      "updated_at": "2026-10-31T06:57:36.134Z"
+      "updated_at": "2026-10-31T08:41:35.908Z"
     },
     {
       "id": "prod-groundnut-1l",
@@ -234,11 +234,11 @@
         }
       ],
       "createdAt": "2026-10-29T06:07:00.000Z",
-      "updatedAt": "2026-10-31T06:57:36.137Z",
+      "updatedAt": "2026-10-31T08:41:35.916Z",
       "regional_name": "கடலை எண்ணெய் – 1 லிட்டர்",
       "oil_type": "100% Pure Edible Oil",
       "image_file_name": "groundnut_oil.jpg",
-      "updated_at": "2026-10-31T06:57:36.137Z"
+      "updated_at": "2026-10-31T08:41:35.916Z"
     }
   ],
   "settings": {

@@ -248,56 +248,78 @@ function formatProduct(row, variants = []) {
  * Fetch all products with their variants
  */
 export async function getAllProducts() {
+  let pgProducts = null;
   if (activeEngine === 'postgres' && pgPool) {
     try {
       const productsRes = await pgPool.query('SELECT * FROM products ORDER BY created_at DESC');
       const rows = productsRes.rows;
-      if (rows.length === 0) return [];
-
-      const variantsRes = await pgPool.query(
-        'SELECT * FROM product_variants ORDER BY sort_order ASC, price ASC'
-      );
-      const variantsByProductId = {};
-      for (const v of variantsRes.rows) {
-        if (!variantsByProductId[v.product_id]) {
-          variantsByProductId[v.product_id] = [];
+      if (rows.length > 0) {
+        const variantsRes = await pgPool.query(
+          'SELECT * FROM product_variants ORDER BY sort_order ASC, price ASC'
+        );
+        const variantsByProductId = {};
+        for (const v of variantsRes.rows) {
+          if (!variantsByProductId[v.product_id]) {
+            variantsByProductId[v.product_id] = [];
+          }
+          variantsByProductId[v.product_id].push(v);
         }
-        variantsByProductId[v.product_id].push(v);
+        pgProducts = rows.map((p) => formatProduct(p, variantsByProductId[p.id] || []));
       }
-
-      return rows.map((p) => formatProduct(p, variantsByProductId[p.id] || []));
     } catch (err) {
       console.warn('[Database] PostgreSQL fetch failed, reading from persistent store:', err.message);
     }
   }
 
+  if (Array.isArray(pgProducts) && pgProducts.length > 0) {
+    return pgProducts;
+  }
+
   // Persistent JSON store fallback
   const store = readJsonStore();
-  return store.products.map((p) => formatProduct(p, p.variants || []));
+  if (Array.isArray(store.products) && store.products.length > 0) {
+    return store.products.map((p) => formatProduct(p, p.variants || []));
+  }
+
+  // Default 8 canonical products fallback
+  return DEFAULT_8_PRODUCTS.map((p) => formatProduct(p, p.variants || []));
 }
 
 /**
  * Fetch a single product by ID with variants
  */
 export async function getProductById(id) {
+  if (!id) return null;
+
   if (activeEngine === 'postgres' && pgPool) {
     try {
       const res = await pgPool.query('SELECT * FROM products WHERE id = $1', [id]);
-      if (res.rows.length === 0) return null;
-
-      const variantsRes = await pgPool.query(
-        'SELECT * FROM product_variants WHERE product_id = $1 ORDER BY sort_order ASC',
-        [id]
-      );
-      return formatProduct(res.rows[0], variantsRes.rows);
+      if (res.rows.length > 0) {
+        const variantsRes = await pgPool.query(
+          'SELECT * FROM product_variants WHERE product_id = $1 ORDER BY sort_order ASC',
+          [id]
+        );
+        return formatProduct(res.rows[0], variantsRes.rows);
+      }
     } catch (err) {
       console.warn('[Database] PostgreSQL fetch by id failed:', err.message);
     }
   }
 
+  // Check persistent JSON store
   const store = readJsonStore();
   const found = store.products.find((p) => p.id === id);
-  return found ? formatProduct(found, found.variants || []) : null;
+  if (found) {
+    return formatProduct(found, found.variants || []);
+  }
+
+  // Check canonical DEFAULT_8_PRODUCTS
+  const defaultProd = DEFAULT_8_PRODUCTS.find((p) => p.id === id);
+  if (defaultProd) {
+    return formatProduct(defaultProd, defaultProd.variants || []);
+  }
+
+  return null;
 }
 
 /**
@@ -342,8 +364,9 @@ export async function createProduct(productData) {
   };
 
   if (activeEngine === 'postgres' && pgPool) {
-    const client = await pgPool.connect();
+    let client = null;
     try {
+      client = await pgPool.connect();
       await client.query('BEGIN');
       const insertProductSql = `
         INSERT INTO products (id, name, regional_name, brand, oil_type, description, image, image_file_name, created_at, updated_at)
@@ -372,10 +395,12 @@ export async function createProduct(productData) {
       }
       await client.query('COMMIT');
     } catch (err) {
-      await client.query('ROLLBACK');
-      throw err;
+      if (client) {
+        try { await client.query('ROLLBACK'); } catch { /* ignore */ }
+      }
+      console.warn(`[Database] PostgreSQL create for '${id}' had an issue, persisting to file store:`, err.message);
     } finally {
-      client.release();
+      if (client) client.release();
     }
   }
 
@@ -445,26 +470,49 @@ export async function updateProduct(id, productData) {
   };
 
   if (activeEngine === 'postgres' && pgPool) {
-    const client = await pgPool.connect();
+    let client = null;
     try {
+      client = await pgPool.connect();
       await client.query('BEGIN');
-      const updateProductSql = `
-        UPDATE products
-        SET name = $1, regional_name = $2, brand = $3, oil_type = $4, description = $5,
-            image = $6, image_file_name = $7, updated_at = $8
-        WHERE id = $9
-      `;
-      await client.query(updateProductSql, [
-        updatedRecord.name,
-        updatedRecord.regional_name,
-        updatedRecord.brand,
-        updatedRecord.oil_type,
-        updatedRecord.description,
-        updatedRecord.image,
-        updatedRecord.image_file_name,
-        now,
-        id,
-      ]);
+
+      const checkRes = await client.query('SELECT id FROM products WHERE id = $1', [id]);
+      if (checkRes.rows.length === 0) {
+        // Product does not exist in PostgreSQL yet; insert it
+        const insertProductSql = `
+          INSERT INTO products (id, name, regional_name, brand, oil_type, description, image, image_file_name, created_at, updated_at)
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+        `;
+        await client.query(insertProductSql, [
+          id,
+          updatedRecord.name,
+          updatedRecord.regional_name,
+          updatedRecord.brand,
+          updatedRecord.oil_type,
+          updatedRecord.description,
+          updatedRecord.image,
+          updatedRecord.image_file_name,
+          now,
+          now,
+        ]);
+      } else {
+        const updateProductSql = `
+          UPDATE products
+          SET name = $1, regional_name = $2, brand = $3, oil_type = $4, description = $5,
+              image = $6, image_file_name = $7, updated_at = $8
+          WHERE id = $9
+        `;
+        await client.query(updateProductSql, [
+          updatedRecord.name,
+          updatedRecord.regional_name,
+          updatedRecord.brand,
+          updatedRecord.oil_type,
+          updatedRecord.description,
+          updatedRecord.image,
+          updatedRecord.image_file_name,
+          now,
+          id,
+        ]);
+      }
 
       await client.query('DELETE FROM product_variants WHERE product_id = $1', [id]);
       for (let i = 0; i < formattedVariants.length; i++) {
@@ -477,16 +525,22 @@ export async function updateProduct(id, productData) {
       }
       await client.query('COMMIT');
     } catch (err) {
-      await client.query('ROLLBACK');
-      throw err;
+      if (client) {
+        try { await client.query('ROLLBACK'); } catch { /* ignore */ }
+      }
+      console.warn(`[Database] PostgreSQL update for '${id}' had an issue, persisting to central file store:`, err.message);
     } finally {
-      client.release();
+      if (client) client.release();
     }
   }
 
-  // Update persistent JSON store
+  // Update persistent JSON store (always authoritative & permanent on disk)
   const store = readJsonStore();
-  const updatedProducts = store.products.map((p) => (p.id === id ? updatedRecord : p));
+  const existsInStore = store.products.some((p) => p.id === id);
+  const updatedProducts = existsInStore
+    ? store.products.map((p) => (p.id === id ? updatedRecord : p))
+    : [...store.products, updatedRecord];
+
   const writeSuccess = writeJsonStore({ ...store, products: updatedProducts });
   if (!writeSuccess) {
     throw new Error(`Failed to save updated price for product '${id}' to persistent database store.`);

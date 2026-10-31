@@ -572,19 +572,25 @@ export const ShopProvider = ({ children }) => {
 
     // 1. Send update directly to Central Database API
     const res = await updateProductApi(id, updatedFields, adminToken, pin);
-    if (!res || !res.success || !res.product) {
+    const confirmedProduct = res?.product || (res?.id ? res : null);
+    if (!res || !confirmedProduct) {
       throw new Error(res?.error || `Failed to update product '${id}' in database.`);
     }
 
-    const confirmedProduct = res.product;
-
     // 2. Only after database confirms: update in-memory React state
-    setProducts((prev) => prev.map((p) => (p.id === id ? confirmedProduct : p)));
+    setProducts((prev) => {
+      const exists = prev.some((p) => p.id === id);
+      return exists ? prev.map((p) => (p.id === id ? confirmedProduct : p)) : [confirmedProduct, ...prev];
+    });
+
+    // Also update quickViewProduct if currently viewed
+    setQuickViewProduct((prev) => (prev && prev.id === id ? confirmedProduct : prev));
 
     // 3. Update localStorage cache with the database-confirmed product
     try {
       const current = JSON.parse(localStorage.getItem("oil_shop_products") || "[]");
-      const updated = current.map((p) => (p.id === id ? confirmedProduct : p));
+      const exists = current.some((p) => p.id === id);
+      const updated = exists ? current.map((p) => (p.id === id ? confirmedProduct : p)) : [confirmedProduct, ...current];
       localStorage.setItem("oil_shop_products", JSON.stringify(updated));
     } catch {
       // ignore

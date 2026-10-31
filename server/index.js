@@ -25,6 +25,7 @@ import {
   updateOrderWhatsAppStatus,
   PERMANENT_ADMIN_WHATSAPP,
   PERMANENT_ADMIN_WHATSAPP_DISPLAY,
+  DEFAULT_8_PRODUCTS,
 } from './db.js';
 import {
   verifyAdminPin,
@@ -206,7 +207,14 @@ app.post('/api/products', requireAdminAuth, async (req, res) => {
 app.put('/api/products/:id', requireAdminAuth, async (req, res) => {
   try {
     const { id } = req.params;
-    const existing = await getProductById(id);
+    let existing = await getProductById(id);
+    if (!existing) {
+      const canonicalProd = DEFAULT_8_PRODUCTS.find((p) => p.id === id);
+      if (canonicalProd) {
+        existing = await createProduct(canonicalProd);
+      }
+    }
+
     if (!existing) {
       return res.status(404).json({
         success: false,
