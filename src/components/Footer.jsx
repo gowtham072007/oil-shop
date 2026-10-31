@@ -28,11 +28,7 @@ export const Footer = () => {
                   : "பூமணி செக்கு எண்ணெய்"}
               </span>
             </h4>
-            <p>
-              Wholesome edible cooking oils crafted with pure quality and honesty.
-              100% unadulterated, unrefined, and packed with everyday natural nutrition.
-            </p>
-            <div style={{ display: "flex", alignItems: "center", gap: "0.4rem", color: "#e5b94c", fontSize: "0.82rem", fontWeight: "600", marginTop: "0.5rem" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "0.4rem", color: "#e5b94c", fontSize: "0.82rem", fontWeight: "600", marginTop: "0.75rem" }}>
               <ShieldCheck size={16} />
               <span>FSSAI License No: {shopSettings.fssaiNumber || "12421008000421"}</span>
             </div>
@@ -114,10 +110,10 @@ export const Footer = () => {
           <div className="footer-col">
             <h4>WhatsApp Orders</h4>
             <p style={{ fontSize: "0.85rem" }}>
-              Need bulk quantity for marriages, functions, or temples? Chat directly with the oil master on WhatsApp!
+              Direct WhatsApp ordering & quick customer support.
             </p>
             <a
-              href={`https://wa.me/${cleanWhatsAppNumber(shopSettings?.whatsappNumber)}?text=Hello%2C%20I%20would%20like%20to%20inquire%20about%20pure%20edible%20cooking%20oils.`}
+              href={`https://wa.me/${cleanWhatsAppNumber(shopSettings?.whatsappNumber)}?text=Hello%2C%20I%20would%20like%20to%20order%20Poomani%20Chekku%20Ennai.`}
               target="_blank"
               rel="noopener noreferrer"
               className="btn-whatsapp-pill"
@@ -149,10 +145,10 @@ export const Footer = () => {
         {/* Footer Bottom */}
         <div className="footer-bottom">
           <div>
-            © {new Date().getFullYear()} {shopSettings.shopName} (<span style={{ fontFamily: "var(--font-tamil)" }}>{shopSettings.shopNameTamil && !shopSettings.shopNameTamil.includes("ஆயில்") ? shopSettings.shopNameTamil : "பூமணி செக்கு எண்ணெய்"}</span>). All rights reserved. Pure edible chekku ennai.
+            © {new Date().getFullYear()} {shopSettings.shopName} (<span style={{ fontFamily: "var(--font-tamil)" }}>{shopSettings.shopNameTamil && !shopSettings.shopNameTamil.includes("ஆயில்") ? shopSettings.shopNameTamil : "பூமணி செக்கு எண்ணெய்"}</span>). All rights reserved.
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", flexWrap: "wrap", justifyContent: "center" }}>
-            <span>100% Pure Edible Chekku Ennai • Pure Quality • Direct WhatsApp Billing</span>
+            <span>100% Pure Chekku Ennai • Pure Quality • Direct WhatsApp Billing</span>
             <span style={{ color: "rgba(222, 184, 105, 0.4)" }}>•</span>
             <a
               href="https://www.instagram.com/poomani_oils?obrf=M2xiZGIyMHZnb2Rr"
