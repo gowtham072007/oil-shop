@@ -22,7 +22,6 @@ import {
   Leaf,
   Droplet,
   Nut,
-  ChevronRight,
 } from "lucide-react";
 
 const OIL_CATEGORY_SECTIONS = [
@@ -283,15 +282,6 @@ const ShopMain = () => {
                           <h2 className="cat-card-title-en">{cat.name}</h2>
                           <div className="cat-card-title-ta">{cat.regionalName}</div>
                         </div>
-                      </div>
-
-                      {/* 5. Dark green, gold-bordered product count badge on the right */}
-                      <div className="cat-card-right">
-                        <span className="cat-card-badge">
-                          <span className="badge-count-num">{catProducts.length}</span>{" "}
-                          {catProducts.length === 1 ? "Product" : "Products"}
-                          <ChevronRight size={14} strokeWidth={2.6} className="cat-card-badge-chevron" />
-                        </span>
                       </div>
                     </div>
 
