@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useShop } from "../context/ShopContext";
-import { formatINR, cleanWhatsAppNumber } from "../utils/billGenerator";
-import { Plus, Minus, ShoppingBag, Check, MessageCircle } from "lucide-react";
+import { formatINR } from "../utils/billGenerator";
+import { Plus, Minus, ShoppingBag, Check } from "lucide-react";
 
 export const ProductCard = ({ product }) => {
   const { addToCart, setQuickViewProduct, shopSettings } = useShop();
@@ -44,20 +44,6 @@ export const ProductCard = ({ product }) => {
       setQuantity(1);
     }, 1200);
   };
-
-  const lineTotal = (selectedVariant.price || 0) * quantity;
-  const productWaText = encodeURIComponent(
-    `Hello ${shopSettings.shopName}, I would like to order:\n` +
-    `• Product: ${product.name} (${product.regionalName || ""})\n` +
-    `• Pack Size: ${selectedVariant.size}\n` +
-    `• Quantity: ${quantity}\n` +
-    `• Price: ₹${formatINR(lineTotal)}\n\n` +
-    `Please confirm availability and order details.`
-  );
-  const cleanAdminPhone = cleanWhatsAppNumber(shopSettings?.whatsappNumber);
-  const productWaUrl = cleanAdminPhone
-    ? `https://wa.me/${cleanAdminPhone}?text=${productWaText}`
-    : "#";
 
   return (
     <div className="product-card" id={`product-${product.id}`}>
@@ -176,48 +162,36 @@ export const ProductCard = ({ product }) => {
           </div>
         </div>
 
-        {/* Dual Actions: Add to Cart + Order on WhatsApp */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.5rem", marginTop: "0.6rem" }}>
+        {/* Action: Full Width Add to Cart */}
+        <div style={{ marginTop: "0.65rem", width: "100%" }}>
           <button
             id={`add-to-cart-${product.id}`}
             type="button"
             className="btn-add-cart"
             onClick={handleAddToCart}
             disabled={isOutOfStock}
-            style={{ width: "100%", justifyContent: "center", padding: "0.6rem 0.5rem", fontSize: "0.84rem" }}
+            style={{
+              width: "100%",
+              justifyContent: "center",
+              padding: "0.65rem 1rem",
+              fontSize: "0.9rem",
+              borderRadius: "8px",
+            }}
           >
             {isAddedAnim ? (
               <>
-                <Check size={15} />
-                Added!
+                <Check size={16} />
+                Added to Cart!
               </>
             ) : isOutOfStock ? (
               "Sold Out"
             ) : (
               <>
-                <ShoppingBag size={15} />
+                <ShoppingBag size={16} />
                 Add to Cart
               </>
             )}
           </button>
-
-          <a
-            href={productWaUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="btn-whatsapp-pill"
-            style={{
-              width: "100%",
-              justifyContent: "center",
-              padding: "0.6rem 0.5rem",
-              fontSize: "0.84rem",
-              whiteSpace: "nowrap",
-            }}
-            title={`Order ${product.name} on WhatsApp`}
-          >
-            <MessageCircle size={15} />
-            <span>WhatsApp</span>
-          </a>
         </div>
       </div>
     </div>
