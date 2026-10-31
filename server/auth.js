@@ -1,12 +1,33 @@
 import crypto from 'node:crypto';
+import { getShopSettings } from './db.js';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'poomani-oils-secure-admin-key-2026';
 const ADMIN_PIN = process.env.ADMIN_PIN || '1234';
 
 /**
- * Validate admin PIN
+ * Validate admin PIN against process.env.ADMIN_PIN or shop_settings in database
  */
-export function verifyAdminPin(pin) {
+export async function verifyAdminPin(pin) {
+  if (!pin) return false;
+  const pinStr = String(pin).trim();
+  if (pinStr === String(ADMIN_PIN).trim()) {
+    return true;
+  }
+  try {
+    const settings = await getShopSettings();
+    if (settings && settings.adminPin && String(settings.adminPin).trim() === pinStr) {
+      return true;
+    }
+  } catch {
+    // ignore
+  }
+  return false;
+}
+
+/**
+ * Synchronous check for fallback
+ */
+export function verifyAdminPinSync(pin) {
   if (!pin) return false;
   return String(pin).trim() === String(ADMIN_PIN).trim();
 }
@@ -58,7 +79,7 @@ export function verifyAdminToken(token) {
 /**
  * Express middleware to ensure only authenticated admins can mutate products
  */
-export function requireAdminAuth(req, res, next) {
+export async function requireAdminAuth(req, res, next) {
   const authHeader = req.headers.authorization || req.headers['x-admin-token'];
   const pinHeader = req.headers['x-admin-pin'];
   let token = null;
@@ -72,9 +93,17 @@ export function requireAdminAuth(req, res, next) {
   }
 
   const validPayload = verifyAdminToken(token);
-  if (validPayload || (pinHeader && verifyAdminPin(pinHeader))) {
-    req.admin = validPayload || { role: 'admin' };
+  if (validPayload) {
+    req.admin = validPayload;
     return next();
+  }
+
+  if (pinHeader) {
+    const isPinValid = await verifyAdminPin(pinHeader);
+    if (isPinValid) {
+      req.admin = { role: 'admin' };
+      return next();
+    }
   }
 
   return res.status(401).json({
@@ -82,4 +111,3 @@ export function requireAdminAuth(req, res, next) {
     error: 'Unauthorized: Admin authentication required to perform this action.',
   });
 }
-

@@ -1149,7 +1149,7 @@ export const AdminModal = () => {
                           }}
                         >
                           <Save size={16} />
-                          {isSavingProduct ? "Saving to Central Database..." : "Save Product"}
+                          {isSavingProduct ? "Saving to Database..." : "Save / Update"}
                         </button>
                         <button
                           type="button"

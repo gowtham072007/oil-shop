@@ -85,9 +85,10 @@ app.get('/api/health', (req, res) => {
 // -------------------------------------------------------------
 // Admin Authentication Routes
 // -------------------------------------------------------------
-app.post('/api/admin/login', (req, res) => {
+app.post('/api/admin/login', async (req, res) => {
   const { pin } = req.body;
-  if (!verifyAdminPin(pin)) {
+  const isValid = await verifyAdminPin(pin);
+  if (!isValid) {
     return res.status(401).json({
       success: false,
       error: 'Invalid Admin PIN. Please enter the correct PIN.',
@@ -201,42 +202,58 @@ app.post('/api/products', requireAdminAuth, async (req, res) => {
   }
 });
 
-// PUT update product (Admin only)
+// PUT update product (Admin only) - Update existing product permanently in database
 app.put('/api/products/:id', requireAdminAuth, async (req, res) => {
   try {
     const { id } = req.params;
+    const existing = await getProductById(id);
+    if (!existing) {
+      return res.status(404).json({
+        success: false,
+        error: `Product with ID '${id}' not found in database. Cannot update non-existent product.`,
+      });
+    }
+
     const { name, image, variants } = req.body;
 
-    if (!name || !name.trim()) {
-      return res.status(400).json({ success: false, error: 'Product name is required.' });
-    }
-    if (!image || !image.trim()) {
-      return res.status(400).json({ success: false, error: 'Product photo is mandatory.' });
-    }
-    if (!variants || !Array.isArray(variants) || variants.length === 0) {
-      return res.status(400).json({ success: false, error: 'At least one pack size variant is required.' });
+    // Validate name if provided
+    if (name !== undefined && !name.trim()) {
+      return res.status(400).json({ success: false, error: 'Product name cannot be empty.' });
     }
 
-    for (let i = 0; i < variants.length; i++) {
-      const v = variants[i];
-      if (!v.size || !v.size.trim()) {
-        return res.status(400).json({ success: false, error: `Pack size description is required for row #${i + 1}.` });
+    // Validate variants & prices if provided
+    if (variants !== undefined) {
+      if (!Array.isArray(variants) || variants.length === 0) {
+        return res.status(400).json({ success: false, error: 'At least one pack size variant is required.' });
       }
-      const priceNum = Number(v.price);
-      if (isNaN(priceNum) || priceNum <= 0) {
-        return res.status(400).json({ success: false, error: `Price for pack size '${v.size}' must be greater than ₹0.` });
-      }
-      const stockNum = Number(v.stock);
-      if (isNaN(stockNum) || stockNum < 0) {
-        return res.status(400).json({ success: false, error: `Available stock for pack size '${v.size}' cannot be negative.` });
+
+      for (let i = 0; i < variants.length; i++) {
+        const v = variants[i];
+        if (!v.size || !String(v.size).trim()) {
+          return res.status(400).json({ success: false, error: `Pack size description is required for row #${i + 1}.` });
+        }
+        const priceNum = Number(v.price);
+        if (isNaN(priceNum) || priceNum <= 0) {
+          return res.status(400).json({ success: false, error: `Price for pack size '${v.size}' must be greater than ₹0.` });
+        }
+        const stockNum = Number(v.stock);
+        if (isNaN(stockNum) || stockNum < 0) {
+          return res.status(400).json({ success: false, error: `Available stock for pack size '${v.size}' cannot be negative.` });
+        }
       }
     }
 
-    const persistentImageUrl = ensurePersistentImageUrl(image, req.body.imageFileName);
+    let persistentImageUrl = existing.image;
+    if (image && typeof image === 'string' && image.trim()) {
+      persistentImageUrl = ensurePersistentImageUrl(image, req.body.imageFileName);
+    }
+
     const updated = await updateProduct(id, {
       ...req.body,
       image: persistentImageUrl,
     });
+
+    console.log(`[API] Product '${id}' (${updated.name}) price updated successfully: ₹${updated.price}`);
 
     // Broadcast real-time update to all connected devices immediately!
     broadcast('product:updated', updated);

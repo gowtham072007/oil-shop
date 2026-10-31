@@ -59,12 +59,26 @@ function readJsonStore() {
 function writeJsonStore(data) {
   try {
     const tempPath = `${jsonStorePath}.tmp`;
-    fs.writeFileSync(tempPath, JSON.stringify(data, null, 2), 'utf8');
-    fs.renameSync(tempPath, jsonStorePath);
+    const serialized = JSON.stringify(data, null, 2);
+    fs.writeFileSync(tempPath, serialized, 'utf8');
+    try {
+      fs.renameSync(tempPath, jsonStorePath);
+    } catch (renameErr) {
+      // On Windows, if renameSync fails due to file locks, directly overwrite
+      fs.writeFileSync(jsonStorePath, serialized, 'utf8');
+      try { fs.unlinkSync(tempPath); } catch { /* ignore */ }
+    }
     return true;
   } catch (err) {
     console.error('[Database] Failed to write JSON store:', err);
-    return false;
+    try {
+      // Last-ditch direct write
+      fs.writeFileSync(jsonStorePath, JSON.stringify(data, null, 2), 'utf8');
+      return true;
+    } catch (writeErr) {
+      console.error('[Database] Critical error writing store directly:', writeErr);
+      return false;
+    }
   }
 }
 
@@ -192,14 +206,25 @@ function formatProduct(row, variants = []) {
   const sortedVariants = variants.sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
   const minPrice = sortedVariants.length > 0
     ? Math.min(...sortedVariants.map((v) => Number(v.price) || 0))
-    : 0;
-  const inStock = sortedVariants.some((v) => Number(v.stock) > 0);
+    : (Number(row.price) || 0);
+  const inStock = sortedVariants.length > 0
+    ? sortedVariants.some((v) => Number(v.stock) > 0)
+    : (row.inStock !== false);
+
+  const fallbackCategory = row.id.includes('coconut')
+    ? 'coconut'
+    : row.id.includes('sesame')
+    ? 'sesame'
+    : row.id.includes('groundnut')
+    ? 'groundnut'
+    : 'all';
 
   return {
     id: row.id,
     name: row.name,
+    category: row.category || fallbackCategory,
     regionalName: row.regional_name || row.regionalName || '',
-    brand: row.brand || 'Poomani Oils',
+    brand: row.brand || 'Poomani Chekku Ennai',
     oilType: row.oil_type || row.oilType || 'Wood-Pressed Cold Extracted',
     description: row.description || '',
     image: row.image,
@@ -373,34 +398,47 @@ export async function updateProduct(id, productData) {
 
   const now = new Date().toISOString();
 
-  const formattedVariants = (productData.variants || existing.variants || []).map((v, i) => ({
-    id: v.id && !v.id.startsWith('v-def') ? v.id : `var-${Date.now()}-${i}`,
-    size: String(v.size || '').trim(),
-    price: Number(v.price) || 0,
-    stock: Number(v.stock) || 0,
-    unit: v.unit || 'Bottle',
-    sort_order: i,
-    sortOrder: i,
-  }));
+  const formattedVariants = (productData.variants || existing.variants || []).map((v, i) => {
+    const existingVar = (existing.variants || [])[i];
+    return {
+      id: v.id && !v.id.startsWith('v-def') ? v.id : (existingVar?.id || `var-${id}-${i}`),
+      size: String(v.size || existingVar?.size || '').trim(),
+      price: Math.max(1, Number(v.price) || Number(existingVar?.price) || 0),
+      stock: Math.max(0, Number(v.stock !== undefined ? v.stock : existingVar?.stock) || 0),
+      unit: v.unit || existingVar?.unit || 'Bottle',
+      sort_order: i,
+      sortOrder: i,
+    };
+  });
 
   const minPrice = formattedVariants.length > 0
     ? Math.min(...formattedVariants.map((v) => Number(v.price) || 0))
     : (Number(productData.price) || Number(existing.price) || 0);
 
+  const fallbackCategory = id.includes('coconut')
+    ? 'coconut'
+    : id.includes('sesame')
+    ? 'sesame'
+    : id.includes('groundnut')
+    ? 'groundnut'
+    : 'all';
+
   const updatedRecord = {
     ...existing,
     id,
     price: minPrice,
+    category: productData.category || existing.category || fallbackCategory,
     name: productData.name !== undefined ? productData.name.trim() : existing.name,
     regional_name: productData.regionalName !== undefined ? productData.regionalName.trim() : (existing.regionalName || ''),
     regionalName: productData.regionalName !== undefined ? productData.regionalName.trim() : (existing.regionalName || ''),
-    brand: productData.brand !== undefined ? productData.brand.trim() : existing.brand,
-    oil_type: productData.oilType !== undefined ? productData.oilType.trim() : existing.oilType,
-    oilType: productData.oilType !== undefined ? productData.oilType.trim() : existing.oilType,
+    brand: productData.brand !== undefined ? productData.brand.trim() : (existing.brand || 'Poomani Chekku Ennai'),
+    oil_type: productData.oilType !== undefined ? productData.oilType.trim() : (existing.oilType || '100% Pure Edible Oil'),
+    oilType: productData.oilType !== undefined ? productData.oilType.trim() : (existing.oilType || '100% Pure Edible Oil'),
     description: productData.description !== undefined ? productData.description.trim() : existing.description,
     image: productData.image ? productData.image.trim() : existing.image,
     image_file_name: productData.imageFileName ? productData.imageFileName.trim() : (existing.imageFileName || ''),
     imageFileName: productData.imageFileName ? productData.imageFileName.trim() : (existing.imageFileName || ''),
+    inStock: productData.inStock !== undefined ? Boolean(productData.inStock) : (formattedVariants.some((v) => Number(v.stock) > 0)),
     updated_at: now,
     updatedAt: now,
     variants: formattedVariants,
@@ -449,7 +487,10 @@ export async function updateProduct(id, productData) {
   // Update persistent JSON store
   const store = readJsonStore();
   const updatedProducts = store.products.map((p) => (p.id === id ? updatedRecord : p));
-  writeJsonStore({ ...store, products: updatedProducts });
+  const writeSuccess = writeJsonStore({ ...store, products: updatedProducts });
+  if (!writeSuccess) {
+    throw new Error(`Failed to save updated price for product '${id}' to persistent database store.`);
+  }
 
   return formatProduct(updatedRecord, formattedVariants);
 }
