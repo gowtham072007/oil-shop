@@ -19,6 +19,7 @@ import {
   Upload,
   RefreshCw,
   Eye,
+  EyeOff,
   AlertCircle,
   Send,
 } from "lucide-react";
@@ -52,6 +53,7 @@ export const AdminModal = () => {
   } = useShop();
 
   const [enteredPin, setEnteredPin] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [pinError, setPinError] = useState("");
   const [isLoggingIn, setIsLoggingIn] = useState(false);
   const [isSavingProduct, setIsSavingProduct] = useState(false);
@@ -138,7 +140,7 @@ export const AdminModal = () => {
       await loginAdmin(enteredPin);
       setEnteredPin("");
     } catch (err) {
-      setPinError(err.message || "Incorrect PIN. Please enter the correct PIN (Default: 1234)");
+      setPinError(err.message || "Incorrect password. Please enter the correct admin password.");
     } finally {
       setIsLoggingIn(false);
     }
@@ -516,21 +518,58 @@ export const AdminModal = () => {
               Admin Security Access
             </h3>
             <p style={{ fontSize: "0.88rem", color: "#57655d", marginBottom: "1.5rem" }}>
-              Enter the shop owner PIN to manage products, prices, stock, coupons, and orders.
+              Enter the shop owner password to manage products, prices, stock, coupons, and orders.
             </p>
 
             <form onSubmit={handleLogin}>
-              <div className="form-group" style={{ marginBottom: "1rem" }}>
-                <input
-                  type="password"
-                  placeholder="Enter 4-digit PIN (Default: 1234)"
-                  value={enteredPin}
-                  onChange={(e) => setEnteredPin(e.target.value)}
-                  style={{ textAlign: "center", fontSize: "1.2rem", letterSpacing: "0.2em", padding: "0.75rem" }}
-                  autoFocus
-                />
+              <div className="form-group" style={{ marginBottom: "1.25rem" }}>
+                <div style={{ position: "relative", display: "flex", alignItems: "center" }}>
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    placeholder="Enter Password"
+                    value={enteredPin}
+                    onChange={(e) => setEnteredPin(e.target.value)}
+                    style={{
+                      width: "100%",
+                      textAlign: "center",
+                      fontSize: "1.1rem",
+                      letterSpacing: showPassword ? "0.05em" : "0.2em",
+                      padding: "0.85rem 3rem 0.85rem 1.25rem",
+                      borderRadius: "10px",
+                      border: "1.5px solid var(--gold, #d4af37)",
+                      background: "#fffdf9",
+                      color: "#09331d",
+                      boxShadow: "0 2px 8px rgba(9, 51, 29, 0.06)",
+                      outline: "none",
+                    }}
+                    autoFocus
+                    autoComplete="current-password"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    aria-label={showPassword ? "Hide password" : "Show password"}
+                    title={showPassword ? "Hide password" : "Show password"}
+                    style={{
+                      position: "absolute",
+                      right: "12px",
+                      background: "transparent",
+                      border: "none",
+                      color: showPassword ? "#b45309" : "#65766d",
+                      cursor: "pointer",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      padding: "6px",
+                      borderRadius: "6px",
+                      transition: "color 0.2s ease",
+                    }}
+                  >
+                    {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                  </button>
+                </div>
                 {pinError && (
-                  <div className="form-error-msg" style={{ marginTop: "6px" }}>
+                  <div className="form-error-msg" style={{ marginTop: "8px", textAlign: "center" }}>
                     {pinError}
                   </div>
                 )}
@@ -549,10 +588,6 @@ export const AdminModal = () => {
                 {isLoggingIn ? "Authenticating with Central DB..." : "Unlock Admin Dashboard"}
               </button>
             </form>
-
-            <div style={{ marginTop: "1.5rem", fontSize: "0.78rem", color: "#85958c" }}>
-              💡 Hint: Default demo PIN is <strong>1234</strong> (can be changed in settings).
-            </div>
           </div>
         ) : (
           <>

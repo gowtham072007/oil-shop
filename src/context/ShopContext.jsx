@@ -498,9 +498,9 @@ export const ShopProvider = ({ children }) => {
     const entered = String(pin || "").trim();
     const expected = String(shopSettings.adminPin || "1234").trim();
 
-    // 1. Check PIN
+    // 1. Check password
     if (entered !== expected) {
-      throw new Error("Incorrect PIN. Please enter the correct PIN (Default: 1234)");
+      throw new Error("Incorrect password. Please enter the correct admin password.");
     }
 
     // 2. PIN matches! Immediately authenticate the admin locally
