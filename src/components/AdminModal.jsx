@@ -443,9 +443,9 @@ export const AdminModal = () => {
       >
         {/* Header */}
         <div className="admin-modal-header">
-          <h3 style={{ display: "flex", alignItems: "center", gap: "0.5rem", flexWrap: "wrap" }}>
+          <h3 style={{ display: "flex", alignItems: "center", gap: "0.5rem", flexWrap: "wrap", color: "#ffffff", margin: 0 }}>
             <Settings size={20} color="#e5b94c" />
-            <span>Shop Owner Admin Area</span>
+            <span style={{ color: "#ffffff", fontWeight: "700" }}>Shop Owner Admin Area</span>
             <span
               style={{
                 fontSize: "0.72rem",

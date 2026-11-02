@@ -2384,6 +2384,7 @@ input, textarea, select {
   background: #ffffff;
   width: 100%;
   max-width: 960px;
+  height: 90vh;
   max-height: 92vh;
   border-radius: var(--radius-lg);
   border: 2px solid var(--gold);
@@ -2401,13 +2402,38 @@ input, textarea, select {
   align-items: center;
   justify-content: space-between;
   border-bottom: 2px solid var(--gold);
+  flex-shrink: 0;
+}
+
+.admin-modal-header h3 {
+  color: #ffffff !important;
+  margin: 0;
+  font-size: 1.2rem;
+  font-weight: 700;
+}
+
+.admin-modal-header h3 span {
+  color: #ffffff !important;
 }
 
 .admin-nav-tabs {
   display: flex;
   background: var(--bg-surface);
-  border-bottom: 1px solid var(--border-subtle);
+  border-bottom: 2px solid #e8e0d2;
   overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  flex-shrink: 0;
+  min-height: 48px;
+  align-items: stretch;
+}
+
+.admin-nav-tabs::-webkit-scrollbar {
+  height: 4px;
+}
+
+.admin-nav-tabs::-webkit-scrollbar-thumb {
+  background: rgba(212, 175, 55, 0.4);
+  border-radius: 4px;
 }
 
 .admin-nav-btn {
@@ -2420,10 +2446,18 @@ input, textarea, select {
   align-items: center;
   gap: 0.5rem;
   white-space: nowrap;
+  flex-shrink: 0;
+  background: transparent;
+  border-top: none;
+  border-left: none;
+  border-right: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
 }
 
 .admin-nav-btn:hover {
   color: var(--primary);
+  background: rgba(212, 175, 55, 0.08);
 }
 
 .admin-nav-btn.active {
@@ -2436,7 +2470,8 @@ input, textarea, select {
 .admin-modal-content {
   padding: 1.5rem;
   overflow-y: auto;
-  flex: 1;
+  flex: 1 1 auto;
+  min-height: 0;
 }
 
 /* Admin Table */
@@ -3517,31 +3552,43 @@ input, textarea, select {
     height: 100%;
     max-height: 100%;
     border-radius: 0;
+    border: none;
   }
 
-  .admin-modal-nav {
+  .admin-modal-header {
+    padding: 0.85rem 1rem;
+    flex-shrink: 0;
+  }
+
+  .admin-nav-tabs {
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
     scrollbar-width: none;
     flex-wrap: nowrap;
-    padding: 0.45rem;
+    padding: 0.35rem 0.5rem;
     gap: 0.35rem;
+    flex-shrink: 0;
+    min-height: 44px;
+    background: #fdfbf7;
   }
 
-  .admin-modal-nav::-webkit-scrollbar {
+  .admin-nav-tabs::-webkit-scrollbar {
     display: none;
   }
 
   .admin-nav-btn {
     flex-shrink: 0;
     white-space: nowrap;
-    padding: 0.4rem 0.7rem;
-    font-size: 0.78rem;
-    min-height: 40px;
+    padding: 0.45rem 0.75rem;
+    font-size: 0.8rem;
+    min-height: 38px;
   }
 
   .admin-modal-content {
-    padding: 0.85rem 0.65rem;
+    padding: 1rem 0.75rem;
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
   }
 
   .form-grid-2 {
