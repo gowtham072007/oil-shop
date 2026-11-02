@@ -203,7 +203,7 @@ export async function generateBillImage(order, shopSettings = {}, format = 'png'
   ctx.font = '11px "Plus Jakarta Sans", Arial, sans-serif';
   const shopPhone = PERMANENT_ADMIN_WHATSAPP_DISPLAY;
   const phonePart = shopPhone ? ` • Phone: ${shopPhone}` : '';
-  const millInfo = `${shopSettings?.address || 'Gopalasamuthiram, Tamil Nadu'}${phonePart} • FSSAI #${shopSettings?.fssaiNumber || '12421008000421'}`;
+  const millInfo = `28 Union Road, Keelaline, Gopalasamudram, Tirunelveli – 627414${phonePart} • FSSAI #${shopSettings?.fssaiNumber || '22426277000360'}`;
   ctx.fillText(millInfo, titleX, headerY + 72);
 
   // Gold Separator Line with Centered Diamond
@@ -434,7 +434,7 @@ export async function generateBillImage(order, shopSettings = {}, format = 'png'
 
   ctx.fillStyle = '#85958c';
   ctx.font = '11px "Plus Jakarta Sans", Arial, sans-serif';
-  ctx.fillText('Official WhatsApp Order Confirmation • Gopalasamuthiram, Tamil Nadu', width / 2, footerY + 42);
+  ctx.fillText('Official WhatsApp Order Confirmation • Gopalasamudram, Tirunelveli, Tamil Nadu – 627414', width / 2, footerY + 42);
 
   // Export as PNG or JPEG
   return new Promise((resolve) => {

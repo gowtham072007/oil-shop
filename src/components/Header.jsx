@@ -34,7 +34,7 @@ export const Header = () => {
           <div className="top-announcement-item">
             <span className="badge">100% PURE & NATURAL</span>
             <span className="announcement-text">
-              Pure Edible Chekku Ennai • FSSAI #{shopSettings.fssaiNumber || "12421008000421"} • 100% Unrefined & Pure • Instant WhatsApp Ordering
+              Pure Edible Chekku Ennai • FSSAI #{shopSettings.fssaiNumber || "22426277000360"} • 100% Unrefined & Pure • Instant WhatsApp Ordering
             </span>
           </div>
         </div>

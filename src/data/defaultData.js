@@ -6,9 +6,9 @@ export const DEFAULT_SHOP_SETTINGS = {
   whatsappNumber: "916385755368", // Official phone number from brand poster
   phoneDisplay: "+91 63857 55368",
   email: "contact@poomanichekkuennai.com",
-  address: "Gopalasamuthiram (கோபாலசமுத்திரம்), Tamil Nadu",
-  fssaiNumber: "12421008000421",
-  workingHours: "Mon - Sat: 8:00 AM - 9:00 PM | Sun: 8:00 AM - 2:00 PM",
+  address: "MARIAPPAN C/O POOMANI CHEKKU ENNAI, 28 UNION ROAD, KEELALINE, BRANCH POST OFFICE GOPALASAMUDRAM, CHERANMAHADEVI BLOCK, TIRUNELVELI, TAMIL NADU – 627414.",
+  fssaiNumber: "22426277000360",
+  workingHours: "Monday – Saturday: 09:00 AM – 08:00 PM | Sunday: 09:00 AM – 01:00 PM",
   deliveryCharge: 0,
   freeDeliveryThreshold: 0,
   adminPin: "1234",

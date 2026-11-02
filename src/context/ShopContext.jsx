@@ -95,11 +95,24 @@ export const ShopProvider = ({ children }) => {
           ? "பூமணி செக்கு எண்ணெய்"
           : parsed.shopNameTamil;
 
+        const resolvedFssai = (!parsed.fssaiNumber || parsed.fssaiNumber === "12421008000421" || parsed.fssaiNumber.includes("1242100"))
+          ? "22426277000360"
+          : parsed.fssaiNumber;
+        const resolvedAddress = (!parsed.address || parsed.address.includes("Gopalasamuthiram (கோபாலசமுத்திரம்)"))
+          ? DEFAULT_SHOP_SETTINGS.address
+          : parsed.address;
+        const resolvedHours = (!parsed.workingHours || parsed.workingHours.includes("8:00 AM") || parsed.workingHours.includes("Mon - Sat: 8:00"))
+          ? DEFAULT_SHOP_SETTINGS.workingHours
+          : parsed.workingHours;
+
         return {
           ...DEFAULT_SHOP_SETTINGS,
           ...parsed,
           shopName: resolvedShopName,
           shopNameTamil: resolvedShopNameTamil,
+          fssaiNumber: resolvedFssai,
+          address: resolvedAddress,
+          workingHours: resolvedHours,
           whatsappNumber: "916385755368",
           phoneDisplay: "+91 63857 55368",
         };
@@ -238,11 +251,24 @@ export const ShopProvider = ({ children }) => {
           ? "பூமணி செக்கு எண்ணெய்"
           : serverSettings.shopNameTamil;
 
+        const resolvedFssai = (!serverSettings.fssaiNumber || serverSettings.fssaiNumber === "12421008000421" || serverSettings.fssaiNumber.includes("1242100"))
+          ? "22426277000360"
+          : serverSettings.fssaiNumber;
+        const resolvedAddress = (!serverSettings.address || serverSettings.address.includes("Gopalasamuthiram (கோபாலசமுத்திரம்)"))
+          ? DEFAULT_SHOP_SETTINGS.address
+          : serverSettings.address;
+        const resolvedHours = (!serverSettings.workingHours || serverSettings.workingHours.includes("8:00 AM") || serverSettings.workingHours.includes("Mon - Sat: 8:00"))
+          ? DEFAULT_SHOP_SETTINGS.workingHours
+          : serverSettings.workingHours;
+
         setShopSettings((prev) => ({
           ...prev,
           ...serverSettings,
           shopName: resolvedShopName,
           shopNameTamil: resolvedShopNameTamil,
+          fssaiNumber: resolvedFssai,
+          address: resolvedAddress,
+          workingHours: resolvedHours,
         }));
       }
     } catch (err) {

@@ -213,12 +213,25 @@ export const PERMANENT_ADMIN_WHATSAPP_DISPLAY = '+91 63857 55368';
 export async function ensurePermanentAdminWhatsApp() {
   try {
     const current = await getShopSettings();
-    if (current.whatsappNumber !== PERMANENT_ADMIN_WHATSAPP || current.phoneDisplay !== PERMANENT_ADMIN_WHATSAPP_DISPLAY) {
+    const needsUpdate =
+      current.whatsappNumber !== PERMANENT_ADMIN_WHATSAPP ||
+      current.phoneDisplay !== PERMANENT_ADMIN_WHATSAPP_DISPLAY ||
+      current.fssaiNumber !== '22426277000360' ||
+      !current.address ||
+      current.address.includes('Gopalasamuthiram (கோபாலசமுத்திரம்)') ||
+      !current.workingHours ||
+      current.workingHours.includes('8:00 AM');
+
+    if (needsUpdate) {
       await saveShopSettings({
+        ...current,
         whatsappNumber: PERMANENT_ADMIN_WHATSAPP,
         phoneDisplay: PERMANENT_ADMIN_WHATSAPP_DISPLAY,
+        fssaiNumber: '22426277000360',
+        address: 'MARIAPPAN C/O POOMANI CHEKKU ENNAI, 28 UNION ROAD, KEELALINE, BRANCH POST OFFICE GOPALASAMUDRAM, CHERANMAHADEVI BLOCK, TIRUNELVELI, TAMIL NADU – 627414.',
+        workingHours: 'Monday – Saturday: 09:00 AM – 08:00 PM | Sunday: 09:00 AM – 01:00 PM',
       });
-      console.log(`[Database] Stored permanent Admin WhatsApp recipient number: ${PERMANENT_ADMIN_WHATSAPP_DISPLAY}`);
+      console.log(`[Database] Stored permanent Admin WhatsApp recipient number: ${PERMANENT_ADMIN_WHATSAPP_DISPLAY} and updated shop information.`);
     }
   } catch (err) {
     console.warn('[Database] Could not verify permanent admin phone:', err.message);

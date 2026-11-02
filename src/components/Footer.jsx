@@ -30,7 +30,7 @@ export const Footer = () => {
             </h4>
             <div style={{ display: "flex", alignItems: "center", gap: "0.4rem", color: "#e5b94c", fontSize: "0.82rem", fontWeight: "600", marginTop: "0.75rem" }}>
               <ShieldCheck size={16} />
-              <span>FSSAI License No: {shopSettings.fssaiNumber || "12421008000421"}</span>
+              <span>FSSAI License No: {shopSettings.fssaiNumber || "22426277000360"}</span>
             </div>
 
             {/* Official Instagram Profile */}
@@ -88,21 +88,28 @@ export const Footer = () => {
             <h4>Mill & Shop Address</h4>
             <div style={{ display: "flex", gap: "0.5rem", marginBottom: "0.75rem" }}>
               <MapPin size={18} color="#e5b94c" style={{ flexShrink: 0, marginTop: "2px" }} />
-              <span style={{ fontSize: "0.85rem", color: "#c8d8ce" }}>
-                {shopSettings.address}
-              </span>
+              <div style={{ fontSize: "0.85rem", color: "#c8d8ce", lineHeight: "1.5" }}>
+                <strong style={{ color: "#ffffff", display: "block", marginBottom: "0.15rem" }}>
+                  MARIAPPAN C/O POOMANI CHEKKU ENNAI
+                </strong>
+                <div>28 UNION ROAD, KEELALINE,</div>
+                <div>BRANCH POST OFFICE GOPALASAMUDRAM,</div>
+                <div>CHERANMAHADEVI BLOCK,</div>
+                <div>TIRUNELVELI, TAMIL NADU – 627414.</div>
+              </div>
             </div>
             <div style={{ display: "flex", gap: "0.5rem", marginBottom: "0.5rem" }}>
               <Phone size={16} color="#e5b94c" style={{ flexShrink: 0 }} />
               <span style={{ fontSize: "0.85rem", color: "#c8d8ce" }}>
-                {shopSettings.phoneDisplay || "+91 98765 43210"}
+                {shopSettings.phoneDisplay || "+91 63857 55368"}
               </span>
             </div>
             <div style={{ display: "flex", gap: "0.5rem" }}>
-              <Clock size={16} color="#e5b94c" style={{ flexShrink: 0 }} />
-              <span style={{ fontSize: "0.82rem", color: "#c8d8ce" }}>
-                {shopSettings.workingHours}
-              </span>
+              <Clock size={16} color="#e5b94c" style={{ flexShrink: 0, marginTop: "2px" }} />
+              <div style={{ fontSize: "0.82rem", color: "#c8d8ce", lineHeight: "1.45" }}>
+                <div><strong>Monday – Saturday:</strong> 09:00 AM – 08:00 PM</div>
+                <div><strong>Sunday:</strong> 09:00 AM – 01:00 PM</div>
+              </div>
             </div>
           </div>
 
