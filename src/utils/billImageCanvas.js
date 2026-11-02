@@ -1,4 +1,4 @@
-import { formatINR, cleanWhatsAppNumber } from './billGenerator.js';
+import { formatINR, cleanWhatsAppNumber, formatISTDateTime } from './billGenerator.js';
 import { sendWhatsAppBillApi, uploadBillImageApi } from './api.js';
 
 /**
@@ -248,7 +248,7 @@ export async function generateBillImage(order, shopSettings = {}, format = 'png'
   ctx.fillText('Date & Time:', col1X, metaY + 52);
   ctx.fillStyle = '#1f2923';
   ctx.font = '600 12px "Plus Jakarta Sans", Arial, sans-serif';
-  ctx.fillText(order.date || new Date().toLocaleString('en-IN'), col1X + 115, metaY + 52);
+  ctx.fillText(formatISTDateTime(order.date), col1X + 115, metaY + 52);
 
   // Payment Method
   ctx.fillStyle = '#57655d';
@@ -504,7 +504,7 @@ export async function dispatchOrderPhotoBillToWhatsApp({
   billLines.push("*Customer Order Bill / வாடிக்கையாளர் ஆர்டர் ரசீது*");
   billLines.push("━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
   billLines.push(`*Bill No / Order ID:* ${order.orderNumber}`);
-  billLines.push(`*Date & Time:* ${order.date || new Date().toLocaleString("en-IN")}`);
+  billLines.push(`*Date & Time:* ${formatISTDateTime(order.date)}`);
   billLines.push(`*Customer Name:* ${order.customerName}`);
   billLines.push(`*Phone Number:* ${order.customerPhone}`);
   const customerAddress = order.customerAddress || order.address || order.deliveryAddress;

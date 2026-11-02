@@ -14,6 +14,7 @@ import {
   buildWhatsAppUrl,
   cleanWhatsAppNumber,
   PERMANENT_ADMIN_WHATSAPP,
+  formatISTDateTime,
 } from "../utils/billGenerator";
 import {
   API_BASE,
@@ -834,16 +835,7 @@ export const ShopProvider = ({ children }) => {
       return;
     }
 
-    const now = new Date();
-    const formattedDate = `${now.toLocaleDateString("en-IN", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-    })}, ${now.toLocaleTimeString("en-IN", {
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: true,
-    })}`;
+    const formattedDate = formatISTDateTime(new Date());
 
     const orderNumber = generateOrderNumber();
 

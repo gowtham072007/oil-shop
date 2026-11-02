@@ -1,3 +1,5 @@
+process.env.TZ = 'Asia/Kolkata';
+
 import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
@@ -349,6 +351,8 @@ app.post('/api/orders', async (req, res) => {
   try {
     const {
       orderNumber,
+      date,
+      createdAt,
       customerName,
       customerPhone,
       customerAddress,
@@ -364,6 +368,8 @@ app.post('/api/orders', async (req, res) => {
 
     const saved = await saveOrder({
       orderNumber: orderNumber || `OS-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`,
+      date: date || req.body.date,
+      createdAt: createdAt || req.body.createdAt,
       customerName: customerName || 'Valued Customer',
       customerPhone: customerPhone || '',
       customerAddress: customerAddress || '',

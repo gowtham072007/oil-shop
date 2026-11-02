@@ -7,6 +7,7 @@ import {
   getStandardOilNames,
   PERMANENT_ADMIN_WHATSAPP,
   PERMANENT_ADMIN_WHATSAPP_DISPLAY,
+  formatISTDateTime,
 } from "../utils/billGenerator";
 import {
   X,
@@ -306,7 +307,7 @@ export const BillPreviewModal = () => {
                     </code>
                   </span>
                   <span>
-                    <strong>Date & Time:</strong> {previewOrder.date}
+                    <strong>Date & Time:</strong> {formatISTDateTime(previewOrder.date || previewOrder.createdAt)}
                   </span>
                 </div>
               </div>

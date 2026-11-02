@@ -10,6 +10,30 @@ export const formatINR = (amount) => {
   }).format(num);
 };
 
+/**
+ * Format any date or timestamp strictly into Indian Standard Time (IST, UTC+05:30)
+ * Example output: "02 Nov 2026, 01:45 pm"
+ */
+export const formatISTDateTime = (inputDate = new Date()) => {
+  if (!inputDate) return "";
+  const dateObj =
+    typeof inputDate === "string" || typeof inputDate === "number"
+      ? new Date(inputDate)
+      : inputDate;
+  if (isNaN(dateObj.getTime())) {
+    return String(inputDate);
+  }
+  return dateObj.toLocaleString("en-IN", {
+    timeZone: "Asia/Kolkata",
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: true,
+  });
+};
+
 // Generate unique order reference (e.g., OS-2026-8392)
 export const generateOrderNumber = () => {
   const year = new Date().getFullYear();
@@ -238,16 +262,7 @@ export const generateWhatsAppOrderBillText = (order, shopSettings = {}) => {
 
   // 2. Order Metadata
   lines.push(`*Order No:* ${order.orderNumber}`);
-  const orderDate =
-    order.date ||
-    new Date().toLocaleString("en-IN", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: true,
-    });
+  const orderDate = formatISTDateTime(order.date || new Date());
   lines.push(`*Date & Time:* ${orderDate}`);
   lines.push("");
 

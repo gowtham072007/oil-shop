@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useShop } from "../context/ShopContext";
-import { formatINR, parseCountryAndLocalPhone, cleanWhatsAppNumber } from "../utils/billGenerator";
+import { formatINR, parseCountryAndLocalPhone, cleanWhatsAppNumber, formatISTDateTime } from "../utils/billGenerator";
 import { testWhatsAppCloudApi, sendWhatsAppTestPingApi, fetchAdminWhatsAppConfig } from "../utils/api";
 import {
   X,
@@ -1862,7 +1862,7 @@ export const AdminModal = () => {
                                 <strong>{ord.orderNumber}</strong>
                               </td>
                               <td>
-                                <small>{ord.date}</small>
+                                <small>{formatISTDateTime(ord.date || ord.createdAt || ord.created_at)}</small>
                               </td>
                               <td>
                                 <div><strong>{ord.customerName}</strong></div>

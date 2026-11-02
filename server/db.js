@@ -1,7 +1,33 @@
+process.env.TZ = 'Asia/Kolkata';
+
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import pg from 'pg';
+
+/**
+ * Format any date or timestamp strictly into Indian Standard Time (IST, UTC+05:30)
+ * Example output: "02 Nov 2026, 01:45 PM"
+ */
+export function formatISTDateTime(inputDate = new Date()) {
+  if (!inputDate) return '';
+  const dateObj =
+    typeof inputDate === 'string' || typeof inputDate === 'number'
+      ? new Date(inputDate)
+      : inputDate;
+  if (isNaN(dateObj.getTime())) {
+    return String(inputDate);
+  }
+  return dateObj.toLocaleString('en-IN', {
+    timeZone: 'Asia/Kolkata',
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: true,
+  });
+}
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -642,10 +668,12 @@ export async function saveOrder(orderData) {
   const id = orderData.id || `ord-${Date.now()}`;
   const orderNumber = orderData.orderNumber || `OS-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
   const now = new Date().toISOString();
+  const istDate = orderData.date || formatISTDateTime(orderData.createdAt || new Date());
 
   const formattedOrder = {
     id,
     orderNumber,
+    date: istDate,
     customerName: String(orderData.customerName || 'Customer').trim(),
     customerPhone: String(orderData.customerPhone || '').trim(),
     customerAddress: String(orderData.customerAddress || orderData.address || '').trim(),
@@ -659,7 +687,7 @@ export async function saveOrder(orderData) {
     whatsappStatus: orderData.whatsappStatus || 'pending',
     whatsappMessageId: orderData.whatsappMessageId || '',
     whatsappError: orderData.whatsappError || '',
-    createdAt: orderData.createdAt || orderData.date || now,
+    createdAt: orderData.createdAt || istDate,
     updatedAt: now,
   };
 
@@ -738,6 +766,7 @@ export async function getAllOrders() {
       return res.rows.map((r) => ({
         id: r.id,
         orderNumber: r.order_number,
+        date: formatISTDateTime(r.created_at),
         customerName: r.customer_name,
         customerPhone: r.customer_phone,
         customerAddress: r.customer_address,
@@ -760,7 +789,10 @@ export async function getAllOrders() {
   }
 
   const store = readJsonStore();
-  return store.orders || [];
+  return (store.orders || []).map((o) => ({
+    ...o,
+    date: o.date || formatISTDateTime(o.createdAt || o.created_at),
+  }));
 }
 
 /**
@@ -775,6 +807,7 @@ export async function getOrderById(orderNumber) {
         return {
           id: r.id,
           orderNumber: r.order_number,
+          date: formatISTDateTime(r.created_at),
           customerName: r.customer_name,
           customerPhone: r.customer_phone,
           customerAddress: r.customer_address,
@@ -793,12 +826,17 @@ export async function getOrderById(orderNumber) {
         };
       }
     } catch (err) {
-      console.warn('[Database] PostgreSQL fetch order by ID failed:', err.message);
+      console.warn('[Database] PostgreSQL getOrderById failed:', err.message);
     }
   }
 
   const store = readJsonStore();
-  return (store.orders || []).find((o) => o.orderNumber === orderNumber) || null;
+  const found = (store.orders || []).find((o) => o.orderNumber === orderNumber);
+  if (!found) return null;
+  return {
+    ...found,
+    date: found.date || formatISTDateTime(found.createdAt || found.created_at),
+  };
 }
 
 /**
