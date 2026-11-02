@@ -1,5 +1,5 @@
-import { formatINR, cleanWhatsAppNumber, formatISTDateTime } from './billGenerator.js';
-import { sendWhatsAppBillApi, uploadBillImageApi } from './api.js';
+import { formatINR, formatISTDateTime } from './billGenerator.js';
+import { sendWhatsAppBillApi } from './api.js';
 
 /**
  * Helper to wrap text into multiple lines within a maximum pixel width
@@ -72,7 +72,7 @@ export async function generateBillImage(order, shopSettings = {}, format = 'png'
   const ext = isJpeg ? 'jpg' : 'png';
 
   // Calculate dynamic address lines & height
-  const fullAddress = order.customerAddress || order.address || order.deliveryAddress || 'Direct Order';
+  const fullAddress = order.deliveryAddress || order.fullAddress || order.customerAddress || order.address || 'Direct Order';
   const items = order.items || [];
   const itemsCount = Math.max(1, items.length);
   const rowHeight = 52;
@@ -84,6 +84,7 @@ export async function generateBillImage(order, shopSettings = {}, format = 'png'
     const mctx = measureCanvas.getContext('2d');
     mctx.font = '12px "Plus Jakarta Sans", Arial, sans-serif';
     addrLines = wrapTextLines(mctx, fullAddress, 290);
+    if (!addrLines.length) addrLines = ['Direct Order'];
   }
   const extraAddrHeight = Math.max(0, (addrLines.length - 1) * 16);
   const metaHeight = 114 + extraAddrHeight;
@@ -362,12 +363,14 @@ export async function generateBillImage(order, shopSettings = {}, format = 'png'
     ctx.textAlign = 'right';
     ctx.fillStyle = '#57655d';
     ctx.font = '13px "Plus Jakarta Sans", Arial, sans-serif';
-    ctx.fillText(`₹${formatINR(item.rate)}`, cols[4].x + cols[4].w - 12, currentY + 31);
+    const unitPrice = Number(item.rate ?? item.price ?? 0);
+    ctx.fillText(`₹${formatINR(unitPrice)}`, cols[4].x + cols[4].w - 12, currentY + 31);
 
     // Item Total
     ctx.fillStyle = '#09331d';
     ctx.font = 'bold 14px "Plus Jakarta Sans", Arial, sans-serif';
-    ctx.fillText(`₹${formatINR(item.amount)}`, cols[5].x + cols[5].w - 12, currentY + 31);
+    const itemTotal = Number(item.amount != null ? item.amount : unitPrice * (item.quantity || 1));
+    ctx.fillText(`₹${formatINR(itemTotal)}`, cols[5].x + cols[5].w - 12, currentY + 31);
 
     currentY += rowHeight;
   });
@@ -427,7 +430,7 @@ export async function generateBillImage(order, shopSettings = {}, format = 'png'
   ctx.textAlign = 'center';
   ctx.fillStyle = '#09331d';
   ctx.font = 'bold 12px "Plus Jakarta Sans", Arial, sans-serif';
-  ctx.fillText('Thank you for choosing Poomani Chekku Ennai! 100% Pure & Unrefined Edible Cooking Oils.', width / 2, footerY + 24);
+  ctx.fillText('Thank you for choosing Poomani Chekku Ennai! 100% Pure, Natural & Traditional Cold-Pressed Oils.', width / 2, footerY + 24);
 
   ctx.fillStyle = '#85958c';
   ctx.font = '11px "Plus Jakarta Sans", Arial, sans-serif';
@@ -447,28 +450,71 @@ export async function generateBillImage(order, shopSettings = {}, format = 'png'
   });
 }
 
+// Set to track downloaded orders and prevent duplicate downloads
+const downloadedOrderNumbers = new Set();
+
 /**
- * Generates and triggers automatic browser download of the bill image file
+ * Generates and triggers automatic browser download of the bill image file (PNG)
+ * Guarantees no duplicate downloads for the same order within the user session.
+ *
+ * @param {Object} order - Complete order record
+ * @param {Object} shopSettings - Shop settings configuration
+ * @param {string} format - Image format ('png' or 'jpeg')
+ * @param {boolean} force - Force download even if previously downloaded
+ * @returns {Promise<Object>}
  */
-export async function downloadBillImageFile(order, shopSettings = {}, format = 'png') {
+export async function downloadBillImageFile(order, shopSettings = {}, format = 'png', force = false) {
+  if (!order) return null;
+
+  const orderNum = String(order.orderNumber || '').trim();
+  if (!force && orderNum && downloadedOrderNumbers.has(orderNum)) {
+    console.log(`[Bill] Order #${orderNum} PNG bill has already been downloaded. Skipping duplicate.`);
+    return { skipped: true, orderNumber: orderNum };
+  }
+
   const result = await generateBillImage(order, shopSettings, format);
-  const cleanOrder = String(order.orderNumber || 'order').replace(/[^a-zA-Z0-9_-]/g, '_');
+  const cleanOrder = String(orderNum || 'order').replace(/[^a-zA-Z0-9_-]/g, '_');
   const fileName = `Poomani_Chekku_Ennai_Bill_${cleanOrder}.${result.ext}`;
+
+  // Use Blob URL if supported for reliable mobile & desktop file downloads
+  let downloadUrl = result.dataUrl;
+  let isBlobUrl = false;
+  if (result.blob && typeof URL !== 'undefined' && URL.createObjectURL) {
+    try {
+      downloadUrl = URL.createObjectURL(result.blob);
+      isBlobUrl = true;
+    } catch {
+      downloadUrl = result.dataUrl;
+    }
+  }
 
   const link = document.createElement('a');
   link.download = fileName;
-  link.href = result.dataUrl;
+  link.href = downloadUrl;
+  link.rel = 'noopener';
+  link.style.display = 'none';
   document.body.appendChild(link);
   link.click();
+
+  if (orderNum) {
+    downloadedOrderNumbers.add(orderNum);
+  }
+
   setTimeout(() => {
     if (document.body.contains(link)) {
       document.body.removeChild(link);
     }
-  }, 200);
+    if (isBlobUrl && typeof URL !== 'undefined' && URL.revokeObjectURL) {
+      try {
+        URL.revokeObjectURL(downloadUrl);
+      } catch { /* ignore */ }
+    }
+  }, 2000);
 
   return {
     ...result,
     fileName,
+    downloaded: true,
   };
 }
 

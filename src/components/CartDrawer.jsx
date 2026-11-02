@@ -7,6 +7,7 @@ import {
   PERMANENT_ADMIN_WHATSAPP,
   PERMANENT_ADMIN_WHATSAPP_DISPLAY,
 } from "../utils/billGenerator";
+import { downloadBillImageFile } from "../utils/billImageCanvas";
 import {
   X,
   Trash2,
@@ -59,7 +60,7 @@ export const CartDrawer = () => {
   if (!isCartOpen) return null;
 
   // Validate form and directly initiate WhatsApp Tax Invoice checkout sequence
-  const validateAndProceed = (e) => {
+  const validateAndProceed = async (e) => {
     e.preventDefault();
     const errors = {};
 
@@ -91,19 +92,58 @@ export const CartDrawer = () => {
     setFormErrors(errors);
     if (Object.keys(errors).length > 0) return;
 
-    // Create order record and open WhatsApp click-to-chat directly with professional text bill
+    if (isSubmitting) return;
     setIsSubmitting(true);
-    const order = initiateWhatsAppCheckout(customerDetails);
-    if (order) {
-      showNotification(
-        "WhatsApp opened with order bill! Please tap Send in WhatsApp to forward to +91 63857 55368.",
-        "info"
-      );
-      openWhatsAppOrder(order.whatsappRecipient || PERMANENT_ADMIN_WHATSAPP, order.billText);
-      setIsCartOpen(false);
-      clearCart();
+
+    try {
+      const order = initiateWhatsAppCheckout(customerDetails);
+      if (order) {
+        // 1 & 2. Automatically generate and download the order bill as a PNG image
+        try {
+          await downloadBillImageFile(order, shopSettings, "png");
+          showNotification(
+            "Official Order Bill downloaded! Opening WhatsApp...",
+            "success"
+          );
+        } catch (billErr) {
+          console.warn("[CartDrawer] Automatic bill photo download warning:", billErr);
+          showNotification(
+            "WhatsApp opened with order bill! Please tap Send in WhatsApp to forward to +91 63857 55368.",
+            "info"
+          );
+        }
+
+        // 3. Open WhatsApp using existing order text and phone number (+91 63857 55368), exactly as it works currently
+        const isMobile =
+          typeof navigator !== "undefined" &&
+          /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+            navigator.userAgent
+          );
+
+        if (isMobile) {
+          setTimeout(() => {
+            openWhatsAppOrder(
+              order.whatsappRecipient || PERMANENT_ADMIN_WHATSAPP,
+              order.billText
+            );
+          }, 350);
+        } else {
+          openWhatsAppOrder(
+            order.whatsappRecipient || PERMANENT_ADMIN_WHATSAPP,
+            order.billText
+          );
+        }
+
+        // 4. Keep existing order submission flow unchanged
+        setIsCartOpen(false);
+        clearCart();
+      }
+    } catch (err) {
+      console.error("[CartDrawer] Order submission error:", err);
+      showNotification("Could not complete checkout. Please try again.", "error");
+    } finally {
+      setIsSubmitting(false);
     }
-    setIsSubmitting(false);
   };
 
   return (
@@ -406,12 +446,21 @@ export const CartDrawer = () => {
               onClick={validateAndProceed}
               disabled={isSubmitting}
             >
-              <Send size={18} />
-              <span>Send Order on WhatsApp</span>
+              {isSubmitting ? (
+                <>
+                  <Loader2 size={18} className="animate-spin" />
+                  <span>Preparing Order & Bill...</span>
+                </>
+              ) : (
+                <>
+                  <Send size={18} />
+                  <span>Send Order on WhatsApp</span>
+                </>
+              )}
             </button>
 
             <div className="cart-footer-notice">
-              🌿 Formats your official Customer Order Bill and opens WhatsApp addressed to the store owner (+91 63857 55368).
+              🌿 Generates your official photo bill download and opens WhatsApp addressed to the store owner (+91 63857 55368).
             </div>
           </div>
         )}

@@ -9,6 +9,7 @@ import {
   PERMANENT_ADMIN_WHATSAPP_DISPLAY,
   formatISTDateTime,
 } from "../utils/billGenerator";
+import { downloadBillImageFile } from "../utils/billImageCanvas";
 import {
   X,
   Copy,
@@ -18,6 +19,7 @@ import {
   Receipt,
   CheckCircle,
   ExternalLink,
+  Loader2,
 } from "lucide-react";
 
 export const BillPreviewModal = () => {
@@ -33,6 +35,7 @@ export const BillPreviewModal = () => {
   const [copied, setCopied] = useState(false);
   const [activeTab, setActiveTab] = useState("bill"); // 'bill' | 'text'
   const [isSent, setIsSent] = useState(false);
+  const [isSending, setIsSending] = useState(false);
 
   if (!previewOrder) return null;
 
@@ -51,23 +54,53 @@ export const BillPreviewModal = () => {
 
   /**
    * Primary action: Send Order on WhatsApp
-   * 1. Records confirmation
-   * 2. Clears shopping cart
-   * 3. Launches WhatsApp directed to fixed store owner number (+91 6385755368)
-   * 4. Pre-fills the structured Customer Order Bill message for the customer to review and press Send
+   * 1. Automatically downloads PNG photo bill to device (skips if already downloaded)
+   * 2. Records confirmation
+   * 3. Clears shopping cart
+   * 4. Launches WhatsApp directed to fixed store owner number (+91 6385755368)
+   * 5. Pre-fills the structured Customer Order Bill message for the customer to review and press Send
    */
-  const handleSendToWhatsApp = () => {
-    confirmOrderRedirect(previewOrder.orderNumber);
-    clearCart();
-    setIsSent(true);
+  const handleSendToWhatsApp = async () => {
+    if (isSending) return;
+    setIsSending(true);
 
-    showNotification(
-      `Opening WhatsApp with order bill addressed to +91 63857 55368...`,
-      "info"
-    );
+    try {
+      // 1 & 2. Automatically generate and download the order bill as a PNG image
+      try {
+        await downloadBillImageFile(previewOrder, shopSettings, "png");
+        showNotification(
+          "Official Order Bill downloaded! Opening WhatsApp...",
+          "success"
+        );
+      } catch (billErr) {
+        console.warn("[BillPreviewModal] Photo bill download warning:", billErr);
+        showNotification(
+          `Opening WhatsApp with order bill addressed to +91 63857 55368...`,
+          "info"
+        );
+      }
 
-    // Open WhatsApp with prefilled Customer Order Bill
-    openWhatsAppOrder(PERMANENT_ADMIN_WHATSAPP, billText);
+      confirmOrderRedirect(previewOrder.orderNumber);
+      clearCart();
+      setIsSent(true);
+
+      // 3. Open WhatsApp using existing order text and phone number, exactly as before
+      const isMobile =
+        typeof navigator !== "undefined" &&
+        /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+          navigator.userAgent
+        );
+
+      if (isMobile) {
+        setTimeout(() => {
+          openWhatsAppOrder(PERMANENT_ADMIN_WHATSAPP, billText);
+        }, 350);
+      } else {
+        openWhatsAppOrder(PERMANENT_ADMIN_WHATSAPP, billText);
+      }
+    } finally {
+      setIsSending(false);
+    }
   };
 
   const items = previewOrder.items || [];
@@ -549,10 +582,20 @@ export const BillPreviewModal = () => {
             type="button"
             className="btn-proceed-wa"
             onClick={handleSendToWhatsApp}
+            disabled={isSending}
             title="Open WhatsApp directed to store owner (+91 63857 55368) with prefilled order bill"
           >
-            <Send size={18} />
-            <span>Send Order on WhatsApp</span>
+            {isSending ? (
+              <>
+                <Loader2 size={18} className="animate-spin" />
+                <span>Preparing Order & Bill...</span>
+              </>
+            ) : (
+              <>
+                <Send size={18} />
+                <span>Send Order on WhatsApp</span>
+              </>
+            )}
           </button>
         </div>
 

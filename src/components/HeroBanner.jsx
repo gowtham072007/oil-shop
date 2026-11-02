@@ -57,13 +57,8 @@ export const HeroBanner = () => {
   const touchStartXRef = useRef(null);
 
   // Shop context for direct category selection on click
-  let setSelectedCategory = null;
-  try {
-    const shopCtx = useShop();
-    setSelectedCategory = shopCtx?.setSelectedCategory;
-  } catch {
-    // fallback
-  }
+  const shopCtx = useShop();
+  const setSelectedCategory = shopCtx?.setSelectedCategory;
 
   // Set up 2-second automatic sliding timer
   const startAutoPlay = useCallback(() => {
