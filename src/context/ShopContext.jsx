@@ -27,6 +27,8 @@ import {
   fetchShopSettings,
   saveShopSettingsApi,
   createOrderApi,
+  fetchOrdersApi,
+  deleteOrderApi,
   adminLogin as apiAdminLogin,
   verifyAdminToken,
   syncMigrationApi,
@@ -278,6 +280,26 @@ export const ShopProvider = ({ children }) => {
     }
   }, []);
 
+  const loadCentralOrders = useCallback(async () => {
+    try {
+      const token = adminToken || localStorage.getItem("oil_shop_admin_token");
+      const pin = shopSettings.adminPin || "1234";
+      const serverOrders = await fetchOrdersApi(token, pin);
+      if (Array.isArray(serverOrders)) {
+        setOrders(serverOrders);
+        localStorage.setItem("oil_shop_orders", JSON.stringify(serverOrders));
+      }
+    } catch (err) {
+      console.warn("[Poomani Sync] Unable to load central orders:", err.message);
+    }
+  }, [adminToken, shopSettings.adminPin]);
+
+  useEffect(() => {
+    if (isAdminAuthenticated) {
+      loadCentralOrders();
+    }
+  }, [isAdminAuthenticated, loadCentralOrders]);
+
   // Initial load
   useEffect(() => {
     loadCentralProducts();
@@ -448,6 +470,35 @@ export const ShopProvider = ({ children }) => {
           }
         });
 
+        es.addEventListener("order:created", (e) => {
+          try {
+            const newOrder = JSON.parse(e.data);
+            setOrders((prev) => {
+              const exists = prev.some((o) => o.orderNumber === newOrder.orderNumber);
+              const updated = exists
+                ? prev.map((o) => (o.orderNumber === newOrder.orderNumber ? { ...o, ...newOrder } : o))
+                : [newOrder, ...prev];
+              localStorage.setItem("oil_shop_orders", JSON.stringify(updated));
+              return updated;
+            });
+          } catch (err) {
+            console.error("[SSE] Failed to parse order:created event:", err);
+          }
+        });
+
+        es.addEventListener("order:deleted", (e) => {
+          try {
+            const { orderNumber } = JSON.parse(e.data);
+            setOrders((prev) => {
+              const updated = prev.filter((o) => o.orderNumber !== orderNumber);
+              localStorage.setItem("oil_shop_orders", JSON.stringify(updated));
+              return updated;
+            });
+          } catch (err) {
+            console.error("[SSE] Failed to parse order:deleted event:", err);
+          }
+        });
+
         es.onerror = () => {
           setSyncStatus("offline");
           es.close();
@@ -555,6 +606,7 @@ export const ShopProvider = ({ children }) => {
       if (res && res.success && res.token) {
         setAdminToken(res.token);
         localStorage.setItem("oil_shop_admin_token", res.token);
+        loadCentralOrders();
 
         // Check if central database is empty and local products exist to migrate
         try {
@@ -698,6 +750,34 @@ export const ShopProvider = ({ children }) => {
     }
 
     showNotification("Product removed successfully from database!");
+    return true;
+  };
+
+  const deleteOrder = async (orderNumber) => {
+    if (!isAdminAuthenticated) {
+      throw new Error("Unauthorized: Only an authenticated administrator can delete orders.");
+    }
+    const pin = shopSettings.adminPin || "1234";
+
+    // 1. Permanently delete from central database
+    try {
+      await deleteOrderApi(orderNumber, adminToken, pin);
+    } catch (err) {
+      console.warn("[ShopContext] Server deleteOrder failed, applying local update:", err.message);
+    }
+
+    // 2. Remove from local orders list and update persistent cache
+    setOrders((prev) => {
+      const updated = prev.filter((o) => o.orderNumber !== orderNumber && o.id !== orderNumber);
+      try {
+        localStorage.setItem("oil_shop_orders", JSON.stringify(updated));
+      } catch {
+        // ignore
+      }
+      return updated;
+    });
+
+    showNotification(`Order #${orderNumber} deleted permanently!`, "success");
     return true;
   };
 
@@ -1018,6 +1098,8 @@ export const ShopProvider = ({ children }) => {
         addProduct,
         updateProduct,
         deleteProduct,
+        deleteOrder,
+        loadCentralOrders,
         uploadPhoto,
         updateShopSettings,
       }}

@@ -1,7 +1,8 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useShop } from "../context/ShopContext";
-import { formatINR, parseCountryAndLocalPhone, cleanWhatsAppNumber, formatISTDateTime } from "../utils/billGenerator";
+import { formatINR, parseCountryAndLocalPhone, formatISTDateTime } from "../utils/billGenerator";
 import { testWhatsAppCloudApi, sendWhatsAppTestPingApi, fetchAdminWhatsAppConfig } from "../utils/api";
+import { generateBillImage, downloadBillImageFile } from "../utils/billImageCanvas";
 import {
   X,
   Lock,
@@ -22,6 +23,8 @@ import {
   EyeOff,
   AlertCircle,
   Send,
+  Printer,
+  Loader2,
 } from "lucide-react";
 
 export const AdminModal = () => {
@@ -41,9 +44,10 @@ export const AdminModal = () => {
     syncStatus,
     refetchProducts,
     categories,
-    addCategory,
     deleteCategory,
     orders,
+    deleteOrder,
+    loadCentralOrders,
     updateOrderStatus,
     resetToDefaultData,
     exportStoreData,
@@ -106,12 +110,15 @@ export const AdminModal = () => {
     }
   }, [shopSettings, isAdminOpen]);
 
-  // Proactively fetch latest product prices from central database whenever admin dashboard opens or tab switches
+  // Proactively fetch latest product prices and orders from central database whenever admin dashboard opens or tab switches
   useEffect(() => {
     if (isAdminOpen && isAdminAuthenticated) {
       refetchProducts(true);
+      if (activeTab === "orders") {
+        loadCentralOrders();
+      }
     }
-  }, [isAdminOpen, isAdminAuthenticated, activeTab, refetchProducts]);
+  }, [isAdminOpen, isAdminAuthenticated, activeTab, refetchProducts, loadCentralOrders]);
 
   // Fetch full WhatsApp configuration when admin is authenticated and in settings tab
   useEffect(() => {
@@ -126,8 +133,87 @@ export const AdminModal = () => {
     }
   }, [isAdminAuthenticated, adminToken, activeTab]);
 
-  // View Bill Modal within Admin
+  // View Bill Modal & Bill Photo within Admin
   const [adminViewingBill, setAdminViewingBill] = useState(null);
+  const [billImageDataUrl, setBillImageDataUrl] = useState(null);
+  const [billImageLoading, setBillImageLoading] = useState(false);
+
+  // Delete Order Confirmation state
+  const [orderToDelete, setOrderToDelete] = useState(null);
+  const [isDeletingOrder, setIsDeletingOrder] = useState(false);
+
+  // Generate Photo Bill whenever adminViewingBill changes
+  useEffect(() => {
+    if (!adminViewingBill) {
+      setBillImageDataUrl(null);
+      setBillImageLoading(false);
+      return;
+    }
+
+    let isMounted = true;
+    setBillImageLoading(true);
+    setBillImageDataUrl(null);
+
+    generateBillImage(adminViewingBill, shopSettings, "png")
+      .then((res) => {
+        if (isMounted && res) {
+          setBillImageDataUrl(res.dataUrl);
+        }
+      })
+      .catch((err) => {
+        console.warn("[AdminModal] Failed to generate bill photo:", err);
+      })
+      .finally(() => {
+        if (isMounted) {
+          setBillImageLoading(false);
+        }
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [adminViewingBill, shopSettings]);
+
+  // Handler for printing the generated bill photo
+  const handlePrintBill = () => {
+    if (!billImageDataUrl || !adminViewingBill) return;
+    const printWindow = window.open("", "_blank");
+    if (!printWindow) {
+      window.print();
+      return;
+    }
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Poomani Chekku Ennai - Bill ${adminViewingBill.orderNumber}</title>
+          <style>
+            @page { size: auto; margin: 8mm; }
+            body { margin: 0; padding: 10px; display: flex; justify-content: center; align-items: flex-start; background: #fff; }
+            img { max-width: 100%; height: auto; display: block; margin: 0 auto; box-shadow: none; }
+          </style>
+        </head>
+        <body>
+          <img src="${billImageDataUrl}" alt="Order Bill" onload="window.print(); setTimeout(() => window.close(), 1200);" />
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+  };
+
+  // Handler for permanently deleting an order after confirmation
+  const handleConfirmDeleteOrder = async () => {
+    if (!orderToDelete) return;
+    setIsDeletingOrder(true);
+    try {
+      await deleteOrder(orderToDelete.orderNumber);
+      setOrderToDelete(null);
+    } catch (err) {
+      showNotification(err.message || "Failed to delete order.", "error");
+    } finally {
+      setIsDeletingOrder(false);
+    }
+  };
 
   if (!isAdminOpen) return null;
 
@@ -1855,7 +1941,7 @@ export const AdminModal = () => {
                             <th>Total (₹)</th>
                             <th>WhatsApp Delivery</th>
                             <th>Status</th>
-                            <th>Bill</th>
+                            <th>Bill & Actions</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -1970,13 +2056,48 @@ export const AdminModal = () => {
                                 </select>
                               </td>
                               <td>
-                                <button
-                                  type="button"
-                                  onClick={() => setAdminViewingBill(ord)}
-                                  style={{ color: "#124e2c", display: "inline-flex", alignItems: "center", gap: "2px", fontSize: "0.8rem" }}
-                                >
-                                  <Eye size={14} /> View
-                                </button>
+                                <div style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}>
+                                  <button
+                                    type="button"
+                                    onClick={() => setAdminViewingBill(ord)}
+                                    style={{
+                                      color: "#124e2c",
+                                      background: "#e8f5e9",
+                                      border: "1px solid #c8e6c9",
+                                      padding: "4px 8px",
+                                      borderRadius: "6px",
+                                      display: "inline-flex",
+                                      alignItems: "center",
+                                      gap: "4px",
+                                      fontSize: "0.78rem",
+                                      fontWeight: "600",
+                                      cursor: "pointer",
+                                    }}
+                                    title="View Photo Bill"
+                                  >
+                                    <Eye size={13} /> View
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => setOrderToDelete(ord)}
+                                    style={{
+                                      color: "#dc2626",
+                                      background: "#fef2f2",
+                                      border: "1px solid #fecaca",
+                                      padding: "4px 8px",
+                                      borderRadius: "6px",
+                                      display: "inline-flex",
+                                      alignItems: "center",
+                                      gap: "4px",
+                                      fontSize: "0.78rem",
+                                      fontWeight: "600",
+                                      cursor: "pointer",
+                                    }}
+                                    title="Permanently Delete Order"
+                                  >
+                                    <Trash2 size={13} /> Delete
+                                  </button>
+                                </div>
                               </td>
                             </tr>
                           ))}
@@ -2072,22 +2193,307 @@ export const AdminModal = () => {
           </>
         )}
 
-        {/* View Bill Modal inside Admin */}
+        {/* Delete Order Confirmation Popup */}
+        {orderToDelete && (
+          <div
+            className="modal-backdrop"
+            onClick={() => !isDeletingOrder && setOrderToDelete(null)}
+            style={{ zIndex: 1200 }}
+          >
+            <div
+              className="modal-content"
+              onClick={(e) => e.stopPropagation()}
+              style={{
+                maxWidth: "460px",
+                width: "90%",
+                padding: "1.75rem",
+                borderRadius: "14px",
+                background: "#ffffff",
+                boxShadow: "0 25px 50px rgba(0,0,0,0.3)",
+                textAlign: "center",
+              }}
+            >
+              <div
+                style={{
+                  width: "56px",
+                  height: "56px",
+                  borderRadius: "50%",
+                  background: "#fee2e2",
+                  color: "#dc2626",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  margin: "0 auto 1.25rem",
+                }}
+              >
+                <Trash2 size={28} />
+              </div>
+
+              <h3 style={{ fontSize: "1.25rem", color: "#991b1b", marginBottom: "0.5rem", fontWeight: "700" }}>
+                Delete Order Confirmation
+              </h3>
+
+              <p style={{ fontSize: "0.95rem", color: "#374151", marginBottom: "1rem", lineHeight: "1.5" }}>
+                Are you sure you want to permanently delete this order?
+              </p>
+
+              <div
+                style={{
+                  background: "#f9fafb",
+                  border: "1px solid #e5e7eb",
+                  borderRadius: "8px",
+                  padding: "0.85rem 1rem",
+                  marginBottom: "1.25rem",
+                  fontSize: "0.86rem",
+                  textAlign: "left",
+                  lineHeight: "1.6",
+                }}
+              >
+                <div><strong>Order No:</strong> <span style={{ fontFamily: "monospace", color: "#09331d" }}>{orderToDelete.orderNumber}</span></div>
+                <div><strong>Customer:</strong> {orderToDelete.customerName} ({orderToDelete.customerPhone || "—"})</div>
+                <div><strong>Total:</strong> ₹{formatINR(orderToDelete.grandTotal)}</div>
+                <div><strong>Date:</strong> {formatISTDateTime(orderToDelete.date || orderToDelete.createdAt)}</div>
+              </div>
+
+              <p style={{ fontSize: "0.78rem", color: "#6b7280", marginBottom: "1.5rem" }}>
+                This action will permanently delete this order from the central database.
+              </p>
+
+              <div style={{ display: "flex", gap: "0.75rem", justifyContent: "center" }}>
+                <button
+                  type="button"
+                  onClick={() => setOrderToDelete(null)}
+                  disabled={isDeletingOrder}
+                  style={{
+                    padding: "0.6rem 1.25rem",
+                    borderRadius: "8px",
+                    border: "1px solid #d1d5db",
+                    background: "#ffffff",
+                    color: "#374151",
+                    fontWeight: "600",
+                    fontSize: "0.88rem",
+                    cursor: isDeletingOrder ? "not-allowed" : "pointer",
+                  }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleConfirmDeleteOrder}
+                  disabled={isDeletingOrder}
+                  style={{
+                    padding: "0.6rem 1.35rem",
+                    borderRadius: "8px",
+                    border: "none",
+                    background: "#dc2626",
+                    color: "#ffffff",
+                    fontWeight: "700",
+                    fontSize: "0.88rem",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "6px",
+                    cursor: isDeletingOrder ? "not-allowed" : "pointer",
+                    boxShadow: "0 2px 6px rgba(220, 38, 38, 0.3)",
+                  }}
+                >
+                  {isDeletingOrder ? (
+                    <>
+                      <Loader2 size={16} className="spin-icon" /> Deleting...
+                    </>
+                  ) : (
+                    <>
+                      <Trash2 size={16} /> Confirm Delete
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* View Bill Photo Modal inside Admin */}
         {adminViewingBill && (
-          <div className="modal-backdrop" onClick={() => setAdminViewingBill(null)}>
-            <div className="bill-modal-container" onClick={(e) => e.stopPropagation()}>
-              <div className="bill-modal-header">
-                <h3>Bill Details: {adminViewingBill.orderNumber}</h3>
+          <div className="modal-backdrop" onClick={() => setAdminViewingBill(null)} style={{ zIndex: 1100 }}>
+            <div
+              className="bill-modal-container"
+              onClick={(e) => e.stopPropagation()}
+              style={{
+                maxWidth: "840px",
+                width: "95%",
+                maxHeight: "92vh",
+                display: "flex",
+                flexDirection: "column",
+                background: "#ffffff",
+                borderRadius: "16px",
+                boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.35)",
+                overflow: "hidden",
+              }}
+            >
+              <div
+                className="bill-modal-header"
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  padding: "1rem 1.5rem",
+                  background: "#09331d",
+                  color: "#ffffff",
+                  borderBottom: "2px solid #d4af37",
+                }}
+              >
+                <div>
+                  <h3 style={{ fontSize: "1.15rem", margin: 0, color: "#ffffff", display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+                    <span>Order Bill Photo:</span>
+                    <span style={{ color: "#fde047", fontFamily: "monospace" }}>{adminViewingBill.orderNumber}</span>
+                  </h3>
+                  <div style={{ fontSize: "0.78rem", color: "#d1fae5", marginTop: "3px" }}>
+                    Customer: <strong>{adminViewingBill.customerName}</strong> ({adminViewingBill.customerPhone || "—"}) • {formatISTDateTime(adminViewingBill.date || adminViewingBill.createdAt)}
+                  </div>
+                </div>
                 <button
                   type="button"
                   className="btn-close"
                   onClick={() => setAdminViewingBill(null)}
+                  style={{
+                    background: "rgba(255,255,255,0.15)",
+                    border: "none",
+                    color: "#ffffff",
+                    borderRadius: "50%",
+                    width: "32px",
+                    height: "32px",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    cursor: "pointer",
+                  }}
+                  title="Close"
                 >
                   <X size={18} />
                 </button>
               </div>
-              <div className="bill-modal-body">
-                <pre className="bill-receipt-paper">{adminViewingBill.billText}</pre>
+
+              {/* Action Toolbar */}
+              <div
+                style={{
+                  padding: "0.75rem 1.5rem",
+                  background: "#f9fafb",
+                  borderBottom: "1px solid #e5e7eb",
+                  display: "flex",
+                  flexWrap: "wrap",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  gap: "0.75rem",
+                }}
+              >
+                <div style={{ fontSize: "0.82rem", color: "#4b5563", display: "flex", alignItems: "center", gap: "6px" }}>
+                  <CheckCircle size={15} color="#16a34a" />
+                  <span>High-Resolution Photo Bill with Poomani Chekku Ennai branding</span>
+                </div>
+
+                <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+                  <button
+                    type="button"
+                    onClick={() => downloadBillImageFile(adminViewingBill, shopSettings, "png", true)}
+                    style={{
+                      background: "#166534",
+                      color: "#ffffff",
+                      border: "none",
+                      padding: "6px 14px",
+                      borderRadius: "6px",
+                      fontSize: "0.82rem",
+                      fontWeight: "700",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "5px",
+                      cursor: "pointer",
+                    }}
+                    title="Download Bill as PNG image"
+                  >
+                    <Download size={14} /> Download PNG
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => downloadBillImageFile(adminViewingBill, shopSettings, "jpeg", true)}
+                    style={{
+                      background: "#09331d",
+                      color: "#ffffff",
+                      border: "1px solid #d4af37",
+                      padding: "6px 14px",
+                      borderRadius: "6px",
+                      fontSize: "0.82rem",
+                      fontWeight: "700",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "5px",
+                      cursor: "pointer",
+                    }}
+                    title="Download Bill as JPG image"
+                  >
+                    <Download size={14} /> Download JPG
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handlePrintBill}
+                    style={{
+                      background: "#ffffff",
+                      color: "#09331d",
+                      border: "1.5px solid #09331d",
+                      padding: "6px 14px",
+                      borderRadius: "6px",
+                      fontSize: "0.82rem",
+                      fontWeight: "700",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "5px",
+                      cursor: "pointer",
+                    }}
+                    title="Print Bill"
+                  >
+                    <Printer size={14} /> Print Bill
+                  </button>
+                </div>
+              </div>
+
+              {/* Bill Photo Body */}
+              <div
+                className="bill-modal-body"
+                style={{
+                  padding: "1.25rem",
+                  overflowY: "auto",
+                  background: "#f3f4f6",
+                  textAlign: "center",
+                  flex: 1,
+                }}
+              >
+                {billImageLoading ? (
+                  <div style={{ padding: "4rem 2rem", color: "#4b5563" }}>
+                    <Loader2 size={36} className="spin-icon" style={{ margin: "0 auto 1rem", color: "#166534" }} />
+                    <p style={{ fontWeight: "600", fontSize: "0.95rem" }}>Rendering high-resolution bill photo...</p>
+                    <p style={{ fontSize: "0.82rem", color: "#6b7280" }}>Applying Poomani Chekku Ennai branding, FSSAI #22426277000360, items and totals</p>
+                  </div>
+                ) : billImageDataUrl ? (
+                  <div style={{ display: "inline-block", maxWidth: "100%" }}>
+                    <img
+                      src={billImageDataUrl}
+                      alt={`Order Bill ${adminViewingBill.orderNumber}`}
+                      style={{
+                        maxWidth: "100%",
+                        height: "auto",
+                        borderRadius: "8px",
+                        boxShadow: "0 10px 30px rgba(0,0,0,0.18)",
+                        display: "block",
+                        margin: "0 auto",
+                        background: "#ffffff",
+                      }}
+                    />
+                  </div>
+                ) : (
+                  <div style={{ padding: "3rem", color: "#ef4444" }}>
+                    Failed to render bill photo. Please try again.
+                  </div>
+                )}
               </div>
             </div>
           </div>

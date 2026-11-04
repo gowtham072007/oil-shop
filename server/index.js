@@ -23,7 +23,7 @@ import {
   getDatabaseDiagnostics,
   saveOrder,
   getAllOrders,
-  getOrderById,
+  deleteOrder,
   updateOrderWhatsAppStatus,
   PERMANENT_ADMIN_WHATSAPP,
   PERMANENT_ADMIN_WHATSAPP_DISPLAY,
@@ -48,7 +48,6 @@ import {
   sendWhatsAppCloudImage,
   verifyWhatsAppCloudCredentials,
   sendWhatsAppTestPing,
-  formatMetaErrorMessage,
 } from './whatsappCloudApi.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -575,6 +574,23 @@ app.get('/api/orders', requireAdminAuth, async (req, res) => {
   } catch (err) {
     console.error('[API] Error loading orders:', err);
     res.status(500).json({ success: false, error: 'Failed to load customer orders.' });
+  }
+});
+
+// Admin Route: Delete an order permanently from database
+app.delete('/api/orders/:orderNumber', requireAdminAuth, async (req, res) => {
+  try {
+    const { orderNumber } = req.params;
+    const deleted = await deleteOrder(orderNumber);
+    if (!deleted) {
+      return res.status(404).json({ success: false, error: 'Order not found in database.' });
+    }
+    // Broadcast deletion event to connected admin sessions in real time
+    broadcast('order:deleted', { orderNumber });
+    res.json({ success: true, message: `Order ${orderNumber} permanently deleted.`, orderNumber });
+  } catch (err) {
+    console.error(`[API] Error deleting order ${req.params.orderNumber}:`, err);
+    res.status(500).json({ success: false, error: 'Failed to delete order from database.' });
   }
 });
 

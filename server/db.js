@@ -896,6 +896,53 @@ export async function updateOrderWhatsAppStatus(orderNumber, { status, messageId
   return existing ? { ...existing, ...updateFields } : updateFields;
 }
 
+/**
+ * Permanently delete an order from database (Postgres or JSON store)
+ */
+export async function deleteOrder(orderNumber) {
+  if (!orderNumber) return null;
+  const target = String(orderNumber).trim();
+
+  let deleted = null;
+
+  if (activeEngine === 'postgres' && pgPool) {
+    try {
+      const existing = await getOrderById(target);
+      if (existing) {
+        deleted = existing;
+      }
+      const res = await pgPool.query(
+        'DELETE FROM orders WHERE order_number = $1 OR id = $1 RETURNING *',
+        [target]
+      );
+      if (res.rowCount > 0 && !deleted) {
+        deleted = { orderNumber: target };
+      }
+    } catch (err) {
+      console.warn('[Database] PostgreSQL deleteOrder failed:', err.message);
+    }
+  }
+
+  const store = readJsonStore();
+  const existingOrder = (store.orders || []).find(
+    (o) => String(o.orderNumber).trim() === target || String(o.id).trim() === target
+  );
+  if (existingOrder && !deleted) {
+    deleted = existingOrder;
+  }
+
+  const filteredOrders = (store.orders || []).filter(
+    (o) => String(o.orderNumber).trim() !== target && String(o.id).trim() !== target
+  );
+
+  if (filteredOrders.length !== (store.orders || []).length) {
+    writeJsonStore({ ...store, orders: filteredOrders });
+    if (!deleted) deleted = { orderNumber: target };
+  }
+
+  return deleted;
+}
+
 export function isUsingPostgres() {
   return activeEngine === 'postgres';
 }

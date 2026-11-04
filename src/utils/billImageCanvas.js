@@ -73,7 +73,24 @@ export async function generateBillImage(order, shopSettings = {}, format = 'png'
 
   // Calculate dynamic address lines & height
   const fullAddress = order.deliveryAddress || order.fullAddress || order.customerAddress || order.address || 'Direct Order';
-  const items = order.items || [];
+  let items = order.items || [];
+  if (typeof items === 'string') {
+    try {
+      items = JSON.parse(items);
+    } catch {
+      items = [];
+    }
+  }
+  if (!Array.isArray(items) || items.length === 0) {
+    items = [{
+      name: 'Cold-Pressed Oil',
+      regionalName: 'மரச்செக்கு எண்ணெய்',
+      packSize: '1 Litre',
+      quantity: 1,
+      rate: Number(order.grandTotal) || 0,
+      amount: Number(order.grandTotal) || 0,
+    }];
+  }
   const itemsCount = Math.max(1, items.length);
   const rowHeight = 52;
 
@@ -101,7 +118,7 @@ export async function generateBillImage(order, shopSettings = {}, format = 'png'
   const nextSummaryY = summaryY + (hasDiscount ? 60 : 38);
   const grandTotalBottomY = nextSummaryY + 44;
   const footerY = grandTotalBottomY + 26;
-  const height = footerY + 56;
+  const height = footerY + 68;
 
   const canvas = document.createElement('canvas');
   canvas.width = width * scale;
@@ -203,7 +220,7 @@ export async function generateBillImage(order, shopSettings = {}, format = 'png'
   ctx.font = '11px "Plus Jakarta Sans", Arial, sans-serif';
   const shopPhone = PERMANENT_ADMIN_WHATSAPP_DISPLAY;
   const phonePart = shopPhone ? ` • Phone: ${shopPhone}` : '';
-  const millInfo = `28 Union Road, Keelaline, Gopalasamudram, Tirunelveli – 627414${phonePart} • FSSAI #${shopSettings?.fssaiNumber || '22426277000360'}`;
+  const millInfo = `MARIAPPAN C/O POOMANI CHEKKU ENNAI • 28 Union Road, Keelaline, Gopalasamudram – 627414${phonePart} • FSSAI #${shopSettings?.fssaiNumber || '22426277000360'}`;
   ctx.fillText(millInfo, titleX, headerY + 72);
 
   // Gold Separator Line with Centered Diamond
@@ -352,7 +369,8 @@ export async function generateBillImage(order, shopSettings = {}, format = 'png'
     ctx.textAlign = 'center';
     ctx.fillStyle = '#1f2923';
     ctx.font = 'bold 12px "Plus Jakarta Sans", Arial, sans-serif';
-    ctx.fillText(item.packSize || '1 Litre', cols[2].x + cols[2].w / 2, currentY + 31);
+    const resolvedPackSize = item.packSize || item.selectedVariant?.size || (item.name?.match(/\b(200\s*ml|500\s*ml|1\s*Litre|1\s*L)\b/i)?.[0]) || '1 Litre';
+    ctx.fillText(resolvedPackSize, cols[2].x + cols[2].w / 2, currentY + 31);
 
     // Qty
     ctx.fillStyle = '#09331d';
@@ -430,11 +448,15 @@ export async function generateBillImage(order, shopSettings = {}, format = 'png'
   ctx.textAlign = 'center';
   ctx.fillStyle = '#09331d';
   ctx.font = 'bold 12px "Plus Jakarta Sans", Arial, sans-serif';
-  ctx.fillText('Thank you for choosing Poomani Chekku Ennai! 100% Pure, Natural & Traditional Cold-Pressed Oils.', width / 2, footerY + 24);
+  ctx.fillText('Thank you for choosing Poomani Chekku Ennai! 100% Pure, Natural & Traditional Cold-Pressed Oils.', width / 2, footerY + 22);
+
+  ctx.fillStyle = '#6b7280';
+  ctx.font = '11px "Plus Jakarta Sans", Arial, sans-serif';
+  ctx.fillText('Mill & Shop: MARIAPPAN C/O POOMANI CHEKKU ENNAI, 28 Union Road, Keelaline, Gopalasamudram, Cheranmahadevi Block – 627414', width / 2, footerY + 39);
 
   ctx.fillStyle = '#85958c';
-  ctx.font = '11px "Plus Jakarta Sans", Arial, sans-serif';
-  ctx.fillText('Official WhatsApp Order Confirmation • Gopalasamudram, Tirunelveli, Tamil Nadu – 627414', width / 2, footerY + 42);
+  ctx.font = '10px "Plus Jakarta Sans", Arial, sans-serif';
+  ctx.fillText('FSSAI Lic No: 22426277000360 • Official Bill Receipt • Generated for WhatsApp Orders', width / 2, footerY + 54);
 
   // Export as PNG or JPEG
   return new Promise((resolve) => {

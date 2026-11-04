@@ -374,13 +374,34 @@ export async function createOrderApi(orderData) {
 /**
  * Fetch all orders from central database (Admin)
  */
-export async function fetchOrdersApi(adminToken) {
-  const res = await fetch(`${API_BASE}/api/orders`, {
-    headers: {
-      Authorization: `Bearer ${adminToken}`,
-    },
-  });
+export async function fetchOrdersApi(adminToken, adminPin) {
+  const headers = {};
+  if (adminToken) {
+    headers.Authorization = `Bearer ${adminToken}`;
+  }
+  if (adminPin) {
+    headers['x-admin-pin'] = String(adminPin);
+  }
+  const res = await fetch(`${API_BASE}/api/orders`, { headers });
   const data = await handleResponse(res);
   return data.orders || [];
+}
+
+/**
+ * Permanently delete an order from central database (Admin)
+ */
+export async function deleteOrderApi(orderNumber, adminToken, adminPin) {
+  const headers = {};
+  if (adminToken) {
+    headers.Authorization = `Bearer ${adminToken}`;
+  }
+  if (adminPin) {
+    headers['x-admin-pin'] = String(adminPin);
+  }
+  const res = await fetch(`${API_BASE}/api/orders/${encodeURIComponent(orderNumber)}`, {
+    method: 'DELETE',
+    headers,
+  });
+  return await handleResponse(res);
 }
 
