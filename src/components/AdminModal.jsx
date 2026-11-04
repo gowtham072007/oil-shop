@@ -1532,13 +1532,16 @@ export const AdminModal = () => {
                     </div>
 
                     <div className="form-group">
-                      <label>Admin Security PIN</label>
+                      <label>Admin Password</label>
                       <input
                         type="text"
-                        maxLength={6}
-                        value={settingsForm.adminPin}
+                        value={settingsForm.adminPin || ""}
                         onChange={(e) => setSettingsForm({ ...settingsForm, adminPin: e.target.value })}
+                        placeholder="Enter Admin Password (Default: 1234)"
                       />
+                      <small style={{ fontSize: "0.72rem", color: "#57655d" }}>
+                        Password used to unlock the Admin Dashboard (Current: {settingsForm.adminPin || "1234"})
+                      </small>
                     </div>
                   </div>
 

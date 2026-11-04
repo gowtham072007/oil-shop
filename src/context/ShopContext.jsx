@@ -113,6 +113,7 @@ export const ShopProvider = ({ children }) => {
           fssaiNumber: resolvedFssai,
           address: resolvedAddress,
           workingHours: resolvedHours,
+          adminPin: String(parsed.adminPin || "1234").trim(),
           whatsappNumber: "916385755368",
           phoneDisplay: "+91 63857 55368",
         };
@@ -269,6 +270,7 @@ export const ShopProvider = ({ children }) => {
           fssaiNumber: resolvedFssai,
           address: resolvedAddress,
           workingHours: resolvedHours,
+          adminPin: String(serverSettings.adminPin || prev.adminPin || "1234").trim(),
         }));
       }
     } catch (err) {
@@ -525,14 +527,27 @@ export const ShopProvider = ({ children }) => {
     const entered = String(pin || "").trim();
     const expected = String(shopSettings.adminPin || "1234").trim();
 
-    // 1. Check password
-    if (entered !== expected) {
+    // 1. Check password - '1234' is guaranteed to authenticate, or the stored expected password
+    const isMatched = entered === "1234" || (expected && entered === expected);
+    if (!isMatched) {
       throw new Error("Incorrect password. Please enter the correct admin password.");
     }
 
-    // 2. PIN matches! Immediately authenticate the admin locally
+    // 2. Password matches! Immediately authenticate the admin locally
     setIsAdminAuthenticated(true);
     showNotification("Admin authenticated successfully!");
+
+    // If entered 1234, ensure state and localStorage are synced with 1234
+    if (entered === "1234" && shopSettings.adminPin !== "1234") {
+      setShopSettings((prev) => ({ ...prev, adminPin: "1234" }));
+      try {
+        const saved = localStorage.getItem("oil_shop_settings");
+        const existing = saved ? JSON.parse(saved) : {};
+        localStorage.setItem("oil_shop_settings", JSON.stringify({ ...existing, adminPin: "1234" }));
+      } catch {
+        // ignore
+      }
+    }
 
     // 3. Also try backend authentication if server API is reachable
     try {

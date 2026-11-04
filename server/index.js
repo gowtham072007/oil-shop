@@ -94,7 +94,7 @@ app.post('/api/admin/login', async (req, res) => {
   if (!isValid) {
     return res.status(401).json({
       success: false,
-      error: 'Invalid Admin PIN. Please enter the correct PIN.',
+      error: 'Invalid Admin Password. Please enter the correct password.',
     });
   }
   const token = createAdminToken();
