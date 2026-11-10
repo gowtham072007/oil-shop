@@ -25,9 +25,9 @@ export const DEFAULT_CATEGORIES = [
 export const DEFAULT_8_PRODUCTS = [
   // Coconut Oil — தேங்காய் எண்ணெய் (3 sizes)
   {
-    id: "prod-coconut-200ml",
-    name: "Coconut Oil – 200 ml",
-    regionalName: "தேங்காய் எண்ணெய் – 200 மி.லி",
+    id: "prod-coconut-250ml",
+    name: "Coconut Oil – 250 ml",
+    regionalName: "தேங்காய் எண்ணெய் – 250 மி.லி",
     category: "coconut",
     brand: "Poomani Chekku Ennai",
     oilType: "100% Pure Edible Oil",
@@ -38,7 +38,7 @@ export const DEFAULT_8_PRODUCTS = [
     inStock: true,
     featured: false,
     variants: [
-      { id: "v-coconut-200ml", size: "200 ml", price: 90, stock: 50, unit: "Bottle", sortOrder: 1 },
+      { id: "v-coconut-250ml", size: "250 ml", price: 90, stock: 50, unit: "Bottle", sortOrder: 1 },
     ],
   },
   {
@@ -78,9 +78,9 @@ export const DEFAULT_8_PRODUCTS = [
 
   // Sesame Oil — நல்லெண்ணெய் (3 sizes)
   {
-    id: "prod-sesame-200ml",
-    name: "Sesame Oil – 200 ml",
-    regionalName: "நல்லெண்ணெய் – 200 மி.லி",
+    id: "prod-sesame-250ml",
+    name: "Sesame Oil – 250 ml",
+    regionalName: "நல்லெண்ணெய் – 250 மி.லி",
     category: "sesame",
     brand: "Poomani Chekku Ennai",
     oilType: "100% Pure Edible Oil",
@@ -91,7 +91,7 @@ export const DEFAULT_8_PRODUCTS = [
     inStock: true,
     featured: false,
     variants: [
-      { id: "v-sesame-200ml", size: "200 ml", price: 110, stock: 40, unit: "Bottle", sortOrder: 1 },
+      { id: "v-sesame-250ml", size: "250 ml", price: 110, stock: 40, unit: "Bottle", sortOrder: 1 },
     ],
   },
   {

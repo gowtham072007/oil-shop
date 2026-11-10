@@ -232,14 +232,14 @@ export const CartDrawer = () => {
                         className="cart-item-img"
                       />
                       <div className="cart-item-info">
-                        <div className="cart-item-title">{item.name}</div>
+                        <div className="cart-item-title">{(item.name || "").replace(/200\s*ml/gi, "250 ml")}</div>
                         {item.regionalName && (
                           <div style={{ fontSize: "0.78rem", color: "#8c6819", fontWeight: "600", marginTop: "1px" }}>
-                            {item.regionalName}
+                            {item.regionalName.replace(/200\s*மி\.லி/gi, "250 மி.லி").replace(/200\s*ml/gi, "250 ml")}
                           </div>
                         )}
                         <div className="cart-item-meta">
-                          Pack: {item.selectedVariant?.size || "1 Litre"} • ₹{formatINR(item.price)} each
+                          Pack: {(item.selectedVariant?.size || item.packSize || "1 Litre").replace(/200\s*ml/gi, "250 ml")} • ₹{formatINR(item.price)} each
                         </div>
 
                         <div className="cart-item-controls">

@@ -26,7 +26,7 @@ const POSTERS = [
     tamilTitle: "தேங்காய் எண்ணெய்",
     subtitle: "Coconut Oil poster",
     src: "/images/posters/poster_2_coconut_oil.jpg",
-    alt: "Poomani Coconut Oil Natural Goodness — 100% Pure & Natural Cold-Pressed Coconut Oil (1 Litre, 500 ml, 200 ml)",
+    alt: "Poomani Coconut Oil Natural Goodness — 100% Pure & Natural Cold-Pressed Coconut Oil (1 Litre, 500 ml, 250 ml)",
     categoryTarget: "coconut",
   },
   {
@@ -36,7 +36,7 @@ const POSTERS = [
     tamilTitle: "நல்லெண்ணெய்",
     subtitle: "Sesame Oil poster",
     src: "/images/posters/poster_3_sesame_oil.jpg",
-    alt: "Poomani Sesame Oil Pure Natural Goodness — Traditional Cold-Pressed Gingelly / Sesame Oil (1 Litre, 500 ml, 200 ml)",
+    alt: "Poomani Sesame Oil Pure Natural Goodness — Traditional Cold-Pressed Gingelly / Sesame Oil (1 Litre, 500 ml, 250 ml)",
     categoryTarget: "sesame",
   },
   {

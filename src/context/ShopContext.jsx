@@ -138,7 +138,29 @@ export const ShopProvider = ({ children }) => {
   const [orders, setOrders] = useState(() => {
     try {
       const saved = localStorage.getItem("oil_shop_orders");
-      return saved ? JSON.parse(saved) : [];
+      if (!saved) return [];
+      const parsed = JSON.parse(saved);
+      if (!Array.isArray(parsed)) return [];
+      return parsed.map((ord) => ({
+        ...ord,
+        items: Array.isArray(ord.items)
+          ? ord.items.map((it) => ({
+              ...it,
+              name: (it.name || "").replace(/200\s*ml/gi, "250 ml"),
+              regionalName: (it.regionalName || "").replace(/200\s*மி\.லி/gi, "250 மி.லி").replace(/200\s*ml/gi, "250 ml"),
+              packSize: (it.packSize || it.selectedVariant?.size || "").replace(/200\s*ml/gi, "250 ml"),
+              selectedVariant: it.selectedVariant
+                ? {
+                    ...it.selectedVariant,
+                    size: (it.selectedVariant.size || "").replace(/200\s*ml/gi, "250 ml"),
+                  }
+                : it.selectedVariant,
+            }))
+          : ord.items,
+        billText: ord.billText
+          ? ord.billText.replace(/200\s*ml/gi, "250 ml").replace(/200\s*மி\.லி/gi, "250 மி.லி")
+          : ord.billText,
+      }));
     } catch {
       return [];
     }
@@ -150,10 +172,31 @@ export const ShopProvider = ({ children }) => {
       if (saved) {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed)) {
-          return parsed.filter((item) => {
-            if (DEMO_PRODUCT_IDS.includes(item.productId)) return false;
-            return identifyPermittedOilType(item) !== null;
-          });
+          return parsed
+            .filter((item) => {
+              if (DEMO_PRODUCT_IDS.includes(item.productId)) return false;
+              return identifyPermittedOilType(item) !== null;
+            })
+            .map((item) => {
+              const packSize = (item.packSize || item.selectedVariant?.size || "").replace(/200\s*ml/gi, "250 ml");
+              const name = (item.name || "").replace(/200\s*ml/gi, "250 ml");
+              const regionalName = item.regionalName
+                ? item.regionalName.replace(/200\s*மி\.லி/gi, "250 மி.லி").replace(/200\s*ml/gi, "250 ml")
+                : item.regionalName;
+              const selectedVariant = item.selectedVariant
+                ? {
+                    ...item.selectedVariant,
+                    size: (item.selectedVariant.size || "").replace(/200\s*ml/gi, "250 ml"),
+                  }
+                : item.selectedVariant;
+              return {
+                ...item,
+                name,
+                regionalName,
+                packSize,
+                selectedVariant,
+              };
+            });
         }
       }
       return [];
@@ -218,10 +261,27 @@ export const ShopProvider = ({ children }) => {
     try {
       const serverProducts = await fetchAllProducts();
       if (Array.isArray(serverProducts) && serverProducts.length > 0) {
-        const resolved = serverProducts.map((p) => ({
-          ...p,
-          image: resolveImageUrl(p.image),
-        }));
+        const resolved = serverProducts.map((p) => {
+          const updatedName = (p.name || "").replace(/200\s*ml/gi, "250 ml");
+          const updatedRegName = p.regionalName
+            ? p.regionalName.replace(/200\s*மி\.லி/gi, "250 மி.லி").replace(/200\s*ml/gi, "250 ml")
+            : p.regional_name
+            ? p.regional_name.replace(/200\s*மி\.லி/gi, "250 மி.லி").replace(/200\s*ml/gi, "250 ml")
+            : p.regionalName;
+          const updatedVariants = Array.isArray(p.variants)
+            ? p.variants.map((v) => ({
+                ...v,
+                size: (v.size || "").replace(/200\s*ml/gi, "250 ml"),
+              }))
+            : p.variants;
+          return {
+            ...p,
+            name: updatedName,
+            regionalName: updatedRegName,
+            variants: updatedVariants,
+            image: resolveImageUrl(p.image),
+          };
+        });
         setProducts(resolved);
         try {
           localStorage.setItem("oil_shop_products", JSON.stringify(resolved));
@@ -286,8 +346,28 @@ export const ShopProvider = ({ children }) => {
       const pin = shopSettings.adminPin || "1234";
       const serverOrders = await fetchOrdersApi(token, pin);
       if (Array.isArray(serverOrders)) {
-        setOrders(serverOrders);
-        localStorage.setItem("oil_shop_orders", JSON.stringify(serverOrders));
+        const sanitized = serverOrders.map((ord) => ({
+          ...ord,
+          items: Array.isArray(ord.items)
+            ? ord.items.map((it) => ({
+                ...it,
+                name: (it.name || "").replace(/200\s*ml/gi, "250 ml"),
+                regionalName: (it.regionalName || "").replace(/200\s*மி\.லி/gi, "250 மி.லி").replace(/200\s*ml/gi, "250 ml"),
+                packSize: (it.packSize || it.selectedVariant?.size || "").replace(/200\s*ml/gi, "250 ml"),
+                selectedVariant: it.selectedVariant
+                  ? {
+                      ...it.selectedVariant,
+                      size: (it.selectedVariant.size || "").replace(/200\s*ml/gi, "250 ml"),
+                    }
+                  : it.selectedVariant,
+              }))
+            : ord.items,
+          billText: ord.billText
+            ? ord.billText.replace(/200\s*ml/gi, "250 ml").replace(/200\s*மி\.லி/gi, "250 மி.லி")
+            : ord.billText,
+        }));
+        setOrders(sanitized);
+        localStorage.setItem("oil_shop_orders", JSON.stringify(sanitized));
       }
     } catch (err) {
       console.warn("[Poomani Sync] Unable to load central orders:", err.message);
@@ -339,26 +419,32 @@ export const ShopProvider = ({ children }) => {
         const liveProduct = products.find((p) => p.id === item.productId);
         if (!liveProduct) return item;
 
+        const currentSize = (item.selectedVariant?.size || item.packSize || "").replace(/200\s*ml/gi, "250 ml");
         const liveVariant =
           liveProduct.variants?.find(
             (v) =>
+              v.size === currentSize ||
               v.size === (item.selectedVariant?.size || item.packSize) ||
               v.id === item.selectedVariant?.id
           ) || (liveProduct.variants && liveProduct.variants[0]);
 
         const latestPrice = Number(liveVariant?.price || liveProduct.price || item.price);
+        const hasOld200Size = (item.selectedVariant?.size && item.selectedVariant.size.includes("200")) ||
+          (item.packSize && item.packSize.includes("200")) ||
+          (item.name && item.name.includes("200"));
 
-        if (item.price !== latestPrice || item.selectedVariant?.price !== latestPrice) {
+        if (item.price !== latestPrice || item.selectedVariant?.price !== latestPrice || hasOld200Size) {
           hasChanges = true;
           return {
             ...item,
             name: liveProduct.name,
             regionalName: liveProduct.regionalName || item.regionalName,
+            packSize: liveVariant?.size || currentSize,
             image: liveProduct.image || item.image,
             price: latestPrice,
             selectedVariant: liveVariant
-              ? { ...liveVariant, price: latestPrice }
-              : { ...item.selectedVariant, price: latestPrice },
+              ? { ...liveVariant, price: latestPrice, size: (liveVariant.size || "").replace(/200\s*ml/gi, "250 ml") }
+              : { ...item.selectedVariant, price: latestPrice, size: currentSize },
           };
         }
         return item;

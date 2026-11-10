@@ -142,12 +142,15 @@ export const calculateOrderTotals = (cartItems, shopSettings, appliedCoupon) => 
     subtotal += lineTotal;
 
     const stdNames = getStandardOilNames(item.name, item.regionalName);
-    const packSize = item.selectedVariant?.size || item.packSize || (item.name?.match(/\b(200\s*ml|500\s*ml|1\s*Litre|1\s*L)\b/i)?.[0]) || "1 Litre";
+    const rawPack = item.selectedVariant?.size || item.packSize || (item.name?.match(/\b(250\s*ml|200\s*ml|500\s*ml|1\s*Litre|1\s*L)\b/i)?.[0]) || "1 Litre";
+    const packSize = rawPack.replace(/200\s*ml/gi, "250 ml");
+    const cleanName = (item.name || "").replace(/200\s*ml/gi, "250 ml");
+    const cleanRegName = (item.regionalName || "").replace(/200\s*மி\.லி/gi, "250 மி.லி").replace(/200\s*ml/gi, "250 ml");
 
     return {
       sNo: index + 1,
-      name: item.name,
-      regionalName: item.regionalName || "",
+      name: cleanName,
+      regionalName: cleanRegName,
       oilNameEn: stdNames.en,
       oilNameTa: stdNames.ta,
       fullName: stdNames.combined,
@@ -314,13 +317,16 @@ export const generateWhatsAppOrderBillText = (order, shopSettings = {}) => {
 
     // Support English and Tamil product names with pack size
     const std = getStandardOilNames(item.name, item.regionalName);
-    const packSize = item.packSize || item.selectedVariant?.size || "1 Litre";
+    const rawPackSize = item.packSize || item.selectedVariant?.size || "1 Litre";
+    const packSize = rawPackSize.replace(/200\s*ml/gi, "250 ml");
 
     // Clean size from title if already present in base string
-    const baseTitle = std.combined || item.name;
+    const baseTitle = (std.combined || item.name || "")
+      .replace(/200\s*ml/gi, "250 ml")
+      .replace(/200\s*மி\.லி/gi, "250 மி.லி");
     const hasSize =
       baseTitle.toLowerCase().includes(packSize.toLowerCase()) ||
-      /\b(200\s*ml|500\s*ml|1\s*litre|1\s*l|5\s*litre|5\s*l)\b/i.test(baseTitle);
+      /\b(250\s*ml|200\s*ml|500\s*ml|1\s*litre|1\s*l|5\s*litre|5\s*l)\b/i.test(baseTitle);
     const itemTitle = hasSize ? baseTitle : `${baseTitle} – ${packSize}`;
 
     lines.push(`${sNo}. ${itemTitle}`);

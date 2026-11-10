@@ -1,10 +1,10 @@
 {
   "products": [
     {
-      "id": "prod-coconut-200ml",
-      "name": "Coconut Oil – 200 ml",
+      "id": "prod-coconut-250ml",
+      "name": "Coconut Oil – 250 ml",
       "category": "coconut",
-      "regionalName": "தேங்காய் எண்ணெய் – 200 மி.லி",
+      "regionalName": "தேங்காய் எண்ணெய் – 250 மி.லி",
       "brand": "Poomani Chekku Ennai",
       "oilType": "100% Pure Edible Oil",
       "description": "100% pure edible coconut oil with authentic natural aroma, perfect for daily cooking, traditional recipes, and dietary wellness.",
@@ -14,8 +14,8 @@
       "inStock": true,
       "variants": [
         {
-          "id": "v-coconut-200ml",
-          "size": "200 ml",
+          "id": "v-coconut-250ml",
+          "size": "250 ml",
           "price": 90,
           "stock": 50,
           "unit": "Bottle",
@@ -25,7 +25,7 @@
       ],
       "createdAt": "2026-10-29T06:00:00.000Z",
       "updatedAt": "2026-10-31T09:14:34.435Z",
-      "regional_name": "தேங்காய் எண்ணெய் – 200 மி.லி",
+      "regional_name": "தேங்காய் எண்ணெய் – 250 மி.லி",
       "oil_type": "100% Pure Edible Oil",
       "image_file_name": "coconut_oil.jpg",
       "updated_at": "2026-10-31T09:14:34.435Z"
@@ -91,10 +91,10 @@
       "updated_at": "2026-10-31T08:41:35.871Z"
     },
     {
-      "id": "prod-sesame-200ml",
-      "name": "Sesame Oil – 200 ml",
+      "id": "prod-sesame-250ml",
+      "name": "Sesame Oil – 250 ml",
       "category": "sesame",
-      "regionalName": "நல்லெண்ணெய் – 200 மி.லி",
+      "regionalName": "நல்லெண்ணெய் – 250 மி.லி",
       "brand": "Poomani Chekku Ennai",
       "oilType": "100% Pure Edible Oil",
       "description": "Premium pure edible sesame oil offering authentic rich taste and golden aroma for traditional cooking and seasoning.",
@@ -104,8 +104,8 @@
       "inStock": true,
       "variants": [
         {
-          "id": "v-sesame-200ml",
-          "size": "200 ml",
+          "id": "v-sesame-250ml",
+          "size": "250 ml",
           "price": 110,
           "stock": 40,
           "unit": "Bottle",
@@ -115,7 +115,7 @@
       ],
       "createdAt": "2026-10-29T06:03:00.000Z",
       "updatedAt": "2026-10-31T08:41:35.880Z",
-      "regional_name": "நல்லெண்ணெய் – 200 மி.லி",
+      "regional_name": "நல்லெண்ணெய் – 250 மி.லி",
       "oil_type": "100% Pure Edible Oil",
       "image_file_name": "sesame_oil.jpg",
       "updated_at": "2026-10-31T08:41:35.880Z"

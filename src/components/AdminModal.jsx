@@ -1964,7 +1964,7 @@ export const AdminModal = () => {
                               </td>
                               <td>
                                 <small>
-                                  {ord.items?.map((it) => `${it.name} (${it.quantity})`).join(", ")}
+                                  {ord.items?.map((it) => `${(it.name || '').replace(/200\s*ml/gi, '250 ml')} (${it.quantity})`).join(", ")}
                                 </small>
                               </td>
                               <td>

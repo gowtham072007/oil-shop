@@ -363,8 +363,8 @@ export async function generateBillImage(order, shopSettings = {}, format = 'png'
     ctx.textAlign = 'left';
     ctx.fillStyle = '#09331d';
     ctx.font = 'bold 13px "Plus Jakarta Sans", Arial, sans-serif';
-    const enName = item.oilNameEn || item.name || 'Pure Edible Oil';
-    const taName = item.oilNameTa || item.regionalName || '';
+    const enName = (item.oilNameEn || item.name || 'Pure Edible Oil').replace(/200\s*ml/gi, '250 ml');
+    const taName = (item.oilNameTa || item.regionalName || '').replace(/200\s*மி\.லி/gi, '250 மி.லி').replace(/200\s*ml/gi, '250 ml');
     ctx.fillText(enName, cols[1].x + 12, currentY + 21);
 
     if (taName) {
@@ -373,11 +373,12 @@ export async function generateBillImage(order, shopSettings = {}, format = 'png'
       ctx.fillText(taName, cols[1].x + 12, currentY + 40);
     }
 
-    // Pack Size (200 ml, 500 ml, 1 lit)
+    // Pack Size (250 ml, 500 ml, 1 lit)
     ctx.textAlign = 'center';
     ctx.fillStyle = '#1f2923';
     ctx.font = 'bold 12px "Plus Jakarta Sans", Arial, sans-serif';
-    const resolvedPackSize = item.packSize || item.selectedVariant?.size || (item.name?.match(/\b(200\s*ml|500\s*ml|1\s*Litre|1\s*L)\b/i)?.[0]) || '1 Litre';
+    const rawPackSize = item.packSize || item.selectedVariant?.size || (item.name?.match(/\b(250\s*ml|200\s*ml|500\s*ml|1\s*Litre|1\s*L)\b/i)?.[0]) || '1 Litre';
+    const resolvedPackSize = rawPackSize.replace(/200\s*ml/gi, '250 ml');
     ctx.fillText(resolvedPackSize, cols[2].x + cols[2].w / 2, currentY + 31);
 
     // Qty

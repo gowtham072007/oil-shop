@@ -18,8 +18,9 @@ export const ProductCard = ({ product }) => {
   const [quantity, setQuantity] = useState(1);
   const [isAddedAnim, setIsAddedAnim] = useState(false);
 
-  // Extract display size (e.g., "200 ml", "500 ml", "1 Litre")
-  const displaySize = selectedVariant?.size || (product.name.match(/\b(200\s*ml|500\s*ml|1\s*Litre|1\s*L)\b/i)?.[0]) || "1 Litre";
+  // Extract display size (e.g., "250 ml", "500 ml", "1 Litre")
+  const rawSize = selectedVariant?.size || (product.name.match(/\b(250\s*ml|200\s*ml|500\s*ml|1\s*Litre|1\s*L)\b/i)?.[0]) || "1 Litre";
+  const displaySize = rawSize.replace(/200\s*ml/gi, "250 ml");
 
   // Stock status logic
   const currentStock = selectedVariant.stock ?? 10;
@@ -91,11 +92,13 @@ export const ProductCard = ({ product }) => {
           className="product-title"
           onClick={() => setQuickViewProduct(product)}
         >
-          {product.name}
+          {product.name ? product.name.replace(/200\s*ml/gi, "250 ml") : ""}
         </h3>
 
         {product.regionalName && (
-          <div className="product-regional-name">{product.regionalName}</div>
+          <div className="product-regional-name">
+            {product.regionalName.replace(/200\s*மி\.லி/gi, "250 மி.லி").replace(/200\s*ml/gi, "250 ml")}
+          </div>
         )}
 
         {/* Clear Quantity Highlight Tag */}
@@ -124,9 +127,9 @@ export const ProductCard = ({ product }) => {
                       setSelectedVariantId(v.id);
                       setQuantity(1);
                     }}
-                    title={`₹${v.price} / ${v.size}`}
+                    title={`₹${v.price} / ${(v.size || "").replace(/200\s*ml/gi, "250 ml")}`}
                   >
-                    {v.size}
+                    {(v.size || "").replace(/200\s*ml/gi, "250 ml")}
                   </button>
                 );
               })}

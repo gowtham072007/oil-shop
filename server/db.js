@@ -200,8 +200,88 @@ export async function initDb() {
   // Seed default 8 products if they do not exist
   await seedDefaultProducts();
 
+  // Automatically migrate existing 200ml products to 250ml in database
+  await migrate200mlTo250ml();
+
   // Permanently store and lock +91 6385755368 as the admin WhatsApp recipient
   await ensurePermanentAdminWhatsApp();
+}
+
+/**
+ * Migration helper: Updates any existing 200ml products/variants to 250ml in PostgreSQL and JSON store
+ */
+export async function migrate200mlTo250ml() {
+  if (activeEngine === 'postgres' && pgPool) {
+    try {
+      await pgPool.query(`
+        UPDATE product_variants 
+        SET size = '250 ml' 
+        WHERE size = '200 ml' OR size LIKE '%200%ml%'
+      `);
+      await pgPool.query(`
+        UPDATE products 
+        SET 
+          name = REPLACE(name, '200 ml', '250 ml'),
+          regional_name = REPLACE(REPLACE(regional_name, '200 மி.லி', '250 மி.லி'), '200 ml', '250 ml'),
+          updated_at = CURRENT_TIMESTAMP
+        WHERE name LIKE '%200%' OR regional_name LIKE '%200%';
+      `);
+      console.log('[Database] Migrated PostgreSQL products from 200ml to 250ml.');
+    } catch (err) {
+      console.warn('[Database] PostgreSQL 250ml migration notice:', err.message);
+    }
+  }
+
+  try {
+    const store = readJsonStore();
+    let modified = false;
+    if (Array.isArray(store.products)) {
+      store.products.forEach((p) => {
+        if (p.id === 'prod-coconut-200ml') {
+          p.id = 'prod-coconut-250ml';
+          modified = true;
+        }
+        if (p.id === 'prod-sesame-200ml') {
+          p.id = 'prod-sesame-250ml';
+          modified = true;
+        }
+        if (p.name && p.name.includes('200 ml')) {
+          p.name = p.name.replace(/200\s*ml/g, '250 ml');
+          modified = true;
+        }
+        if (p.regionalName && p.regionalName.includes('200')) {
+          p.regionalName = p.regionalName.replace(/200\s*மி\.லி/g, '250 மி.லி').replace(/200\s*ml/g, '250 ml');
+          modified = true;
+        }
+        if (p.regional_name && p.regional_name.includes('200')) {
+          p.regional_name = p.regional_name.replace(/200\s*மி\.லி/g, '250 மி.லி').replace(/200\s*ml/g, '250 ml');
+          modified = true;
+        }
+        if (Array.isArray(p.variants)) {
+          p.variants.forEach((v) => {
+            if (v.id === 'v-coconut-200ml') {
+              v.id = 'v-coconut-250ml';
+              modified = true;
+            }
+            if (v.id === 'v-sesame-200ml') {
+              v.id = 'v-sesame-250ml';
+              modified = true;
+            }
+            if (v.size && v.size.includes('200')) {
+              v.size = '250 ml';
+              modified = true;
+            }
+          });
+        }
+      });
+    }
+    if (modified) {
+      writeJsonStore(store);
+      console.log('[Database] Migrated JSON store products from 200ml to 250ml.');
+    }
+  } catch (err) {
+    console.warn('[Database] JSON store 250ml migration notice:', err.message);
+  }
 }
 
 export const PERMANENT_ADMIN_WHATSAPP = '916385755368';
@@ -260,11 +340,16 @@ function formatProduct(row, variants = []) {
     ? 'groundnut'
     : 'all';
 
+  const cleanName = (row.name || '').replace(/200\s*ml/gi, '250 ml');
+  const cleanRegName = (row.regional_name || row.regionalName || '')
+    .replace(/200\s*மி\.லி/gi, '250 மி.லி')
+    .replace(/200\s*ml/gi, '250 ml');
+
   return {
     id: row.id,
-    name: row.name,
+    name: cleanName,
     category: row.category || fallbackCategory,
-    regionalName: row.regional_name || row.regionalName || '',
+    regionalName: cleanRegName,
     brand: row.brand || 'Poomani Chekku Ennai',
     oilType: row.oil_type || row.oilType || 'Wood-Pressed Cold Extracted',
     description: row.description || '',
@@ -274,7 +359,7 @@ function formatProduct(row, variants = []) {
     inStock,
     variants: sortedVariants.map((v) => ({
       id: v.id,
-      size: v.size,
+      size: (v.size || '').replace(/200\s*ml/gi, '250 ml'),
       price: Number(v.price),
       stock: Number(v.stock),
       unit: v.unit || 'Bottle',
@@ -332,15 +417,20 @@ export async function getAllProducts() {
 export async function getProductById(id) {
   if (!id) return null;
 
+  const candidateIds = [id];
+  if (id.includes('250ml')) candidateIds.push(id.replace('250ml', '200ml'));
+  if (id.includes('200ml')) candidateIds.push(id.replace('200ml', '250ml'));
+
   if (activeEngine === 'postgres' && pgPool) {
     try {
-      const res = await pgPool.query('SELECT * FROM products WHERE id = $1', [id]);
+      const res = await pgPool.query('SELECT * FROM products WHERE id = ANY($1)', [candidateIds]);
       if (res.rows.length > 0) {
+        const prod = res.rows[0];
         const variantsRes = await pgPool.query(
           'SELECT * FROM product_variants WHERE product_id = $1 ORDER BY sort_order ASC',
-          [id]
+          [prod.id]
         );
-        return formatProduct(res.rows[0], variantsRes.rows);
+        return formatProduct(prod, variantsRes.rows);
       }
     } catch (err) {
       console.warn('[Database] PostgreSQL fetch by id failed:', err.message);
@@ -349,13 +439,13 @@ export async function getProductById(id) {
 
   // Check persistent JSON store
   const store = readJsonStore();
-  const found = store.products.find((p) => p.id === id);
+  const found = (store.products || []).find((p) => candidateIds.includes(p.id));
   if (found) {
     return formatProduct(found, found.variants || []);
   }
 
   // Check canonical DEFAULT_8_PRODUCTS
-  const defaultProd = DEFAULT_8_PRODUCTS.find((p) => p.id === id);
+  const defaultProd = DEFAULT_8_PRODUCTS.find((p) => candidateIds.includes(p.id));
   if (defaultProd) {
     return formatProduct(defaultProd, defaultProd.variants || []);
   }
@@ -771,6 +861,23 @@ export async function saveOrder(orderData) {
   return formattedOrder;
 }
 
+function sanitizeOrderItems(rawItems) {
+  const items = typeof rawItems === 'string' ? JSON.parse(rawItems) : (rawItems || []);
+  if (!Array.isArray(items)) return [];
+  return items.map((it) => ({
+    ...it,
+    name: (it.name || '').replace(/200\s*ml/gi, '250 ml'),
+    regionalName: (it.regionalName || '').replace(/200\s*மி\.லி/gi, '250 மி.லி').replace(/200\s*ml/gi, '250 ml'),
+    packSize: (it.packSize || it.selectedVariant?.size || '').replace(/200\s*ml/gi, '250 ml'),
+    selectedVariant: it.selectedVariant
+      ? {
+          ...it.selectedVariant,
+          size: (it.selectedVariant.size || '').replace(/200\s*ml/gi, '250 ml'),
+        }
+      : it.selectedVariant,
+  }));
+}
+
 /**
  * Fetch all orders from database
  */
@@ -785,7 +892,7 @@ export async function getAllOrders() {
         customerName: r.customer_name,
         customerPhone: r.customer_phone,
         customerAddress: r.customer_address,
-        items: typeof r.items === 'string' ? JSON.parse(r.items) : (r.items || []),
+        items: sanitizeOrderItems(r.items),
         subtotal: Number(r.subtotal),
         discount: Number(r.discount),
         grandTotal: Number(r.grand_total),
@@ -806,6 +913,7 @@ export async function getAllOrders() {
   const store = readJsonStore();
   return (store.orders || []).map((o) => ({
     ...o,
+    items: sanitizeOrderItems(o.items),
     date: o.date || formatISTDateTime(o.createdAt || o.created_at),
   }));
 }
@@ -826,7 +934,7 @@ export async function getOrderById(orderNumber) {
           customerName: r.customer_name,
           customerPhone: r.customer_phone,
           customerAddress: r.customer_address,
-          items: typeof r.items === 'string' ? JSON.parse(r.items) : (r.items || []),
+          items: sanitizeOrderItems(r.items),
           subtotal: Number(r.subtotal),
           discount: Number(r.discount),
           grandTotal: Number(r.grand_total),
@@ -850,6 +958,7 @@ export async function getOrderById(orderNumber) {
   if (!found) return null;
   return {
     ...found,
+    items: sanitizeOrderItems(found.items),
     date: found.date || formatISTDateTime(found.createdAt || found.created_at),
   };
 }
@@ -960,10 +1069,10 @@ export function getDatabaseDiagnostics() {
 export const DEFAULT_8_PRODUCTS = [
   // Coconut Oil — தேங்காய் எண்ணெய்
   {
-    id: 'prod-coconut-200ml',
-    name: 'Coconut Oil – 200 ml',
-    regional_name: 'தேங்காய் எண்ணெய் – 200 மி.லி',
-    regionalName: 'தேங்காய் எண்ணெய் – 200 மி.லி',
+    id: 'prod-coconut-250ml',
+    name: 'Coconut Oil – 250 ml',
+    regional_name: 'தேங்காய் எண்ணெய் – 250 மி.லி',
+    regionalName: 'தேங்காய் எண்ணெய் – 250 மி.லி',
     brand: 'Poomani Chekku Ennai',
     oil_type: '100% Pure Edible Oil',
     oilType: '100% Pure Edible Oil',
@@ -975,7 +1084,7 @@ export const DEFAULT_8_PRODUCTS = [
     price: 90,
     inStock: true,
     variants: [
-      { id: 'v-coconut-200ml', size: '200 ml', price: 90, stock: 50, unit: 'Bottle', sort_order: 1, sortOrder: 1 },
+      { id: 'v-coconut-250ml', size: '250 ml', price: 90, stock: 50, unit: 'Bottle', sort_order: 1, sortOrder: 1 },
     ],
   },
   {
@@ -1019,10 +1128,10 @@ export const DEFAULT_8_PRODUCTS = [
 
   // Sesame Oil — நல்லெண்ணெய்
   {
-    id: 'prod-sesame-200ml',
-    name: 'Sesame Oil – 200 ml',
-    regional_name: 'நல்லெண்ணெய் – 200 மி.லி',
-    regionalName: 'நல்லெண்ணெய் – 200 மி.லி',
+    id: 'prod-sesame-250ml',
+    name: 'Sesame Oil – 250 ml',
+    regional_name: 'நல்லெண்ணெய் – 250 மி.லி',
+    regionalName: 'நல்லெண்ணெய் – 250 மி.லி',
     brand: 'Poomani Chekku Ennai',
     oil_type: '100% Pure Edible Oil',
     oilType: '100% Pure Edible Oil',
@@ -1034,7 +1143,7 @@ export const DEFAULT_8_PRODUCTS = [
     price: 110,
     inStock: true,
     variants: [
-      { id: 'v-sesame-200ml', size: '200 ml', price: 110, stock: 40, unit: 'Bottle', sort_order: 1, sortOrder: 1 },
+      { id: 'v-sesame-250ml', size: '250 ml', price: 110, stock: 40, unit: 'Bottle', sort_order: 1, sortOrder: 1 },
     ],
   },
   {

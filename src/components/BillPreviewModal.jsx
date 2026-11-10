@@ -410,11 +410,15 @@ export const BillPreviewModal = () => {
                   {items.map((item, idx) => {
                     const sNo = idx + 1;
                     const std = getStandardOilNames(item.name, item.regionalName);
-                    const packSize = item.packSize || item.selectedVariant?.size || "1 Litre";
+                    const rawPackSize = item.packSize || item.selectedVariant?.size || "1 Litre";
+                    const packSize = rawPackSize.replace(/200\s*ml/gi, "250 ml");
+                    const baseTitle = (std.combined || item.name || "")
+                      .replace(/200\s*ml/gi, "250 ml")
+                      .replace(/200\s*மி\.லி/gi, "250 மி.லி");
                     const hasSize =
-                      std.combined.toLowerCase().includes(packSize.toLowerCase()) ||
-                      /\b(200\s*ml|500\s*ml|1\s*litre|1\s*l|5\s*litre|5\s*l)\b/i.test(std.combined);
-                    const itemTitle = hasSize ? std.combined : `${std.combined} – ${packSize}`;
+                      baseTitle.toLowerCase().includes(packSize.toLowerCase()) ||
+                      /\b(250\s*ml|200\s*ml|500\s*ml|1\s*litre|1\s*l|5\s*litre|5\s*l)\b/i.test(baseTitle);
+                    const itemTitle = hasSize ? baseTitle : `${baseTitle} – ${packSize}`;
                     const rate = Number(item.rate || item.price || 0);
                     const amount = Number(item.amount || rate * (item.quantity || 1));
 

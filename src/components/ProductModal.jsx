@@ -59,11 +59,11 @@ export const ProductModal = () => {
           <div className="quick-view-content">
             <div className="product-brand">{product.brand || "Poomani Chekku Ennai"}</div>
             <h2 style={{ fontSize: "1.5rem", marginBottom: "0.25rem", color: "#09331d" }}>
-              {product.name}
+              {(product.name || "").replace(/200\s*ml/gi, "250 ml")}
             </h2>
             {product.regionalName && (
               <div style={{ color: "#8c6819", fontWeight: "600", marginBottom: "0.5rem" }}>
-                {product.regionalName}
+                {product.regionalName.replace(/200\s*மி\.லி/gi, "250 மி.லி").replace(/200\s*ml/gi, "250 ml")}
               </div>
             )}
 
@@ -108,7 +108,7 @@ export const ProductModal = () => {
                     className={`size-pill-btn ${activeVariant.id === v.id ? "active" : ""}`}
                     onClick={() => setSelectedVariantId(v.id)}
                   >
-                    {v.size} — ₹{formatINR(v.price)}
+                    {(v.size || "").replace(/200\s*ml/gi, "250 ml")} — ₹{formatINR(v.price)}
                   </button>
                 ))}
               </div>
