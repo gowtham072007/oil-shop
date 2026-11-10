@@ -39,15 +39,15 @@ export const Footer = () => {
                 Official Instagram:
               </span>
               <a
-                href="https://www.instagram.com/poomani_oils?obrf=M2xiZGIyMHZnb2Rr"
+                href="https://www.instagram.com/poomanichekkuennai?utm_source=qr&exln=bWt5ODFxaW4zdmhj"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="btn-instagram-footer"
-                title="Follow @poomani_oils on Instagram"
-                aria-label="Follow Poomani Oils on Instagram"
+                title="Follow @poomanichekkuennai on Instagram"
+                aria-label="Follow Poomani Chekku Ennai on Instagram"
               >
                 <InstagramIcon size={17} color="#deb869" />
-                <span>@poomani_oils</span>
+                <span>@poomanichekkuennai</span>
               </a>
             </div>
           </div>
@@ -135,12 +135,12 @@ export const Footer = () => {
                 Social Media:
               </span>
               <a
-                href="https://www.instagram.com/poomani_oils?obrf=M2xiZGIyMHZnb2Rr"
+                href="https://www.instagram.com/poomanichekkuennai?utm_source=qr&exln=bWt5ODFxaW4zdmhj"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="btn-instagram-footer"
-                title="Follow @poomani_oils on Instagram"
-                aria-label="Follow Poomani Oils on Instagram"
+                title="Follow @poomanichekkuennai on Instagram"
+                aria-label="Follow Poomani Chekku Ennai on Instagram"
               >
                 <InstagramIcon size={17} color="#deb869" />
                 <span>Follow on Instagram</span>
@@ -158,7 +158,7 @@ export const Footer = () => {
             <span>100% Pure Chekku Ennai • Pure Quality • Direct WhatsApp Billing</span>
             <span style={{ color: "rgba(222, 184, 105, 0.4)" }}>•</span>
             <a
-              href="https://www.instagram.com/poomani_oils?obrf=M2xiZGIyMHZnb2Rr"
+              href="https://www.instagram.com/poomanichekkuennai?utm_source=qr&exln=bWt5ODFxaW4zdmhj"
               target="_blank"
               rel="noopener noreferrer"
               style={{
@@ -170,10 +170,10 @@ export const Footer = () => {
                 textDecoration: "none",
                 transition: "color 0.2s ease",
               }}
-              title="Official Instagram: @poomani_oils"
+              title="Official Instagram: @poomanichekkuennai"
             >
               <InstagramIcon size={14} color="#deb869" />
-              <span>@poomani_oils</span>
+              <span>@poomanichekkuennai</span>
             </a>
           </div>
         </div>

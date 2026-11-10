@@ -114,12 +114,12 @@ export const Header = () => {
 
               {/* Official Instagram Profile Link */}
               <a
-                href="https://www.instagram.com/poomani_oils?obrf=M2xiZGIyMHZnb2Rr"
+                href="https://www.instagram.com/poomanichekkuennai?utm_source=qr&exln=bWt5ODFxaW4zdmhj"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="btn-instagram-pill"
-                title="Follow @poomani_oils on Instagram"
-                aria-label="Follow Poomani Oils on Instagram"
+                title="Follow @poomanichekkuennai on Instagram"
+                aria-label="Follow Poomani Chekku Ennai on Instagram"
               >
                 <InstagramIcon size={16} />
                 <span className="d-none-sm">Instagram</span>
