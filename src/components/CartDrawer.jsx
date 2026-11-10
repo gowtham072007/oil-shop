@@ -381,28 +381,6 @@ export const CartDrawer = () => {
                 </div>
 
                 <div className="form-group">
-                  <label htmlFor="cust-payment">Preferred Payment Method</label>
-                  <select
-                    id="cust-payment"
-                    value={customerDetails.paymentMethod}
-                    onChange={(e) =>
-                      setCustomerDetails({
-                        ...customerDetails,
-                        paymentMethod: e.target.value,
-                      })
-                    }
-                  >
-                    <option value="Cash">Cash (நேரில் பணம்)</option>
-                    <option value="UPI (GPay / PhonePe / Paytm)">
-                      UPI (GPay / PhonePe / Paytm)
-                    </option>
-                    <option value="Direct UPI Transfer to Mill">
-                      Direct UPI Transfer to Mill
-                    </option>
-                  </select>
-                </div>
-
-                <div className="form-group">
                   <label htmlFor="cust-notes">Customer Notes (Optional)</label>
                   <input
                     id="cust-notes"
