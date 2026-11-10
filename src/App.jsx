@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { ShopProvider, useShop } from "./context/ShopContext";
 import { Header } from "./components/Header";
 import { HeroBanner } from "./components/HeroBanner";
-import { TrustSection } from "./components/TrustSection";
+import { OilShowcaseSections } from "./components/OilShowcaseSections";
 import { CategoryTabs } from "./components/CategoryTabs";
 import { ProductCard } from "./components/ProductCard";
 import { ProductModal } from "./components/ProductModal";
@@ -90,11 +90,11 @@ const ShopMain = () => {
       {/* Header */}
       <Header />
 
-      {/* Hero Banner featuring our 3 pure oils */}
+      {/* 1. Main Homepage Banner */}
       <HeroBanner />
 
-      {/* 4 Pillars of Pure Edible Oils */}
-      <TrustSection />
+      {/* 2. Coconut Oil Section, 3. Sesame Oil Section, 4. Groundnut Oil Section */}
+      <OilShowcaseSections />
 
       {/* Product Catalog Section */}
       <main id="oil-catalog-section" className="catalog-section">
