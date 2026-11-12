@@ -1623,10 +1623,10 @@ export const AdminModal = () => {
                         type="text"
                         value={settingsForm.adminPin || ""}
                         onChange={(e) => setSettingsForm({ ...settingsForm, adminPin: e.target.value })}
-                        placeholder="Enter Admin Password (Default: 1234)"
+                        placeholder="Enter Admin Password (Default: Mari@1999)"
                       />
                       <small style={{ fontSize: "0.72rem", color: "#57655d" }}>
-                        Password used to unlock the Admin Dashboard (Current: {settingsForm.adminPin || "1234"})
+                        Password used to unlock the Admin Dashboard (Current: {settingsForm.adminPin || "Mari@1999"})
                       </small>
                     </div>
                   </div>

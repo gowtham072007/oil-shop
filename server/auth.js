@@ -2,7 +2,7 @@ import crypto from 'node:crypto';
 import { getShopSettings } from './db.js';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'poomani-oils-secure-admin-key-2026';
-const ADMIN_PIN = process.env.ADMIN_PIN || '1234';
+const ADMIN_PIN = process.env.ADMIN_PIN || 'Mari@1999';
 
 /**
  * Validate admin PIN against process.env.ADMIN_PIN or shop_settings in database
@@ -10,7 +10,7 @@ const ADMIN_PIN = process.env.ADMIN_PIN || '1234';
 export async function verifyAdminPin(pin) {
   if (!pin) return false;
   const pinStr = String(pin).trim();
-  if (pinStr === '1234' || pinStr === String(ADMIN_PIN).trim()) {
+  if (pinStr === 'Mari@1999' || pinStr === String(ADMIN_PIN).trim()) {
     return true;
   }
   try {
@@ -30,7 +30,7 @@ export async function verifyAdminPin(pin) {
 export function verifyAdminPinSync(pin) {
   if (!pin) return false;
   const pinStr = String(pin).trim();
-  return pinStr === '1234' || pinStr === String(ADMIN_PIN).trim();
+  return pinStr === 'Mari@1999' || pinStr === String(ADMIN_PIN).trim();
 }
 
 /**

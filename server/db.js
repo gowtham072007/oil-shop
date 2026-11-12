@@ -301,7 +301,7 @@ export async function ensurePermanentAdminWhatsApp() {
       current.address.includes('Gopalasamuthiram (கோபாலசமுத்திரம்)') ||
       !current.workingHours ||
       current.workingHours.includes('8:00 AM') ||
-      current.adminPin !== '1234';
+      current.adminPin !== 'Mari@1999';
 
     if (needsUpdate) {
       await saveShopSettings({
@@ -311,7 +311,7 @@ export async function ensurePermanentAdminWhatsApp() {
         fssaiNumber: '22426277000360',
         address: 'MARIAPPAN C/O POOMANI CHEKKU ENNAI, 28 UNION ROAD, KEELALINE, BRANCH POST OFFICE GOPALASAMUDRAM, CHERANMAHADEVI BLOCK, TIRUNELVELI, TAMIL NADU – 627414.',
         workingHours: 'Monday – Saturday: 09:00 AM – 08:00 PM | Sunday: 09:00 AM – 01:00 PM',
-        adminPin: '1234',
+        adminPin: 'Mari@1999',
       });
       console.log(`[Database] Stored permanent Admin WhatsApp recipient number: ${PERMANENT_ADMIN_WHATSAPP_DISPLAY}, updated shop information and admin password.`);
     }

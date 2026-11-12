@@ -11,7 +11,7 @@ export const DEFAULT_SHOP_SETTINGS = {
   workingHours: "Monday – Saturday: 09:00 AM – 08:00 PM | Sunday: 09:00 AM – 01:00 PM",
   deliveryCharge: 0,
   freeDeliveryThreshold: 0,
-  adminPin: "1234",
+  adminPin: "Mari@1999",
   currency: "₹",
 };
 

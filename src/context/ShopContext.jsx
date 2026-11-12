@@ -115,7 +115,7 @@ export const ShopProvider = ({ children }) => {
           fssaiNumber: resolvedFssai,
           address: resolvedAddress,
           workingHours: resolvedHours,
-          adminPin: String(parsed.adminPin || "1234").trim(),
+          adminPin: (!parsed.adminPin || parsed.adminPin === "1234") ? "Mari@1999" : String(parsed.adminPin).trim(),
           whatsappNumber: "916385755368",
           phoneDisplay: "+91 63857 55368",
         };
@@ -332,7 +332,11 @@ export const ShopProvider = ({ children }) => {
           fssaiNumber: resolvedFssai,
           address: resolvedAddress,
           workingHours: resolvedHours,
-          adminPin: String(serverSettings.adminPin || prev.adminPin || "1234").trim(),
+          adminPin: String(
+            (serverSettings.adminPin && serverSettings.adminPin !== "1234")
+              ? serverSettings.adminPin
+              : (prev.adminPin && prev.adminPin !== "1234" ? prev.adminPin : "Mari@1999")
+          ).trim(),
         }));
       }
     } catch (err) {
@@ -343,7 +347,7 @@ export const ShopProvider = ({ children }) => {
   const loadCentralOrders = useCallback(async () => {
     try {
       const token = adminToken || localStorage.getItem("oil_shop_admin_token");
-      const pin = shopSettings.adminPin || "1234";
+      const pin = shopSettings.adminPin || "Mari@1999";
       const serverOrders = await fetchOrdersApi(token, pin);
       if (Array.isArray(serverOrders)) {
         const sanitized = serverOrders.map((ord) => ({
@@ -662,10 +666,10 @@ export const ShopProvider = ({ children }) => {
   // -------------------------------------------------------------
   const loginAdmin = async (pin) => {
     const entered = String(pin || "").trim();
-    const expected = String(shopSettings.adminPin || "1234").trim();
+    const expected = String(shopSettings.adminPin || "Mari@1999").trim();
 
-    // 1. Check password - '1234' is guaranteed to authenticate, or the stored expected password
-    const isMatched = entered === "1234" || (expected && entered === expected);
+    // 1. Check password - 'Mari@1999' is guaranteed to authenticate, or the stored expected password
+    const isMatched = entered === "Mari@1999" || (expected && entered === expected);
     if (!isMatched) {
       throw new Error("Incorrect password. Please enter the correct admin password.");
     }
@@ -674,13 +678,13 @@ export const ShopProvider = ({ children }) => {
     setIsAdminAuthenticated(true);
     showNotification("Admin authenticated successfully!");
 
-    // If entered 1234, ensure state and localStorage are synced with 1234
-    if (entered === "1234" && shopSettings.adminPin !== "1234") {
-      setShopSettings((prev) => ({ ...prev, adminPin: "1234" }));
+    // If entered Mari@1999, ensure state and localStorage are synced with Mari@1999
+    if (entered === "Mari@1999" && shopSettings.adminPin !== "Mari@1999") {
+      setShopSettings((prev) => ({ ...prev, adminPin: "Mari@1999" }));
       try {
         const saved = localStorage.getItem("oil_shop_settings");
         const existing = saved ? JSON.parse(saved) : {};
-        localStorage.setItem("oil_shop_settings", JSON.stringify({ ...existing, adminPin: "1234" }));
+        localStorage.setItem("oil_shop_settings", JSON.stringify({ ...existing, adminPin: "Mari@1999" }));
       } catch {
         // ignore
       }
@@ -727,7 +731,7 @@ export const ShopProvider = ({ children }) => {
   };
 
   const addProduct = async (newProduct) => {
-    const pin = shopSettings.adminPin || "1234";
+    const pin = shopSettings.adminPin || "Mari@1999";
 
     // 1. Submit product data to central backend database API
     const res = await createProductApi(newProduct, adminToken, pin);
@@ -755,7 +759,7 @@ export const ShopProvider = ({ children }) => {
   };
 
   const updateProduct = async (id, updatedFields) => {
-    const pin = shopSettings.adminPin || "1234";
+    const pin = shopSettings.adminPin || "Mari@1999";
 
     // 1. Send update directly to Central Database API
     const res = await updateProductApi(id, updatedFields, adminToken, pin);
@@ -817,7 +821,7 @@ export const ShopProvider = ({ children }) => {
   };
 
   const deleteProduct = async (id) => {
-    const pin = shopSettings.adminPin || "1234";
+    const pin = shopSettings.adminPin || "Mari@1999";
 
     const res = await deleteProductApi(id, adminToken, pin);
     if (res && res.success === false) {
@@ -843,7 +847,7 @@ export const ShopProvider = ({ children }) => {
     if (!isAdminAuthenticated) {
       throw new Error("Unauthorized: Only an authenticated administrator can delete orders.");
     }
-    const pin = shopSettings.adminPin || "1234";
+    const pin = shopSettings.adminPin || "Mari@1999";
 
     // 1. Permanently delete from central database
     try {
@@ -868,7 +872,7 @@ export const ShopProvider = ({ children }) => {
   };
 
   const uploadPhoto = async (file) => {
-    const pin = shopSettings.adminPin || "1234";
+    const pin = shopSettings.adminPin || "Mari@1999";
 
     // 1. Try server storage upload first
     try {

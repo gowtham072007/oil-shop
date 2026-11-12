@@ -64,7 +64,7 @@ Thank you for shopping with us!
 - Orders are automatically stored in the admin order log.
 
 ### 5. Secure Admin Management Portal
-- **PIN Protected**: Default PIN is `1234` (configurable in settings).
+- **PIN Protected**: Default PIN is `Mari@1999` (configurable in settings).
 - **Product Management**: Add, edit, delete products, configure images, and set multiple pack sizes with custom prices and stock counts.
 - **Category Management**: Add, rename, or delete oil categories.
 - **Shop & WhatsApp Settings**: Edit shop name, tagline, WhatsApp business number, delivery charges, free delivery threshold, and FSSAI number.
@@ -137,7 +137,7 @@ All products added, updated, or deleted on any device (phone, laptop, tablet) ar
 3. Render automatically provisions:
    - A Node.js web service running `npm run build` and `npm start`.
    - A free **PostgreSQL** database (`poomani-oils-db`) automatically wired to `DATABASE_URL`.
-   - Environment variables for `PORT: 10000`, `NODE_ENV: production`, and `ADMIN_PIN: 1234`.
+   - Environment variables for `PORT: 10000`, `NODE_ENV: production`, and `ADMIN_PIN: Mari@1999`.
 4. The website will be live at `https://mani-oils.onrender.com`.
 
 ---
@@ -185,5 +185,5 @@ d:/oil shop/
 
 ## 🔐 Admin Credentials
 - **Access**: Click the **Admin** shield icon in the header.
-- **Default PIN**: `1234`
+- **Default PIN**: `Mari@1999`
 - You can change the PIN in **Admin > Shop & WhatsApp Settings** or via `ADMIN_PIN` environment variable.

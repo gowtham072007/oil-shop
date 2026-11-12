@@ -15,7 +15,7 @@ services:
           name: mani-oils-db
           property: connectionString
       - key: ADMIN_PIN
-        value: "1234"
+        value: "Mari@1999"
       - key: JWT_SECRET
         generateValue: true
 
